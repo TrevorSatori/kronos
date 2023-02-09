@@ -3,7 +3,6 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use lib::music;
 use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -16,7 +15,7 @@ use tui::{
 
 
 mod lib;
-use crate::lib::{app::*, music::*, stateful_list::*};
+use crate::lib::{app::*, stateful_list::*};
 
 use std::io::BufReader;
 use rodio::{Sink, Decoder, OutputStream, source::Source};

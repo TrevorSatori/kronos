@@ -17,7 +17,7 @@ use rodio::{Sink, Decoder, OutputStream, source::Source};
 use std::ffi::OsStr;
 
 use crate::lib::stateful_list::*;
-use crate::lib::music::*;
+
 
 // app is responsible for handling state //
 // keeps track of which Field you are in (QUEUE, Browser)
@@ -35,7 +35,6 @@ pub struct App {
     pub queue: Vec<PathBuf>,
     pub current_song: String,
     pub input_mode: InputMode,
-    pub music: Music,
     
 }
 
@@ -48,7 +47,6 @@ impl App {
             queue: Vec::new(),
             current_song: "|CURRENT SONG|".to_string(),
             input_mode: InputMode::Browser,
-            music: Music::new(),
         }
     }
     
@@ -111,11 +109,9 @@ impl App {
     }  
 
     pub fn enqueu(&mut self, song: PathBuf){
-
         // push songs to queue as Pathbuf and stateful list as string
         self.queue.push(song.clone());
-        self.queue_items = StatefulList::with_items(vec![song.file_name().unwrap().to_str().unwrap().to_string().clone()]);
-    
+        self.stateful_queue();    
     }
 
     pub fn get_current_song(&self) -> String{
@@ -132,11 +128,19 @@ impl App {
             let sink = Sink::try_new(&stream_handle).expect("Couldn't create sink");
             let file = BufReader::new(File::open(path).unwrap());
             let source = Decoder::new(file).unwrap();
-            
+            println!("{:?}", sink.len());
             sink.append(source);
             sink.sleep_until_end();
             // self.sink.play();
         });
+    }
+
+    // convert queue to stateful queue
+    pub fn stateful_queue(&mut self) {
+        let convert: String = self.queue.iter().map(|i|
+            i.file_name().unwrap().to_str().unwrap().to_string().clone()
+        ).collect();
+        self.queue_items = StatefulList::with_items(vec![convert]);
     }
 
 }
