@@ -1,4 +1,4 @@
-use std::{fs, path::{PathBuf, Path}, thread}; 
+use std::{fs, path::{PathBuf, Path}, thread, sync::Arc}; 
 extern crate glob;
 use glob::{glob, glob_with, MatchOptions, Pattern};
 use std::env;
@@ -13,7 +13,7 @@ use tui::{
 };
 use std::fs::File;
 use std::io::BufReader;
-use rodio::{Sink, Decoder, OutputStream, source::Source};
+use rodio::{Sink, Decoder, OutputStream, source::Source, OutputStreamHandle, queue::SourcesQueueOutput};
 use std::ffi::OsStr;
 
 use crate::lib::stateful_list::*;
@@ -39,6 +39,7 @@ pub struct App {
 }
 
 
+// let (_stream, stream_handle) =
 impl App {
     pub fn new() -> App {
         App {
@@ -52,7 +53,7 @@ impl App {
     
 
     // if item selected is folder, enter folder, else play record.
-    pub fn evaluate(&mut self, selected: usize){
+    pub fn evaluate(&mut self){
 
         let join = self.selected_item();
         
@@ -61,7 +62,7 @@ impl App {
             env::set_current_dir(join).unwrap();
             self.browser_items = StatefulList::with_items(App::scan_folder());
         } else {
-            // self.play_song();
+            self.play(join);
         }
     }
 
@@ -89,8 +90,8 @@ impl App {
                     let join = Path::join(&current_dir, Path::new(&item));
                     let ext = Path::new(&item).extension().and_then(OsStr::to_str);       
                 
-                    // if folder enter, else play song
-                    if join.is_dir() || (ext.is_some() && (item.extension().unwrap() == "mp3")){
+                    // if folder  (Hide Private) enter, else play song
+                    if (join.is_dir() && !join.file_name().unwrap().to_str().unwrap().contains(".") ) || (ext.is_some() && (item.extension().unwrap() == "mp3" || item.extension().unwrap() == "mp4" || item.extension().unwrap() == "m4a" || item.extension().unwrap() == "wav")){
                         items.push(item.to_str().unwrap().to_owned());
                     }         
                 },
@@ -121,26 +122,37 @@ impl App {
     // update current song and play
     pub fn play(&mut self, path: PathBuf){
         
-        self.current_song = path.file_name().unwrap().to_str().unwrap().to_string().clone();
-
+        self.current_song = path.file_name().unwrap().to_str().unwrap().to_string();
+        
+        
         let t1 = thread::spawn(||{
-            let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-            let sink = Sink::try_new(&stream_handle).expect("Couldn't create sink");
+        
             let file = BufReader::new(File::open(path).unwrap());
             let source = Decoder::new(file).unwrap();
-            println!("{:?}", sink.len());
+            let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+            let sink = Sink::try_new(&stream_handle).expect("Couldn't create sink");
             sink.append(source);
             sink.sleep_until_end();
-            // self.sink.play();
         });
+        
     }
 
     // convert queue to stateful queue
     pub fn stateful_queue(&mut self) {
-        let convert: String = self.queue.iter().map(|i|
-            i.file_name().unwrap().to_str().unwrap().to_string().clone()
+        let convert: Vec<String> = self.queue.iter().map(|i|
+            i.file_name().unwrap().to_str().unwrap().to_string()
         ).collect();
-        self.queue_items = StatefulList::with_items(vec![convert]);
+        self.queue_items = StatefulList::with_items(convert);
+    }
+
+    pub fn remove_selected(&mut self){
+        self.queue.remove(self.queue_items.curr);
+        self.stateful_queue();
     }
 
 }
+
+
+// TODO, find way to append stateful list
+// TODO, use same thread for queue songs
+// TODO, get length of song from file
