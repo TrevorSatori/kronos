@@ -1,0 +1,12 @@
+[package]
+name = "tui"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tui = "0.19"
+crossterm = "0.25"
+glob = "0.3.1"
+rodio = { version = "0.16.0", features = ["symphonia-all"]}
