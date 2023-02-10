@@ -182,13 +182,18 @@ impl App {
             // }
             
             self.increment_time();
+            let percentage = (self.time * 100) / song_length;
             
-            ((self.time - 0) * 100) / song_length
+            if percentage >= 100 {
+                100
+            } else {
+                percentage
+            }
         }
     }
 
     pub fn increment_time(&mut self){
-        if self.time > 100 {
+        if self.sink.len() == 0 {
             self.time = 0;
         } else if !self.sink.is_paused() {
             self.time += 1;
