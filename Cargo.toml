@@ -10,3 +10,4 @@ tui = "0.19"
 crossterm = "0.25"
 glob = "0.3.1"
 rodio = { version = "0.16.0", features = ["symphonia-all"]}
+metadata = "0.1.7"

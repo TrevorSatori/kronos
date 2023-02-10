@@ -15,13 +15,13 @@ use std::fs::File;
 use std::io::BufReader;
 use rodio::{Sink, Decoder, OutputStream, source::Source};
 use std::ffi::OsStr;
-
 use crate::*;
 
+// TODO encapsulation
 pub struct StatefulList<T> {
     pub state: ListState,
-    pub items: Vec<T>,
-    pub curr: usize,
+    items: Vec<T>,
+    curr: usize,
 }
 
 impl<T> StatefulList<T> {
@@ -75,10 +75,12 @@ impl<T> StatefulList<T> {
         self.state.select(None);
     }
 
+    // add item to items vector
     pub fn add(&mut self, item: T){
         self.items.push(item);
     }
 
+    // remove item from items vector
     pub fn remove(&mut self){
 
         // if list is empty ignore
@@ -98,4 +100,19 @@ impl<T> StatefulList<T> {
             self.items.remove(self.curr);
         };
     }
+
+    // return all items contained in vector
+    pub fn get_items(&self) -> &Vec<T> {
+        &self.items
+    }
+
+    // return item at index
+    pub fn get_item(&self) -> &T {
+        &self.items[self.curr]
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
 }
