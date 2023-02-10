@@ -3,7 +3,6 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use lib::music;
 use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -16,7 +15,7 @@ use tui::{
 
 
 mod lib;
-use crate::lib::{app::*, music::*, stateful_list::*};
+use crate::lib::{app::*, stateful_list::*};
 
 use std::io::BufReader;
 use rodio::{Sink, Decoder, OutputStream, source::Source};
@@ -73,8 +72,8 @@ fn run_app<B: Backend>(
                 match app.input_mode {
                     InputMode::Browser => match key.code {
                         KeyCode::Char('q') => return Ok(()),
-                        KeyCode::Char('a') => app.enqueu(app.selected_item()),
-                        KeyCode::Enter => app.evaluate(app.browser_items.curr),
+                        KeyCode::Char('a') => app.queue_items.add(app.selected_item().file_name().unwrap().to_str().unwrap().to_string()),
+                        KeyCode::Enter => app.evaluate(),
                         KeyCode::Backspace => app.backpedal(),
                         KeyCode::Down | KeyCode::Char('j') => app.browser_items.next(),
                         KeyCode::Up | KeyCode::Char('k') => app.browser_items.previous(),
@@ -90,7 +89,8 @@ fn run_app<B: Backend>(
                         KeyCode::Char('q') => return Ok(()),
                         KeyCode::Enter => app.play(app.selected_item()),
                         KeyCode::Down | KeyCode::Char('j') => app.queue_items.next(),
-                        KeyCode::Up | KeyCode::Char('k') => app.browser_items.previous(),
+                        KeyCode::Up | KeyCode::Char('k') => app.queue_items.previous(),
+                        KeyCode::Char('r') => app.queue_items.remove(),
                         KeyCode::Left | KeyCode::Char('h') => {
                             app.queue_items.unselect();
                             app.input_mode = InputMode::Browser;
@@ -143,7 +143,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .border_type(BorderType::Rounded))
         .highlight_style(
             Style::default()
-                .bg(Color::LightGreen)
+                .bg(Color::LightCyan)
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol(">> ");
@@ -153,25 +153,27 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     // convert queue items to text
     let queue_items: Vec<ListItem> = app.queue_items.items
-    .iter()
-    .map(|i| {
-        ListItem::new(Text::from(i.clone()))
-    })
-    .collect();
+        .iter()
+        .map(|i| {
+            ListItem::new(Text::from(i.clone()))
+        })
+        .collect();
 
     
      // Create a List from all list items and highlight the currently selected one
     let queue_items = List::new(queue_items)
-        .block(Block::default().borders(Borders::ALL)
+        .block(Block::default()
+        .borders(Borders::ALL)
         .title("QUEUE")
         .title_alignment(Alignment::Left)
         .border_type(BorderType::Rounded))
         .highlight_style(
             Style::default()
-                .bg(Color::LightGreen)
+                .bg(Color::LightCyan)
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol(">> ");
+
 
     // We can now render the item list
     f.render_stateful_widget(queue_items, queue_playing[0], &mut app.queue_items.state);

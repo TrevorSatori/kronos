@@ -1,4 +1,4 @@
-use std::{fs, path::{PathBuf, Path}, thread}; 
+use std::{fs, path::{PathBuf, Path}, thread, sync::Arc}; 
 extern crate glob;
 use glob::{glob, glob_with, MatchOptions, Pattern};
 use std::env;
@@ -13,11 +13,11 @@ use tui::{
 };
 use std::fs::File;
 use std::io::BufReader;
-use rodio::{Sink, Decoder, OutputStream, source::Source};
+use rodio::{Sink, Decoder, OutputStream, source::Source, OutputStreamHandle, queue::SourcesQueueOutput};
 use std::ffi::OsStr;
 
 use crate::lib::stateful_list::*;
-use crate::lib::music::*;
+
 
 // app is responsible for handling state //
 // keeps track of which Field you are in (QUEUE, Browser)
@@ -32,29 +32,25 @@ pub enum InputMode {
 pub struct App {
     pub browser_items: StatefulList<String>,
     pub queue_items: StatefulList<String>,
-    pub queue: Vec<PathBuf>,
     pub current_song: String,
     pub input_mode: InputMode,
-    pub music: Music,
     
 }
 
 
+// let (_stream, stream_handle) =
 impl App {
     pub fn new() -> App {
         App {
             browser_items: StatefulList::with_items(App::scan_folder()),
             queue_items: StatefulList::with_items(vec![]),
-            queue: Vec::new(),
             current_song: "|CURRENT SONG|".to_string(),
             input_mode: InputMode::Browser,
-            music: Music::new(),
         }
     }
-    
 
     // if item selected is folder, enter folder, else play record.
-    pub fn evaluate(&mut self, selected: usize){
+    pub fn evaluate(&mut self){
 
         let join = self.selected_item();
         
@@ -63,7 +59,7 @@ impl App {
             env::set_current_dir(join).unwrap();
             self.browser_items = StatefulList::with_items(App::scan_folder());
         } else {
-            // self.play_song();
+            self.play(join);
         }
     }
 
@@ -91,8 +87,8 @@ impl App {
                     let join = Path::join(&current_dir, Path::new(&item));
                     let ext = Path::new(&item).extension().and_then(OsStr::to_str);       
                 
-                    // if folder enter, else play song
-                    if join.is_dir() || (ext.is_some() && (item.extension().unwrap() == "mp3")){
+                    // if folder  (Hide Private) enter, else play song
+                    if (join.is_dir() && !join.file_name().unwrap().to_str().unwrap().contains(".") ) || (ext.is_some() && (item.extension().unwrap() == "mp3" || item.extension().unwrap() == "mp4" || item.extension().unwrap() == "m4a" || item.extension().unwrap() == "wav")){
                         items.push(item.to_str().unwrap().to_owned());
                     }         
                 },
@@ -110,14 +106,6 @@ impl App {
         join
     }  
 
-    pub fn enqueu(&mut self, song: PathBuf){
-
-        // push songs to queue as Pathbuf and stateful list as string
-        self.queue.push(song.clone());
-        self.queue_items = StatefulList::with_items(vec![song.file_name().unwrap().to_str().unwrap().to_string().clone()]);
-    
-    }
-
     pub fn get_current_song(&self) -> String{
         self.current_song.clone()
     }
@@ -125,18 +113,21 @@ impl App {
     // update current song and play
     pub fn play(&mut self, path: PathBuf){
         
-        self.current_song = path.file_name().unwrap().to_str().unwrap().to_string().clone();
-
+        self.current_song = path.file_name().unwrap().to_str().unwrap().to_string();
+        
+        
         let t1 = thread::spawn(||{
-            let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-            let sink = Sink::try_new(&stream_handle).expect("Couldn't create sink");
+        
             let file = BufReader::new(File::open(path).unwrap());
             let source = Decoder::new(file).unwrap();
-            
+            let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+            let sink = Sink::try_new(&stream_handle).expect("Couldn't create sink");
             sink.append(source);
             sink.sleep_until_end();
-            // self.sink.play();
         });
     }
-
 }
+
+
+// TODO, use same thread for queue songs
+// TODO, get length of song from file
