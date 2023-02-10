@@ -19,15 +19,15 @@ use crate::*;
 
 
 // TODO encapsulation
-pub struct Queue<T> {
+pub struct Queue {
     pub state: ListState,
-    items: VecDeque<T>,
+    items: VecDeque<PathBuf>,
     curr: usize,
 }
 
-impl<T> Queue<T> {
+impl Queue {
 
-    pub fn with_items(items: Vec<T>) -> Queue<T> {
+    pub fn with_items(items: Vec<PathBuf>) -> Queue {
         Queue {
             state: ListState::default(),
             items: VecDeque::new(),
@@ -75,10 +75,19 @@ impl<T> Queue<T> {
         self.state.select(None);
     }
 
+    // if invalid, recursive search, consider enum
     // add item to items vector (Need to store pathBuf and name)
-    pub fn add(&mut self, item: T){
-        self.items.push_back(item);
+    pub fn add(&mut self, item: PathBuf){
+
+        if item.is_dir() {
+            return;
+        } else {
+            self.items.push_back(item);
+        }
+        
     }
+
+    
 
     // remove item from items vector
     pub fn remove(&mut self){
@@ -102,12 +111,12 @@ impl<T> Queue<T> {
     }
 
     // return all items contained in vector
-    pub fn get_items(&self) -> &VecDeque<T> {
+    pub fn get_items(&self) -> &VecDeque<PathBuf> {
         &self.items
     }
 
     // return item at index
-    pub fn get_item(&self) -> &T {
+    pub fn get_item(&self) -> &PathBuf {
         &self.items[self.curr]
     }
 
@@ -116,7 +125,7 @@ impl<T> Queue<T> {
     }
 
     // FIFO
-    pub fn pop(&mut self) -> Option<T>{
+    pub fn pop(&mut self) -> Option<PathBuf>{
         self.items.pop_front()
     }
 

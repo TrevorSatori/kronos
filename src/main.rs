@@ -92,7 +92,7 @@ fn run_app<B: Backend>(
                     InputMode::Queue => match key.code {
                         KeyCode::Char('q') => return Ok(()),
                         KeyCode::Char('p') => app.play_pause(),
-                        KeyCode::Enter => app.play(app.selected_item()),
+                        KeyCode::Enter => app.play(app.queue_items.get_item().clone()),
                         KeyCode::Down | KeyCode::Char('j') => app.queue_items.next(),
                         KeyCode::Up | KeyCode::Char('k') => app.queue_items.previous(),
                         KeyCode::Char('r') => app.queue_items.remove(),
@@ -162,7 +162,6 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .collect();
     
     let queue_title = "QUEUE ITEMS ".to_owned() + &app.queue_items.length().to_string();
-     // Create a List from all list items and highlight the currently selected one
     let queue_items = List::new(queue_items)
         .block(Block::default()
         .borders(Borders::ALL)
@@ -191,3 +190,6 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
 }
 
+// functions constantly called 
+// 1. get_current_song - checked, good
+// 2. song_progress
