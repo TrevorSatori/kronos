@@ -179,6 +179,17 @@ impl App {
             if !self.sink.is_paused(){
                 self.time += 1;
             }
+
+            if self.time == 100 {
+                self.time == 0;
+            }
+
+            if self.time % 10 == 0 {
+                println!("{:?}",self.sink.empty());
+            }
+            
+
+
             
             ((self.time - 0) * 100) / song_length
         }
