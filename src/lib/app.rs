@@ -126,7 +126,9 @@ impl App {
         } else {
 
             // set currently playing
-            self.currently_playing = path.file_name().unwrap().to_str().unwrap().to_string();
+            self.currently_playing =  path.clone().file_name().unwrap().to_str().unwrap().to_string() ;
+
+
             // reinitialize due to rodio crate
             self.sink = Arc::new(Sink::try_new(&self.music_output.1).unwrap());
 
@@ -174,27 +176,23 @@ impl App {
             let seconds: u16 = m_s[1].clone().parse::<u16>().expect("couldn't convert time to i32");
             let song_length = minutes_to_seconds + seconds;
             
-
-
-            if !self.sink.is_paused(){
-                self.time += 1;
-            }
-
-            if self.time == 100 {
-                self.time == 0;
-            }
-
-            if self.time % 10 == 0 {
-                println!("{:?}",self.sink.empty());
-            }
+            // 99 100
+            // if self.time > 98  || self.time < 5 {
+            //     println!("{:?}", self.sink.empty());
+            // }
             
-
-
+            self.increment_time();
             
             ((self.time - 0) * 100) / song_length
         }
+    }
 
-        
+    pub fn increment_time(&mut self){
+        if self.time > 100 {
+            self.time = 0;
+        } else if !self.sink.is_paused() {
+            self.time += 1;
+        }
     }
 
 }
