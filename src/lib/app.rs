@@ -50,7 +50,7 @@ impl App {
         App {
             browser_items: StatefulList::with_items(App::scan_folder()),
             queue_items: Queue::with_items(vec![]),
-            currently_playing: "|CURRENT SONG|".to_string(),
+            currently_playing: "CURRENT SONG".to_string(),
             input_mode: InputMode::Browser,
             music_output: Arc::new(OutputStream::try_default().unwrap()),
             sink: Arc::new(Sink::new_idle().0), // more efficient way, shouldnt have to do twice?
@@ -159,6 +159,12 @@ impl App {
             self.sink.pause()
         }
     }
+    
+    // clears sink queue, next item auto added
+    pub fn skip(&self){
+        self.sink.stop();
+    }
+
 
 
     // track song progress, NEEDS TIME RUNNING, constantly called by draw func.
@@ -180,11 +186,6 @@ impl App {
             let minutes_to_seconds: u16 = m_s[0].clone().parse::<u16>().expect("couldn't convert time to i32") * 60;
             let seconds: u16 = m_s[1].clone().parse::<u16>().expect("couldn't convert time to i32");
             let song_length = minutes_to_seconds + seconds;
-            
-            // 99 100
-            // if self.time > 98  || self.time < 5 {
-            //     println!("{:?}", self.sink.empty());
-            // }
             
             self.increment_time();
             let percentage = (self.time * 100) / song_length;
@@ -214,8 +215,3 @@ impl App {
 
 }
 
-
-
-// TODO, Gauge progress moves on tick
-// TODO, Next function 
-// TODO, be able to skip on enter (Destroy?)
