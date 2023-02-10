@@ -8,4 +8,3 @@ Currently under active development, check back soon!
 1. Change time tracking 
 2. Gauge progress moves on tick
 5. recursive search for folders valid items
-6. panick on playing, then backpedaling

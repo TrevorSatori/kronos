@@ -50,10 +50,7 @@ impl App {
         // let sink = Sink::try_new(&stream_handle).expect("Couldn't create sink");
         App {
             browser_items: StatefulList::with_items(App::scan_folder()),
-
             queue_items: Queue::with_items(vec![]),
-
-
             currently_playing: "CURRENT SONG".to_string(),
             input_mode: InputMode::Browser,
             music_output: Arc::new(OutputStream::try_default().unwrap()),
@@ -102,7 +99,7 @@ impl App {
             
             // set currently playing
             self.currently_playing =  path.clone().file_name().unwrap().to_str().unwrap().to_string();
-            self.song_metadata();
+            self.song_metadata(&path);
 
             // reinitialize due to rodio crate
             self.sink = Arc::new(Sink::try_new(&self.music_output.1).unwrap());
@@ -138,6 +135,7 @@ impl App {
     
     // if queue has items and nothing playing, auto play
     pub fn auto_play(&mut self){
+        thread::sleep(Duration::from_millis(250));
         if self.sink.len() == 0 && !self.queue_items.is_empty() {
             self.play_next();
         }
@@ -152,39 +150,37 @@ impl App {
         }
     }
 
-    // problem is, constant probing while looking and changing env, 
-    // stop probing while searching
-    // stopping in browser will stop correct time,
-    // if in browser dont updat maybe
-
-    // track song progress, NEEDS TIME RUNNING, constantly called by draw func.
-    // need to remove play next to seperate function handle process
+    // if playing and 
     pub fn song_progress(&mut self) -> u16 { 
+        self.increment_time();
 
-        // edge case if nothing queued or playing
-        if self.sink.len() == 0 && self.queue_items.is_empty() {
-            0
-        } else {
-            self.auto_play();
-            self.increment_time();
-
-
+        let progress = || {
             let percentage = (self.time_played * 100) / self.song_time;
-           
-            
             if percentage >= 100 {
                 100
             } else {
                 percentage
             }
+        };
 
+        // edge case if nothing queued or playing
+        if self.sink.len() == 0 && self.queue_items.is_empty() {
+            0
+
+        // if something playing, calculate progress 
+        } else if self.sink.len() == 1 {
+            progress()
+        // if nothing playing keep rolling
+        } else {
+          self.auto_play();
+          0
         }
                     
     }
 
-    pub fn song_metadata(&mut self){
+    pub fn song_metadata(&mut self, path: &PathBuf){
         // trying to access but path has changed
-        let f = MediaFileMetadata::new(&self.currently_playing).unwrap();
+        let f = MediaFileMetadata::new(path).unwrap();
         let dur = f.duration.unwrap();
 
         // hours, minutes, seconds = vec![&c[..2], &c[3..5], &c[6..8]];
@@ -193,11 +189,10 @@ impl App {
         let seconds: u16 = m_s[1].clone().parse::<u16>().expect("couldn't convert time to i32");
         let song_length = minutes_to_seconds + seconds;
         self.song_time = song_length;
-
     }
 
     pub fn increment_time(&mut self){
-        if !self.sink.is_paused() {
+        if !self.sink.is_paused() && self.sink.len() == 1 {
             self.time_played += 1;
         }
     }

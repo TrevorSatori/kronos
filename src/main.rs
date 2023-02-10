@@ -161,7 +161,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         })
         .collect();
     
-    let queue_title = "QUEUE ITEMS ".to_owned() + &app.queue_items.length().to_string();
+    let queue_title = "| Queue: ".to_owned() + &app.queue_items.length().to_string() + " Songs |";
     let queue_items = List::new(queue_items)
         .block(Block::default()
         .borders(Borders::ALL)
