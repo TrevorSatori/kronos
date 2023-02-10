@@ -14,7 +14,6 @@ use tui::{
     Frame, Terminal,
 };
 
-
 mod lib;
 use crate::lib::{app::*, stateful_list::*};
 
