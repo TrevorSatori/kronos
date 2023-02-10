@@ -17,25 +17,25 @@ use rodio::{Sink, Decoder, OutputStream, source::Source};
 use std::ffi::OsStr;
 use crate::*;
 
+
 // TODO encapsulation
-pub struct StatefulList<T> {
+pub struct Queue {
     pub state: ListState,
-    items: Vec<T>,
+    items: VecDeque<PathBuf>,
     curr: usize,
 }
 
-impl<T> StatefulList<T> {
+impl Queue {
 
-    pub fn with_items(items: Vec<T>) -> StatefulList<T> {
-        StatefulList {
+    pub fn with_items(items: Vec<PathBuf>) -> Queue {
+        Queue {
             state: ListState::default(),
-            items,
+            items: VecDeque::new(),
             curr: 0,
         }
     }
 
-    pub fn next(&mut self) {
-        
+    pub fn next(&mut self) { 
         // check if empty
         if self.items.is_empty(){return};
 
@@ -75,10 +75,19 @@ impl<T> StatefulList<T> {
         self.state.select(None);
     }
 
-    // add item to items vector
-    pub fn add(&mut self, item: T){
-        self.items.push(item);
+    // if invalid, recursive search, consider enum
+    // add item to items vector (Need to store pathBuf and name)
+    pub fn add(&mut self, item: PathBuf){
+
+        if item.is_dir() {
+            return;
+        } else {
+            self.items.push_back(item);
+        }
+        
     }
+
+    
 
     // remove item from items vector
     pub fn remove(&mut self){
@@ -102,17 +111,26 @@ impl<T> StatefulList<T> {
     }
 
     // return all items contained in vector
-    pub fn get_items(&self) -> &Vec<T> {
+    pub fn get_items(&self) -> &VecDeque<PathBuf> {
         &self.items
     }
 
     // return item at index
-    pub fn get_item(&self) -> &T {
+    pub fn get_item(&self) -> &PathBuf {
         &self.items[self.curr]
     }
 
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()
+    }
+
+    // FIFO
+    pub fn pop(&mut self) -> Option<PathBuf>{
+        self.items.pop_front()
+    }
+
+    pub fn length(&self) -> usize {
+        self.items.len()
     }
 
 }
