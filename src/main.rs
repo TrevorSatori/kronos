@@ -112,7 +112,6 @@ fn run_app<B: Backend>(
 
 
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    
 
     // split into left / right
     let browser_queue = Layout::default()

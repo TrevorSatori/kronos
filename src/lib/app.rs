@@ -18,6 +18,8 @@ use std::ffi::OsStr;
 use metadata::MediaFileMetadata;
 use crate::lib::stateful_list::*;
 
+use super::queue::Queue;
+
 
 // app is responsible for handling state //
 // keeps track of which Field you are in (QUEUE, Browser)
@@ -31,7 +33,7 @@ pub enum InputMode {
 
 pub struct App {
     pub browser_items: StatefulList<String>,
-    pub queue_items: StatefulList<String>,
+    pub queue_items: Queue<String>,
     pub currently_playing: String,
     pub input_mode: InputMode,
     music_output: Arc<(OutputStream, OutputStreamHandle)>,
@@ -47,7 +49,7 @@ impl App {
         // let sink = Sink::try_new(&stream_handle).expect("Couldn't create sink");
         App {
             browser_items: StatefulList::with_items(App::scan_folder()),
-            queue_items: StatefulList::with_items(vec![]),
+            queue_items: Queue::with_items(vec![]),
             currently_playing: "|CURRENT SONG|".to_string(),
             input_mode: InputMode::Browser,
             music_output: Arc::new(OutputStream::try_default().unwrap()),
@@ -126,45 +128,43 @@ impl App {
         } else {
 
             // set currently playing
-            self.currently_playing =  path.clone().file_name().unwrap().to_str().unwrap().to_string() ;
-
+            self.currently_playing =  path.clone().file_name().unwrap().to_str().unwrap().to_string();
 
             // reinitialize due to rodio crate
             self.sink = Arc::new(Sink::try_new(&self.music_output.1).unwrap());
 
-            //clone sink for thread
+            // clone sink for thread
             let sclone = self.sink.clone();
-
             let _t1 = thread::spawn( move || {
             
                 // can send in through function
                 let file = BufReader::new(File::open(path).unwrap());
                 let source = Decoder::new(file).unwrap();
                 sclone.append(source);
-                sclone.sleep_until_end();
-                
+                sclone.sleep_until_end();  
     
             });
         };
     }
 
     pub fn play_pause(&mut self){
-
         if self.sink.is_paused(){
             self.sink.play()
         } else {
             self.sink.pause()
         }
-        
     }
 
 
-    // track song progress, NEEDS TIME RUNNING
-    pub fn song_progress(&mut self) -> u16 {
+    // track song progress, NEEDS TIME RUNNING, constantly called by draw func.
+    pub fn song_progress(&mut self) -> u16 { 
 
         // edge case
-        if self.sink.len() != 1 {
-            return 0
+        if self.sink.len() != 1 && self.queue_items.is_empty() {
+            0
+        } else if self.sink.len() == 0 && !self.queue_items.is_empty() {
+            self.play_next();
+            0
         } else {
 
             let f = MediaFileMetadata::new(&self.currently_playing).unwrap();
@@ -190,6 +190,16 @@ impl App {
                 percentage
             }
         }
+    }
+
+    // should pop item from queue and play next
+    pub fn play_next(&mut self){
+
+        match self.queue_items.pop() {
+            Some(item) => self.sink.append(item),
+            None => (),
+        }
+    
     }
 
     pub fn increment_time(&mut self){
