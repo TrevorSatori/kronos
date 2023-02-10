@@ -1,0 +1,11 @@
+/home/satori/projects/tui/target/debug/deps/symphonia_codec_vorbis-cd72433e9a5742b2.rmeta: /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/lib.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/codebook.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/common.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/dsp.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/floor.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/residue.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/window.rs
+
+/home/satori/projects/tui/target/debug/deps/symphonia_codec_vorbis-cd72433e9a5742b2.d: /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/lib.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/codebook.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/common.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/dsp.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/floor.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/residue.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/window.rs
+
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/lib.rs:
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/codebook.rs:
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/common.rs:
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/dsp.rs:
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/floor.rs:
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/residue.rs:
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/symphonia-codec-vorbis-0.5.2/src/window.rs:

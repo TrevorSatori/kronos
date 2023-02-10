@@ -1,0 +1,1 @@
+/home/satori/projects/tui/target/debug/tui: /home/satori/projects/tui/src/lib/app.rs /home/satori/projects/tui/src/lib/mod.rs /home/satori/projects/tui/src/lib/stateful_list.rs /home/satori/projects/tui/src/main.rs
