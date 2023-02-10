@@ -1,0 +1,13 @@
+/home/satori/projects/tui/target/debug/deps/cpal-c05aa75169c7e76c.rmeta: /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/lib.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/error.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/host/mod.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/host/alsa/mod.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/host/alsa/enumerate.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/host/null/mod.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/platform/mod.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/samples_formats.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/traits.rs
+
+/home/satori/projects/tui/target/debug/deps/cpal-c05aa75169c7e76c.d: /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/lib.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/error.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/host/mod.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/host/alsa/mod.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/host/alsa/enumerate.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/host/null/mod.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/platform/mod.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/samples_formats.rs /home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/traits.rs
+
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/lib.rs:
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/error.rs:
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/host/mod.rs:
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/host/alsa/mod.rs:
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/host/alsa/enumerate.rs:
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/host/null/mod.rs:
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/platform/mod.rs:
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/samples_formats.rs:
+/home/satori/.cargo/registry/src/github.com-1ecc6299db9ec823/cpal-0.14.2/src/traits.rs:

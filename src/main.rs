@@ -9,7 +9,7 @@ use tui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Span,Spans, Text},
-    widgets::{Block, BorderType, Borders, List, ListItem},
+    widgets::{Block, BorderType, Borders, List, ListItem, Gauge},
     Frame, Terminal,
 };
 
@@ -27,12 +27,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    execute!(stdout, EnterAlternateScreen, DisableMouseCapture)?; 
+
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
     // create app and run it
-    let tick_rate = Duration::from_millis(250);
+    let tick_rate = Duration::from_secs(1);
     let app = App::new();
     let res = run_app(&mut terminal, app, tick_rate);
 
@@ -51,7 +52,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
-use std::env;
+
 
 fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
@@ -72,6 +73,7 @@ fn run_app<B: Backend>(
                 match app.input_mode {
                     InputMode::Browser => match key.code {
                         KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Char('p') => app.play_pause(),
                         KeyCode::Char('a') => app.queue_items.add(app.selected_item().file_name().unwrap().to_str().unwrap().to_string()),
                         KeyCode::Enter => app.evaluate(),
                         KeyCode::Backspace => app.backpedal(),
@@ -87,6 +89,7 @@ fn run_app<B: Backend>(
                     },
                     InputMode::Queue => match key.code {
                         KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Char('p') => app.play_pause(),
                         KeyCode::Enter => app.play(app.selected_item()),
                         KeyCode::Down | KeyCode::Char('j') => app.queue_items.next(),
                         KeyCode::Up | KeyCode::Char('k') => app.queue_items.previous(),
@@ -95,7 +98,6 @@ fn run_app<B: Backend>(
                             app.queue_items.unselect();
                             app.input_mode = InputMode::Browser;
                             app.browser_items.next();
-                            
                         }
                         _ => {}
                     }      
@@ -128,7 +130,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     
     // convert app items to text
-    let items: Vec<ListItem> = app.browser_items.items
+    let items: Vec<ListItem> = app.browser_items.get_items()
     .iter()
     .map(|i| {
         ListItem::new(Text::from(i.to_owned()))
@@ -147,18 +149,15 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol(">> ");
-
-    // We can now render the item list
     f.render_stateful_widget(items, browser_queue[0], &mut app.browser_items.state);
 
     // convert queue items to text
-    let queue_items: Vec<ListItem> = app.queue_items.items
+    let queue_items: Vec<ListItem> = app.queue_items.get_items()
         .iter()
         .map(|i| {
             ListItem::new(Text::from(i.clone()))
         })
         .collect();
-
     
      // Create a List from all list items and highlight the currently selected one
     let queue_items = List::new(queue_items)
@@ -173,17 +172,16 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol(">> ");
-
-
-    // We can now render the item list
     f.render_stateful_widget(queue_items, queue_playing[0], &mut app.queue_items.state);
 
-
-    let playing = Block::default()
+    let playing = Gauge::default()
+        .block(Block::default()
+        .title(app.get_current_song())
         .borders(Borders::ALL)
-        .title(app.get_current_song()) // 
-        .title_alignment(Alignment::Center)
-        .border_type(BorderType::Rounded);
+        .border_type(BorderType::Rounded)
+        .title_alignment(Alignment::Center))
+        .gauge_style(Style::default().fg(Color::LightCyan))
+        .percent(app.song_progress());
     f.render_widget(playing, queue_playing[1]);
 
 }
