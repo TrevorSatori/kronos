@@ -33,7 +33,7 @@ pub enum InputMode {
 
 pub struct App {
     pub browser_items: StatefulList<String>,
-    pub queue_items: Queue<String>,
+    pub queue_items: Queue<PathBuf>,
     pub currently_playing: String,
     pub input_mode: InputMode,
     music_output: Arc<(OutputStream, OutputStreamHandle)>,
@@ -97,7 +97,12 @@ impl App {
                     let ext = Path::new(&item).extension().and_then(OsStr::to_str);       
                 
                     // if folder  (Hide Private) enter, else play song
-                    if (join.is_dir() && !join.file_name().unwrap().to_str().unwrap().contains(".") ) || (ext.is_some() && (item.extension().unwrap() == "mp3" || item.extension().unwrap() == "mp4" || item.extension().unwrap() == "m4a" || item.extension().unwrap() == "wav")){
+                    if (join.is_dir() && !join.file_name().unwrap().to_str().unwrap().contains(".") ) || (ext.is_some() && 
+                    (item.extension().unwrap() == "mp3" || 
+                    item.extension().unwrap() == "mp4" || 
+                    item.extension().unwrap() == "m4a" || 
+                    item.extension().unwrap() == "wav" || 
+                    item.extension().unwrap() == "flac" )){
                         items.push(item.to_str().unwrap().to_owned());
                     }         
                 },
@@ -194,18 +199,15 @@ impl App {
 
     // should pop item from queue and play next
     pub fn play_next(&mut self){
-
+        self.time = 0;
         match self.queue_items.pop() {
-            Some(item) => self.sink.append(item),
+            Some(item) => self.play(item),
             None => (),
         }
-    
     }
 
     pub fn increment_time(&mut self){
-        if self.sink.len() == 0 {
-            self.time = 0;
-        } else if !self.sink.is_paused() {
+        if !self.sink.is_paused() {
             self.time += 1;
         }
     }
@@ -213,21 +215,7 @@ impl App {
 }
 
 
-// TODO, use same thread for queue songs
-// TODO, Gauge progress
-// TODO, function for song name or file name
-// When song is done, pop item out of queue and start new 
 
-// need to spawn thread for music, but also be able to have access throughout life of app
-// function can be ruled out, must be part of struct.
-
-// WHAT NEEDS TO BE ACCESSED AND SENT TO THREAD?
-// ACCESSED: song play time
-// Sent: Pause, play, next
-
-/*
-    time = time now
-
-    if pause, save time passed to variable
-
-*/
+// TODO, Gauge progress moves on tick
+// TODO, Next function 
+// TODO, be able to skip on enter (Destroy?)

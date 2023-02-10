@@ -3,6 +3,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use lib::queue;
 use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -74,7 +75,7 @@ fn run_app<B: Backend>(
                     InputMode::Browser => match key.code {
                         KeyCode::Char('q') => return Ok(()),
                         KeyCode::Char('p') => app.play_pause(),
-                        KeyCode::Char('a') => app.queue_items.add(app.selected_item().file_name().unwrap().to_str().unwrap().to_string()),
+                        KeyCode::Char('a') => app.queue_items.add(app.selected_item()),
                         KeyCode::Enter => app.evaluate(),
                         KeyCode::Backspace => app.backpedal(),
                         KeyCode::Down | KeyCode::Char('j') => app.browser_items.next(),
@@ -150,19 +151,21 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .highlight_symbol(">> ");
     f.render_stateful_widget(items, browser_queue[0], &mut app.browser_items.state);
 
+    // STORE PATHBUF IN QUEUE, DISPLAY AS STRING
     // convert queue items to text
     let queue_items: Vec<ListItem> = app.queue_items.get_items()
         .iter()
         .map(|i| {
-            ListItem::new(Text::from(i.clone()))
+            ListItem::new(Text::from(i.file_name().unwrap().to_str().unwrap().to_string()))
         })
         .collect();
     
+    let queue_title = "QUEUE ITEMS ".to_owned() + &app.queue_items.length().to_string();
      // Create a List from all list items and highlight the currently selected one
     let queue_items = List::new(queue_items)
         .block(Block::default()
         .borders(Borders::ALL)
-        .title("QUEUE")
+        .title(queue_title)
         .title_alignment(Alignment::Left)
         .border_type(BorderType::Rounded))
         .highlight_style(
@@ -173,9 +176,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .highlight_symbol(">> ");
     f.render_stateful_widget(queue_items, queue_playing[0], &mut app.queue_items.state);
 
+    
+    let playing_title = "| ".to_owned() + &app.get_current_song() + " |";
     let playing = Gauge::default()
         .block(Block::default()
-        .title(app.get_current_song())
+        .title(playing_title)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .title_alignment(Alignment::Center))

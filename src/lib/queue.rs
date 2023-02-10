@@ -75,7 +75,7 @@ impl<T> Queue<T> {
         self.state.select(None);
     }
 
-    // add item to items vector
+    // add item to items vector (Need to store pathBuf and name)
     pub fn add(&mut self, item: T){
         self.items.push_back(item);
     }
@@ -115,8 +115,13 @@ impl<T> Queue<T> {
         self.items.is_empty()
     }
 
+    // FIFO
     pub fn pop(&mut self) -> Option<T>{
         self.items.pop_front()
+    }
+
+    pub fn length(&self) -> usize {
+        self.items.len()
     }
 
 }
