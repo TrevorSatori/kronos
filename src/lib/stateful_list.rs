@@ -25,6 +25,7 @@ pub struct StatefulList<T> {
 }
 
 impl<T> StatefulList<T> {
+
     pub fn with_items(items: Vec<T>) -> StatefulList<T> {
         StatefulList {
             state: ListState::default(),
@@ -34,6 +35,10 @@ impl<T> StatefulList<T> {
     }
 
     pub fn next(&mut self) {
+        
+        // check if empty
+        if self.items.is_empty(){return};
+
         let i = match self.state.selected() {
             Some(i) => {
                 if i >= self.items.len() - 1 {
@@ -49,6 +54,9 @@ impl<T> StatefulList<T> {
     }
 
     pub fn previous(&mut self) {
+        // check if empty
+        if self.items.is_empty(){return};
+
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
@@ -65,5 +73,29 @@ impl<T> StatefulList<T> {
 
     pub fn unselect(&mut self) {
         self.state.select(None);
+    }
+
+    pub fn add(&mut self, item: T){
+        self.items.push(item);
+    }
+
+    pub fn remove(&mut self){
+
+        // if list is empty ignore
+        if self.items.len() == 0{
+            return;
+        // top of queue
+        } else if self.items.len() == 1 {
+            self.items.remove(self.curr);
+            self.unselect();
+        // if at bottom of queue, remove item and select item above above
+        } else if (self.state.selected().unwrap()) >= (self.items.len() - 1){
+            self.items.remove(self.curr);
+            self.curr -= 1;
+            self.state.select(Some(self.curr));
+        // else delete item
+        } else if !(self.items.is_empty()){
+            self.items.remove(self.curr);
+        };
     }
 }

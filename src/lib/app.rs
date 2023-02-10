@@ -32,7 +32,6 @@ pub enum InputMode {
 pub struct App {
     pub browser_items: StatefulList<String>,
     pub queue_items: StatefulList<String>,
-    pub queue: Vec<PathBuf>,
     pub current_song: String,
     pub input_mode: InputMode,
     
@@ -45,12 +44,10 @@ impl App {
         App {
             browser_items: StatefulList::with_items(App::scan_folder()),
             queue_items: StatefulList::with_items(vec![]),
-            queue: Vec::new(),
             current_song: "|CURRENT SONG|".to_string(),
             input_mode: InputMode::Browser,
         }
     }
-    
 
     // if item selected is folder, enter folder, else play record.
     pub fn evaluate(&mut self){
@@ -109,12 +106,6 @@ impl App {
         join
     }  
 
-    pub fn enqueu(&mut self, song: PathBuf){
-        // push songs to queue as Pathbuf and stateful list as string
-        self.queue.push(song.clone());
-        self.stateful_queue();    
-    }
-
     pub fn get_current_song(&self) -> String{
         self.current_song.clone()
     }
@@ -134,25 +125,9 @@ impl App {
             sink.append(source);
             sink.sleep_until_end();
         });
-        
     }
-
-    // convert queue to stateful queue
-    pub fn stateful_queue(&mut self) {
-        let convert: Vec<String> = self.queue.iter().map(|i|
-            i.file_name().unwrap().to_str().unwrap().to_string()
-        ).collect();
-        self.queue_items = StatefulList::with_items(convert);
-    }
-
-    pub fn remove_selected(&mut self){
-        self.queue.remove(self.queue_items.curr);
-        self.stateful_queue();
-    }
-
 }
 
 
-// TODO, find way to append stateful list
 // TODO, use same thread for queue songs
 // TODO, get length of song from file
