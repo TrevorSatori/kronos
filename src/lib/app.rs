@@ -1,28 +1,13 @@
-use std::{fs, path::{PathBuf, Path}, thread::{self, JoinHandle}, sync::{Arc, Mutex}, time::{Duration, Instant, self}, rc::Rc}; 
+use std::{path::{PathBuf, Path}, thread::{self}, time::{Duration}}; 
 extern crate glob;
-use glob::{glob, glob_with, MatchOptions, Pattern};
+use glob::{glob_with, MatchOptions};
 use std::env;
-
-use tui::{
-    backend::{Backend, CrosstermBackend},
-    layout::{Constraint, Corner, Direction, Layout},
-    style::{Color, Modifier, Style},
-    text::{Span, Spans},
-    widgets::{Block, Borders, List, ListItem, ListState},
-    Frame, Terminal,
-};
-use std::fs::File;
-use std::io::BufReader;
-use rodio::{Sink, Decoder, OutputStream, source::Source, OutputStreamHandle, queue::SourcesQueueOutput};
 use std::ffi::OsStr;
-use metadata::MediaFileMetadata;
-
-
 use crate::lib::stateful_list::*;
-use super::{queue::Queue, music_handler};
+use super::{queue::Queue};
 use super::music_handler::{MusicHandle};
 
-// app is responsible for handling state //
+// app is responsible for handling state
 // keeps track of which Field you are in (QUEUE, Browser)
 // updates and handles list state
 
@@ -30,7 +15,6 @@ pub enum InputMode {
     Browser,
     Queue,
 }
-
 
 pub struct App {
     pub browser_items: StatefulList<String>,
@@ -44,7 +28,7 @@ impl App {
     pub fn new() -> App {
         App {
             browser_items: StatefulList::with_items(App::scan_folder()),
-            queue_items: Queue::with_items(vec![]),
+            queue_items: Queue::with_items(),
             input_mode: InputMode::Browser,
             music_handle: MusicHandle::new(),
         }

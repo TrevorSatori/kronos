@@ -1,21 +1,6 @@
-use std::{fs, path::{PathBuf, Path}, collections::VecDeque}; 
-extern crate glob;
-use glob::{glob, glob_with, MatchOptions, Pattern};
-use std::env;
-
 use tui::{
-    backend::{Backend, CrosstermBackend},
-    layout::{Constraint, Corner, Direction, Layout},
-    style::{Color, Modifier, Style},
-    text::{Span, Spans},
-    widgets::{Block, Borders, List, ListItem, ListState},
-    Frame, Terminal,
+    widgets::{ListState},
 };
-use std::fs::File;
-use std::io::BufReader;
-use rodio::{Sink, Decoder, OutputStream, source::Source};
-use std::ffi::OsStr;
-use crate::*;
 
 // TODO encapsulation
 pub struct StatefulList<T> {
@@ -32,6 +17,16 @@ impl<T> StatefulList<T> {
             items,
             curr: 0,
         }
+    }
+
+    // return all items contained in vector
+    pub fn get_items(&self) -> &Vec<T> {
+        &self.items
+    }
+
+    // return item at index
+    pub fn get_item(&self) -> &T {
+        &self.items[self.curr]
     }
 
     pub fn next(&mut self) {
@@ -73,46 +68,6 @@ impl<T> StatefulList<T> {
 
     pub fn unselect(&mut self) {
         self.state.select(None);
-    }
-
-    // add item to items vector
-    pub fn add(&mut self, item: T){
-        self.items.push(item);
-    }
-
-    // remove item from items vector
-    pub fn remove(&mut self){
-
-        // if list is empty ignore
-        if self.items.len() == 0{
-            return;
-        // top of queue
-        } else if self.items.len() == 1 {
-            self.items.remove(self.curr);
-            self.unselect();
-        // if at bottom of queue, remove item and select item above above
-        } else if (self.state.selected().unwrap()) >= (self.items.len() - 1){
-            self.items.remove(self.curr);
-            self.curr -= 1;
-            self.state.select(Some(self.curr));
-        // else delete item
-        } else if !(self.items.is_empty()){
-            self.items.remove(self.curr);
-        };
-    }
-
-    // return all items contained in vector
-    pub fn get_items(&self) -> &Vec<T> {
-        &self.items
-    }
-
-    // return item at index
-    pub fn get_item(&self) -> &T {
-        &self.items[self.curr]
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.items.is_empty()
     }
 
 }
