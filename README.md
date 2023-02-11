@@ -27,6 +27,7 @@ sudo apt install ffmpeg clang
 ``
 sudo pacman -S ffmpeg clang
 ``
+
 3. change directories into Kronos repo 
 
 ``
