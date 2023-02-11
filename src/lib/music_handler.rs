@@ -1,22 +1,10 @@
-use std::{fs, path::{PathBuf, Path}, thread::{self, JoinHandle, sleep_ms}, sync::{Arc, Mutex, mpsc}, time::{Duration, Instant, self}, rc::Rc}; 
+use std::{path::{PathBuf}, thread::{self}, sync::{Arc, Mutex}, time::{Duration}}; 
 extern crate glob;
-use glob::{glob, glob_with, MatchOptions, Pattern};
-use std::env;
-
-use tui::{
-    backend::{Backend, CrosstermBackend},
-    layout::{Constraint, Corner, Direction, Layout},
-    style::{Color, Modifier, Style},
-    text::{Span, Spans},
-    widgets::{Block, Borders, List, ListItem, ListState},
-    Frame, Terminal,
-};
 use std::fs::File;
 use std::io::BufReader;
-use rodio::{Sink, Decoder, OutputStream, source::Source, OutputStreamHandle, queue::SourcesQueueOutput};
-use std::ffi::OsStr;
+use rodio::{Sink, Decoder, OutputStream, OutputStreamHandle};
 use metadata::MediaFileMetadata;
-use crate::lib::stateful_list::*;
+
 
 pub struct MusicHandle{
     music_output: Arc<(OutputStream, OutputStreamHandle)>,

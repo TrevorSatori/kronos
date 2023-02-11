@@ -1,26 +1,20 @@
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::{self, DisableMouseCapture, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use lib::queue;
 use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    text::{Span,Spans, Text},
+    text::{Text},
     widgets::{Block, BorderType, Borders, List, ListItem, Gauge},
     Frame, Terminal,
 };
 
 mod lib;
-use crate::lib::{app::*, stateful_list::*};
-
-use std::io::BufReader;
-use rodio::{Sink, Decoder, OutputStream, source::Source};
-use std::ffi::OsStr;
-
+use crate::lib::{app::*};
 use std::time::{Instant, Duration};
 
 fn main() -> Result<(), Box<dyn Error>> {

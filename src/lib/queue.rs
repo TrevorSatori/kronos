@@ -1,21 +1,9 @@
-use std::{fs, path::{PathBuf, Path}, collections::VecDeque}; 
+use std::{path::{PathBuf}, collections::VecDeque}; 
 extern crate glob;
-use glob::{glob, glob_with, MatchOptions, Pattern};
-use std::env;
-
 use tui::{
-    backend::{Backend, CrosstermBackend},
-    layout::{Constraint, Corner, Direction, Layout},
-    style::{Color, Modifier, Style},
-    text::{Span, Spans},
-    widgets::{Block, Borders, List, ListItem, ListState},
-    Frame, Terminal,
+    widgets::{ListState},
 };
-use std::fs::File;
-use std::io::BufReader;
-use rodio::{Sink, Decoder, OutputStream, source::Source};
-use std::ffi::OsStr;
-use crate::*;
+
 
 
 // TODO encapsulation
@@ -27,7 +15,7 @@ pub struct Queue {
 
 impl Queue {
 
-    pub fn with_items(items: Vec<PathBuf>) -> Queue {
+    pub fn with_items() -> Queue {
         Queue {
             state: ListState::default(),
             items: VecDeque::new(),
