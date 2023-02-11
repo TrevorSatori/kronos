@@ -73,8 +73,8 @@ fn run_app<B: Backend>(
                 match app.input_mode {
                     InputMode::Browser => match key.code {
                         KeyCode::Char('q') => return Ok(()),
-                        KeyCode::Char('p') | KeyCode::Char(' ') => app.play_pause(),
-                        KeyCode::Char('g') => app.skip(),
+                        KeyCode::Char('p') | KeyCode::Char(' ') => app.music_handle.play_pause(),
+                        KeyCode::Char('g') => app.music_handle.skip(),
                         KeyCode::Char('a') => app.queue_items.add(app.selected_item()),
                         KeyCode::Enter => app.evaluate(),
                         KeyCode::Backspace => app.backpedal(),
@@ -90,8 +90,8 @@ fn run_app<B: Backend>(
                     },
                     InputMode::Queue => match key.code {
                         KeyCode::Char('q') => return Ok(()),
-                        KeyCode::Char('p') => app.play_pause(),
-                        KeyCode::Enter => app.play(app.queue_items.get_item().clone()),
+                        KeyCode::Char('p') => app.music_handle.play_pause(),
+                        KeyCode::Enter => app.music_handle.play(app.queue_items.get_item().clone()),
                         KeyCode::Down | KeyCode::Char('j') => app.queue_items.next(),
                         KeyCode::Up | KeyCode::Char('k') => app.queue_items.previous(),
                         KeyCode::Char('r') => app.queue_items.remove(),
@@ -176,7 +176,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     f.render_stateful_widget(queue_items, queue_playing[0], &mut app.queue_items.state);
 
 
-    let playing_title = "| ".to_owned() + &app.get_current_song() + " |";
+    let playing_title = "| ".to_owned() + &app.music_handle.get_current_song() + " |";
+
     let playing = Gauge::default()
         .block(Block::default()
         .title(playing_title)
