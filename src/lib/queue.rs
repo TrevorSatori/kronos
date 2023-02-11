@@ -3,8 +3,6 @@ use tui::{
     widgets::{ListState},
 };
 
-
-
 pub struct Queue {
     state: ListState,
     items: VecDeque<PathBuf>,

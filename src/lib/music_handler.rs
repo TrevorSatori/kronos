@@ -1,11 +1,9 @@
-use std::{path::{PathBuf}, thread::{self}, sync::{Arc, Mutex}, time::{Duration}}; 
+use std::{path::{PathBuf, Path}, thread::{self}, sync::{Arc, Mutex}, time::{Duration}}; 
 extern crate glob;
 use std::fs::File;
 use std::io::BufReader;
 use rodio::{Sink, Decoder, OutputStream, OutputStreamHandle};
-use metadata::MediaFileMetadata;
-
-
+use lofty::{Probe, AudioFile};
 pub struct MusicHandle{
     music_output: Arc<(OutputStream, OutputStreamHandle)>,
     sink: Arc<Sink>,
@@ -109,16 +107,16 @@ impl MusicHandle {
     }
 
     pub fn song_metadata(&mut self, path: &PathBuf){
-        // trying to access but path has changed
-        let f = MediaFileMetadata::new(path).unwrap();
-        let dur = f.duration.unwrap();
+        let path = Path::new(&path);
+        let tagged_file = Probe::open(path)
+		.expect("ERROR: Bad path provided!")
+		.read()
+		.expect("ERROR: Failed to read file!");
 
-        // hours, minutes, seconds = vec![&c[..2], &c[3..5], &c[6..8]];
-        let m_s: Vec<&str> = vec![&dur[3..5], &dur[6..8]];
-        let minutes_to_seconds: u16 = m_s[0].clone().parse::<u16>().expect("couldn't convert time to i32") * 60;
-        let seconds: u16 = m_s[1].clone().parse::<u16>().expect("couldn't convert time to i32");
-        let song_length = minutes_to_seconds + seconds;
-        self.song_length = song_length;
+        let properties = tagged_file.properties();
+	    let duration = properties.duration();
+        self.song_length = duration.as_secs() as u16;
+       
     }
 
    
