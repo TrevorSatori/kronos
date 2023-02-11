@@ -20,7 +20,7 @@ Terminal Music Player Written In Rust. For offline listening and local files.
     sudo apt install ffmpeg clang
 ``
 
-`On Arch`
+On Arch
 ``
     sudo pacman -S ffmpeg clang
 ``
