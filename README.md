@@ -19,12 +19,12 @@ Terminal Music Player Written In Rust. For offline listening and local files.
 - Debian Based Distros (Mint, Ubuntu) 
 
 ``
-    sudo apt install ffmpeg clang
+sudo apt install ffmpeg clang
 ``
 
-- Arch Linux
+- Arch Linux \n
 ``
-    sudo pacman -S ffmpeg clang
+sudo pacman -S ffmpeg clang
 ``
 3. change directories into Kronos repo 
 
