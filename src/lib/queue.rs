@@ -3,6 +3,7 @@ use tui::{
     widgets::{ListState},
 };
 
+use super::gen_funcs::{bulk_add};
 pub struct Queue {
     state: ListState,
     items: VecDeque<PathBuf>,
@@ -33,7 +34,6 @@ impl Queue {
         self.items.is_empty()
     }
 
-    // FIFO
     pub fn pop(&mut self) -> Option<PathBuf>{
         self.items.pop_front()
     }
@@ -88,8 +88,12 @@ impl Queue {
 
 
     pub fn add(&mut self, item: PathBuf){
-
         if item.is_dir(){
+
+            let files = bulk_add(&item);
+            for f in files{
+                self.items.push_back(f);    
+            }
             return;
         } else {
             self.items.push_back(item);

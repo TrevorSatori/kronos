@@ -3,7 +3,7 @@ extern crate glob;
 use std::fs::File;
 use std::io::BufReader;
 use rodio::{Sink, Decoder, OutputStream, OutputStreamHandle};
-use lofty::{Probe, AudioFile, TaggedFileExt, Accessor};
+use lofty::{Probe, AudioFile};
 
 use super::gen_funcs;
 pub struct MusicHandle{
@@ -108,7 +108,6 @@ impl MusicHandle {
     }
 
     pub fn song_metadata(&mut self, path: &PathBuf){
-
         self.currently_playing = gen_funcs::audio_display(&path);
 
         let path = Path::new(&path);

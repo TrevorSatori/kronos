@@ -1,8 +1,6 @@
 use std::{path::{PathBuf, Path}, thread::{self}, time::{Duration}}; 
 extern crate glob;
-use glob::{glob_with, MatchOptions};
 use std::env;
-use std::ffi::OsStr;
 use crate::lib::stateful_list::*;
 use super::{queue::Queue, gen_funcs};
 use super::music_handler::{MusicHandle};
@@ -107,7 +105,6 @@ impl App {
     }
     // get file path
     pub fn selected_item(&self) -> PathBuf{
-        // get absolute path
         let current_dir = env::current_dir().unwrap();
         let join = Path::join(&current_dir, Path::new(&self.browser_items.get_item()));
         join
