@@ -73,7 +73,7 @@ impl MusicHandle {
             let file = BufReader::new(File::open(path).unwrap());
             let source = Decoder::new(file).unwrap();
 
-            // NEW
+            // Arc inside a thread inside a thread. BOOM, INCEPTION 
             let sink_clone_2 = sclone.clone();
             let tpclone2 = tpclone.clone();
 
@@ -104,7 +104,6 @@ impl MusicHandle {
         }
     }
 
-    // clears sink queue, next item auto added
     pub fn skip(&self){
         self.sink.stop();
     }

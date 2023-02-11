@@ -4,7 +4,7 @@ use tui::{
 
 // TODO encapsulation
 pub struct StatefulList<T> {
-    pub state: ListState,
+    state: ListState,
     items: Vec<T>,
     curr: usize,
 }
@@ -27,6 +27,10 @@ impl<T> StatefulList<T> {
     // return item at index
     pub fn get_item(&self) -> &T {
         &self.items[self.curr]
+    }
+
+    pub fn get_state(&self) -> ListState {
+        self.state.clone()
     }
 
     pub fn next(&mut self) {

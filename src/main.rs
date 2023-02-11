@@ -64,7 +64,7 @@ fn run_app<B: Backend>(
 
             // different keys depending on which browser tab
             if let Event::Key(key) = event::read()? {
-                match app.input_mode {
+                match app.get_input_mode() {
                     InputMode::Browser => match key.code {
                         KeyCode::Char('q') => return Ok(()),
                         KeyCode::Char('p') | KeyCode::Char(' ') => app.music_handle.play_pause(),
@@ -76,7 +76,7 @@ fn run_app<B: Backend>(
                         KeyCode::Up | KeyCode::Char('k') => app.browser_items.previous(),
                         KeyCode::Right |  KeyCode::Char('l') => {
                             app.browser_items.unselect();
-                            app.input_mode = InputMode::Queue;
+                            app.set_input_mode(InputMode::Queue);
                             app.queue_items.next();
 
                         },
@@ -91,7 +91,8 @@ fn run_app<B: Backend>(
                         KeyCode::Char('r') => app.queue_items.remove(),
                         KeyCode::Left | KeyCode::Char('h') => {
                             app.queue_items.unselect();
-                            app.input_mode = InputMode::Browser;
+                            app.set_input_mode(InputMode::Browser);
+
                             app.browser_items.next();
                         }
                         _ => {}
@@ -118,7 +119,6 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     // queue and playing sections
     let queue_playing = Layout::default()
         .direction(Direction::Vertical)
-        // .margin(5)
         .constraints([Constraint::Percentage(75), Constraint::Percentage(25)].as_ref())
         .split(browser_queue[1]);
 
@@ -143,10 +143,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol(">> ");
-    f.render_stateful_widget(items, browser_queue[0], &mut app.browser_items.state);
+    f.render_stateful_widget(items, browser_queue[0], &mut app.browser_items.get_state());
 
-    // STORE PATHBUF IN QUEUE, DISPLAY AS STRING
-    // convert queue items to text
+
     let queue_items: Vec<ListItem> = app.queue_items.get_items()
         .iter()
         .map(|i| {
@@ -167,7 +166,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol(">> ");
-    f.render_stateful_widget(queue_items, queue_playing[0], &mut app.queue_items.state);
+    f.render_stateful_widget(queue_items, queue_playing[0], &mut app.queue_items.get_state());
 
 
     let playing_title = "| ".to_owned() + &app.music_handle.get_current_song() + " |";
@@ -183,7 +182,3 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     f.render_widget(playing, queue_playing[1]);
 
 }
-
-// functions constantly called 
-// 1. get_current_song - checked, good
-// 2. song_progress
