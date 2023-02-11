@@ -1,4 +1,4 @@
-use std::{fs, path::{PathBuf, Path}, thread::{self, JoinHandle, sleep_ms}, sync::{Arc, Mutex}, time::{Duration, Instant, self}, rc::Rc}; 
+use std::{fs, path::{PathBuf, Path}, thread::{self, JoinHandle, sleep_ms}, sync::{Arc, Mutex, mpsc}, time::{Duration, Instant, self}, rc::Rc}; 
 extern crate glob;
 use glob::{glob, glob_with, MatchOptions, Pattern};
 use std::env;
@@ -22,8 +22,8 @@ pub struct MusicHandle{
     music_output: Arc<(OutputStream, OutputStreamHandle)>,
     sink: Arc<Sink>,
     song_length: u16,
-    time_played: u16,
-    pub currently_playing: String,
+    time_played: Arc<Mutex<u16>>,
+    currently_playing: String,
 }
 
 
@@ -34,12 +34,11 @@ impl MusicHandle {
             music_output: Arc::new(OutputStream::try_default().unwrap()),
             sink: Arc::new(Sink::new_idle().0), // more efficient way, shouldnt have to do twice?  
             song_length: 0,
-            time_played: 0,
+            time_played: Arc::new(Mutex::new(0)),
             currently_playing: "CURRENT SONG".to_string()
         }
     }
 
-    // use metadata 
     pub fn get_current_song(&self) -> String { 
         self.currently_playing.clone()
     }
@@ -49,7 +48,7 @@ impl MusicHandle {
     }
 
     pub fn get_time_played(&self) -> u16 {
-        self.time_played
+        *self.time_played.lock().unwrap()
     }
 
     pub fn get_sink_length(&self) -> usize {
@@ -57,7 +56,7 @@ impl MusicHandle {
     }
 
     pub fn set_time_played(&mut self, t: u16){
-        self.time_played = t;
+        *self.time_played.lock().unwrap() = t;
     }
 
 
@@ -65,7 +64,7 @@ impl MusicHandle {
     pub fn play(&mut self, path: PathBuf){
         // if song already playing, need to be able to restart tho
         self.sink.stop();
-        self.time_played = 0;
+        *self.time_played.lock().unwrap() = 0;
         
         // set currently playing
         self.currently_playing = path.clone().file_name().unwrap().to_str().unwrap().to_string();
@@ -77,15 +76,35 @@ impl MusicHandle {
         // clone sink for thread
         let sclone = self.sink.clone();
 
+        //NEW
+        let tpclone = self.time_played.clone();
 
         let _t1 = thread::spawn( move || {
         
             // can send in through function
             let file = BufReader::new(File::open(path).unwrap());
             let source = Decoder::new(file).unwrap();
-            sclone.append(source);
-            sclone.sleep_until_end();  
 
+            // NEW
+            let sink_clone_2 = sclone.clone();
+            let tpclone2 = tpclone.clone();
+
+            sclone.append(source);
+
+            let _ = thread::spawn(move ||{
+                // sleep for 1 second then increment count
+                while sink_clone_2.len() == 1 {
+                    thread::sleep(Duration::from_secs(1));
+                    
+                    if !sink_clone_2.is_paused(){
+                        *tpclone2.lock().unwrap() += 1;
+                    }
+                    
+                }
+            });
+            // if sink.stop, thread destroyed.
+            sclone.sleep_until_end();  
+    
         });
     }
 
@@ -102,7 +121,6 @@ impl MusicHandle {
         self.sink.stop();
     }
 
-
     pub fn song_metadata(&mut self, path: &PathBuf){
         // trying to access but path has changed
         let f = MediaFileMetadata::new(path).unwrap();
@@ -116,10 +134,5 @@ impl MusicHandle {
         self.song_length = song_length;
     }
 
-    pub fn increment_time(&mut self){
-        if !self.sink.is_paused() && self.sink.len() == 1 {
-            self.time_played += 1;
-        }
-    }
-
+   
 }

@@ -88,8 +88,6 @@ impl App {
 
     // if playing and 
     pub fn song_progress(&mut self) -> u16 { 
-        self.music_handle.increment_time();
-
         let progress = || {
             let percentage = (self.music_handle.get_time_played() * 100) / self.music_handle.get_song_length();
             if percentage >= 100 {
