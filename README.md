@@ -5,11 +5,11 @@ Terminal Music Player Written In Rust. Used for offline listening and local file
 Main branch is stable. features and perfomance improvements on the way.
 
 # Controls
-Enter => play
-space => pause / resume
-a => add song to queue
-g => skip track
-arrow keys / vim keys => navigate browser and queue 
+1. Enter => play
+2. space => pause / resume
+3. a => add song to queue
+4. g => skip track
+5. arrow keys / vim keys => navigate browser and queue 
 
 # TODO
 1. recursive search for auto adding valid items
