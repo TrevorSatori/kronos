@@ -10,9 +10,9 @@ Terminal Music Player Written In Rust. For offline listening and local files.
 
 # Install
 
-1. clone the repo
+1. Download Release 
 ``
-    git clone https://github.com/TrevorSatori/Kronos
+    https://github.com/TrevorSatori/Kronos/releases/tag/v0.69
 ``
 2. This app uses ffmpeg for file metadata and clang. 
 
@@ -28,16 +28,11 @@ sudo apt install ffmpeg clang
 sudo pacman -S ffmpeg clang
 ``
 
-3. change directories into Kronos repo 
+3. run program
 
-``
-    cd Kronos
-``
+# Something Else? 
 
-4. run program
-``
-    cargo run
-``
+If you enjoy using this package, feel free to reach out and request additions and or changes. 
 
 ![Alt text](Kronos.png?raw=true "Title")
 
