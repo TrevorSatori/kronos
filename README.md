@@ -14,13 +14,15 @@ Terminal Music Player Written In Rust. For offline listening and local files.
 ``
     git clone https://github.com/TrevorSatori/Kronos
 ``
-2. This app uses ffmpeg for file metadata and clang. To install on Debian based distros 
+2. This app uses ffmpeg for file metadata and clang. 
+
+- Debian Based Distros (Mint, Ubuntu) 
 
 ``
     sudo apt install ffmpeg clang
 ``
 
-On Arch
+- Arch Linux
 ``
     sudo pacman -S ffmpeg clang
 ``
