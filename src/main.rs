@@ -3,6 +3,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use lib::gen_funcs;
 use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -149,7 +150,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let queue_items: Vec<ListItem> = app.queue_items.get_items()
         .iter()
         .map(|i| {
-            ListItem::new(Text::from(i.file_name().unwrap().to_str().unwrap().to_string()))
+            
+            ListItem::new(Text::from(gen_funcs::audio_display(i)))
         })
         .collect();
     

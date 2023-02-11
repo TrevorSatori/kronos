@@ -1,10 +1,8 @@
 use std::{path::{PathBuf, Path}, thread::{self}, time::{Duration}}; 
 extern crate glob;
-use glob::{glob_with, MatchOptions};
 use std::env;
-use std::ffi::OsStr;
 use crate::lib::stateful_list::*;
-use super::{queue::Queue};
+use super::{queue::Queue, gen_funcs};
 use super::music_handler::{MusicHandle};
 
 // app is responsible for handling state
@@ -28,7 +26,7 @@ impl App {
 
     pub fn new() -> App {
         App {
-            browser_items: StatefulList::with_items(App::scan_folder()),
+            browser_items: StatefulList::with_items(gen_funcs::scan_folder()),
             queue_items: Queue::with_items(),
             music_handle: MusicHandle::new(),
             input_mode: InputMode::Browser,
@@ -49,7 +47,7 @@ impl App {
         // if folder enter, else play song
         if join.is_dir() {
             env::set_current_dir(join).unwrap();
-            self.browser_items = StatefulList::with_items(App::scan_folder());
+            self.browser_items = StatefulList::with_items(gen_funcs::scan_folder());
         } else {
             self.music_handle.play(join);
         }
@@ -58,7 +56,7 @@ impl App {
     // cd into selected directory
     pub fn backpedal(&mut self){
       env::set_current_dir("../").unwrap();
-      self.browser_items = StatefulList::with_items(App::scan_folder());
+      self.browser_items = StatefulList::with_items(gen_funcs::scan_folder());
       self.browser_items.next();
     }
 
@@ -105,49 +103,12 @@ impl App {
         }
                     
     }
-
     // get file path
     pub fn selected_item(&self) -> PathBuf{
-        // get absolute path
         let current_dir = env::current_dir().unwrap();
         let join = Path::join(&current_dir, Path::new(&self.browser_items.get_item()));
         join
     }  
-
-    // get files in current directory
-    pub fn scan_folder() -> Vec<String>{
-
-        let mut items = Vec::new();
-        let options = MatchOptions {
-            case_sensitive: false,
-            require_literal_separator: false,
-            require_literal_leading_dot: false,
-        };
-        
-        for e in glob_with("./*", options).expect("Failed to read glob pattern") {
-            match e {
-                Ok(item) => {
-                    
-                    let current_dir = env::current_dir().unwrap();
-                    let join = Path::join(&current_dir, Path::new(&item));
-                    let ext = Path::new(&item).extension().and_then(OsStr::to_str);       
-                
-                    // if folder  (Hide Private) enter, else play song
-                    if (join.is_dir() && !join.file_name().unwrap().to_str().unwrap().contains(".") ) || (ext.is_some() && 
-                    (item.extension().unwrap() == "mp3" || 
-                    item.extension().unwrap() == "mp4" || 
-                    item.extension().unwrap() == "m4a" || 
-                    item.extension().unwrap() == "wav" || 
-                    item.extension().unwrap() == "flac" )){
-                        items.push(item.to_str().unwrap().to_owned());
-                    }         
-                },
-                Err(_) => (),
-            }
-        }
-
-        items
-    }
 
 }
 

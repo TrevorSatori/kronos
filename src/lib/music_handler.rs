@@ -4,6 +4,8 @@ use std::fs::File;
 use std::io::BufReader;
 use rodio::{Sink, Decoder, OutputStream, OutputStreamHandle};
 use lofty::{Probe, AudioFile};
+
+use super::gen_funcs;
 pub struct MusicHandle{
     music_output: Arc<(OutputStream, OutputStreamHandle)>,
     sink: Arc<Sink>,
@@ -62,7 +64,6 @@ impl MusicHandle {
         // clone sink for thread
         let sclone = self.sink.clone();
 
-        //NEW
         let tpclone = self.time_played.clone();
 
         let _t1 = thread::spawn( move || {
@@ -107,17 +108,18 @@ impl MusicHandle {
     }
 
     pub fn song_metadata(&mut self, path: &PathBuf){
+        self.currently_playing = gen_funcs::audio_display(&path);
+
         let path = Path::new(&path);
         let tagged_file = Probe::open(path)
 		.expect("ERROR: Bad path provided!")
 		.read()
 		.expect("ERROR: Failed to read file!");
 
-        let properties = tagged_file.properties();
+        let properties = &tagged_file.properties();
 	    let duration = properties.duration();
+        
+        // update song length, currently playing
         self.song_length = duration.as_secs() as u16;
-       
     }
-
-   
 }
