@@ -1,8 +1,5 @@
 # Kronos
-Terminal Music Player Written In Rust. Used for offline listening and local files.
-
-# State
-Main branch is stable. features and perfomance improvements on the way.
+Terminal Music Player Written In Rust. For offline listening and local files.
 
 # Controls
 1. Enter => play
@@ -11,17 +8,32 @@ Main branch is stable. features and perfomance improvements on the way.
 4. g => skip track
 5. arrow keys / vim keys => navigate browser and queue 
 
-# TODO
-1. recursive search for auto adding valid items
-2. Keybind options
-3. man page
+# Install
 
-# Note
-Current build uses metadata crate for song length, while good requires users to install ffmpeg.
+1. clone the repo
+``
+    git clone https://github.com/TrevorSatori/Kronos
+``
+2. This app uses ffmpeg for file metadata and clang. To install on Debian based distros 
 
-``shell 
-
+``
     sudo apt install ffmpeg clang
 ``
+
+`On Arch`
+``
+    sudo pacman -S ffmpeg clang
+``
+3. change directories into Kronos repo 
+
+``
+    cd Kronos
+``
+
+4. run program
+``
+    cargo run
+``
+
 ![Alt text](Kronos.png?raw=true "Title")
 
