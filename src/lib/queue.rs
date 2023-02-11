@@ -1,14 +1,12 @@
 use std::{path::{PathBuf}, collections::VecDeque}; 
-extern crate glob;
 use tui::{
     widgets::{ListState},
 };
 
 
 
-// TODO encapsulation
 pub struct Queue {
-    pub state: ListState,
+    state: ListState,
     items: VecDeque<PathBuf>,
     curr: usize,
 }
@@ -21,6 +19,33 @@ impl Queue {
             items: VecDeque::new(),
             curr: 0,
         }
+    }
+
+    // return all items contained in vector
+    pub fn get_items(&self) -> &VecDeque<PathBuf> {
+        &self.items
+    }
+
+    // return item at index
+    pub fn get_item(&self) -> &PathBuf {
+        &self.items[self.curr]
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
+    // FIFO
+    pub fn pop(&mut self) -> Option<PathBuf>{
+        self.items.pop_front()
+    }
+
+    pub fn length(&self) -> usize {
+        self.items.len()
+    }
+
+    pub fn get_state(&self) -> ListState {
+        self.state.clone()
     }
 
     pub fn next(&mut self) { 
@@ -63,19 +88,15 @@ impl Queue {
         self.state.select(None);
     }
 
-    // if invalid, recursive search, consider enum
-    // add item to items vector (Need to store pathBuf and name)
+
     pub fn add(&mut self, item: PathBuf){
 
-        if item.is_dir() {
+        if item.is_dir(){
             return;
         } else {
             self.items.push_back(item);
         }
-        
     }
-
-    
 
     // remove item from items vector
     pub fn remove(&mut self){
@@ -96,29 +117,6 @@ impl Queue {
         } else if !(self.items.is_empty()){
             self.items.remove(self.curr);
         };
-    }
-
-    // return all items contained in vector
-    pub fn get_items(&self) -> &VecDeque<PathBuf> {
-        &self.items
-    }
-
-    // return item at index
-    pub fn get_item(&self) -> &PathBuf {
-        &self.items[self.curr]
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.items.is_empty()
-    }
-
-    // FIFO
-    pub fn pop(&mut self) -> Option<PathBuf>{
-        self.items.pop_front()
-    }
-
-    pub fn length(&self) -> usize {
-        self.items.len()
     }
 
 }

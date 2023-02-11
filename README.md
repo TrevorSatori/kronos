@@ -16,5 +16,12 @@ Main branch is stable. features and perfomance improvements on the way.
 2. Keybind options
 3. man page
 
+# Note
+Current build uses metadata crate for song length, while good requires users to install ffmpeg.
+
+``shell 
+
+    sudo apt install ffmpeg clang
+``
 ![Alt text](Kronos.png?raw=true "Title")
 

@@ -11,6 +11,7 @@ use super::music_handler::{MusicHandle};
 // keeps track of which Field you are in (QUEUE, Browser)
 // updates and handles list state
 
+#[derive(Clone, Copy)]
 pub enum InputMode {
     Browser,
     Queue,
@@ -19,8 +20,8 @@ pub enum InputMode {
 pub struct App {
     pub browser_items: StatefulList<String>,
     pub queue_items: Queue,
-    pub input_mode: InputMode,
     pub music_handle: MusicHandle,
+    input_mode: InputMode,
 }
 
 impl App {
@@ -29,9 +30,17 @@ impl App {
         App {
             browser_items: StatefulList::with_items(App::scan_folder()),
             queue_items: Queue::with_items(),
-            input_mode: InputMode::Browser,
             music_handle: MusicHandle::new(),
+            input_mode: InputMode::Browser,
         }
+    }
+
+    pub fn get_input_mode(&self) -> InputMode{
+        self.input_mode.clone()
+    }
+
+    pub fn set_input_mode(&mut self, in_mode: InputMode){
+        self.input_mode = in_mode
     }
 
     // if item selected is folder, enter folder, else play record.
@@ -50,6 +59,7 @@ impl App {
     pub fn backpedal(&mut self){
       env::set_current_dir("../").unwrap();
       self.browser_items = StatefulList::with_items(App::scan_folder());
+      self.browser_items.next();
     }
 
 
@@ -103,7 +113,6 @@ impl App {
         let join = Path::join(&current_dir, Path::new(&self.browser_items.get_item()));
         join
     }  
-
 
     // get files in current directory
     pub fn scan_folder() -> Vec<String>{
