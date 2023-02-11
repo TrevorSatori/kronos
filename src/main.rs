@@ -85,6 +85,7 @@ fn run_app<B: Backend>(
                     InputMode::Queue => match key.code {
                         KeyCode::Char('q') => return Ok(()),
                         KeyCode::Char('p') => app.music_handle.play_pause(),
+                        KeyCode::Char('g') => app.music_handle.skip(),
                         KeyCode::Enter => app.music_handle.play(app.queue_items.get_item().clone()),
                         KeyCode::Down | KeyCode::Char('j') => app.queue_items.next(),
                         KeyCode::Up | KeyCode::Char('k') => app.queue_items.previous(),
@@ -92,7 +93,6 @@ fn run_app<B: Backend>(
                         KeyCode::Left | KeyCode::Char('h') => {
                             app.queue_items.unselect();
                             app.set_input_mode(InputMode::Browser);
-
                             app.browser_items.next();
                         }
                         _ => {}
