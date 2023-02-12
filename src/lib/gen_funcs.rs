@@ -54,7 +54,8 @@ pub fn scan_folder() -> Vec<String>{
                 item.extension().unwrap() == "mp4" || 
                 item.extension().unwrap() == "m4a" || 
                 item.extension().unwrap() == "wav" || 
-                item.extension().unwrap() == "flac" )){
+                item.extension().unwrap() == "flac" ||
+                item.extension().unwrap() == "aac")){
                     items.push(item.to_str().unwrap().to_owned());
                 }         
             },
@@ -82,7 +83,8 @@ pub fn bulk_add(selected: &PathBuf) -> Vec<PathBuf>{
                 item.extension().unwrap() == "mp4" || 
                 item.extension().unwrap() == "m4a" || 
                 item.extension().unwrap() == "wav" || 
-                item.extension().unwrap() == "flac" ){
+                item.extension().unwrap() == "flac" ||
+                item.extension().unwrap() == "aac" ){
                     items.push(join);
                 }         
             },

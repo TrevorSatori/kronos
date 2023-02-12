@@ -65,18 +65,19 @@ impl App {
     pub fn auto_play(&mut self){
         thread::sleep(Duration::from_millis(250));
         if self.music_handle.get_sink_length() == 0 && !self.queue_items.is_empty() {
-            self.play_next();
+            // self.play_next();
+            self.music_handle.play(self.queue_items.pop());
         }
     }
 
     // should pop item from queue and play next
-    pub fn play_next(&mut self){
-        self.music_handle.set_time_played(0);
-        match self.queue_items.pop() {
-            Some(item) => self.music_handle.play(item.0),
-            None => (),
-        }
-    }
+    // pub fn play_next(&mut self){
+    //     self.music_handle.set_time_played(0);
+    //     match self.queue_items.pop() {
+    //         Some(item) => self.music_handle.play(item),
+    //         None => (),
+    //     }
+    // }
 
     // if playing and 
     pub fn song_progress(&mut self) -> u16 { 
