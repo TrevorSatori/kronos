@@ -15,21 +15,39 @@ pub enum InputMode {
     Queue,
 }
 
-pub struct App {
+pub struct App<'a>{
     pub browser_items: StatefulList<String>,
     pub queue_items: Queue,
     pub music_handle: MusicHandle,
     input_mode: InputMode,
+
+    pub titles: Vec<&'a str>,
+    pub index: usize,
 }
 
-impl App {
+impl<'a> App<'a> {
 
-    pub fn new() -> App {
+    pub fn new() -> App<'a> {
         App {
             browser_items: StatefulList::with_items(gen_funcs::scan_folder()),
             queue_items: Queue::with_items(),
             music_handle: MusicHandle::new(),
             input_mode: InputMode::Browser,
+            ////
+            titles: vec!["Music", "Instructions"],
+            index: 0,
+        }
+    }
+
+    pub fn next(&mut self) {
+        self.index = (self.index + 1) % self.titles.len();
+    }
+
+    pub fn previous(&mut self) {
+        if self.index > 0 {
+            self.index -= 1;
+        } else {
+            self.index = self.titles.len() - 1;
         }
     }
 

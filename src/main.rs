@@ -7,10 +7,10 @@ use lib::gen_funcs;
 use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
-    layout::{Alignment, Constraint, Direction, Layout},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::{Text},
-    widgets::{Block, BorderType, Borders, List, ListItem, Gauge},
+    text::{Text, Spans, Span},
+    widgets::{Block, BorderType, Borders, List, ListItem, Gauge, Tabs},
     Frame, Terminal,
 };
 
@@ -81,6 +81,9 @@ fn run_app<B: Backend>(
                             app.queue_items.next();
 
                         },
+                        /////
+                        KeyCode::Tab => app.next(),
+
                         _ => {}
                     },
                     InputMode::Queue => match key.code {
@@ -109,13 +112,67 @@ fn run_app<B: Backend>(
 
 
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+    
+    // Total Size
+    let size = f.size();
+    let fg = Color::LightCyan;
+    let hfg = Color::Black;
 
+    // chunking from top to bottom, 3 gets tabs displayed, the rest goes to item layouts
+    let chunks = Layout::default()
+    .direction(Direction::Vertical)
+    .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
+    .split(size);
+
+    // Main Background block, covers entire screen 
+    let block = Block::default().style(Style::default().bg(Color::Black).fg(Color::Black));
+    f.render_widget(block, size);
+
+    
+    // Tab Title items collected
+    let titles = app
+        .titles
+        .iter()
+        .map(|t| {
+            let (first, rest) = t.split_at(1);
+            Spans::from(vec![
+                Span::styled(first, Style::default().fg(Color::Yellow)),
+                Span::styled(rest, Style::default().fg(Color::Green)),
+            ])
+        })
+        .collect();
+
+    // Box Around Tab Items
+    let tabs = Tabs::new(titles)
+    .block(Block::default().borders(Borders::ALL).title("Tabs"))
+    .select(app.index)
+    .style(Style::default().fg(fg))
+    .highlight_style(
+        Style::default()
+            .add_modifier(Modifier::BOLD)
+            .bg(Color::Black),
+    );
+    f.render_widget(tabs, chunks[0]);
+
+    let inner = match app.index {
+        0 => music_tab(f, app,chunks[1], fg, hfg),
+        1 => instructions_tab(f, app,chunks[1], fg, hfg),
+        // 1 => Block::default().title("Inner 1").borders(Borders::ALL),
+        // 2 => Block::default().title("Inner 2").borders(Borders::ALL),
+        // 3 => Block::default().title("Inner 3").borders(Borders::ALL),
+        _ => unreachable!(),
+    };
+   
+
+}
+
+fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Color, hfg: Color){
     // split into left / right
     let browser_queue = Layout::default()
-        .direction(Direction::Horizontal)
-        // .margin(5)
-        .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
-        .split(f.size());
+    .direction(Direction::Horizontal)
+    .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
+    .split(chunks);
+    // f.size()
 
     // queue and playing sections
     let queue_playing = Layout::default()
@@ -138,9 +195,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .title("Browser")
         .title_alignment(Alignment::Left)
         .border_type(BorderType::Rounded))
+        .style(Style::default().fg(fg))
         .highlight_style(
             Style::default()
-                .bg(Color::LightCyan)
+                .bg(Color::Green)
+                .fg(hfg)
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol(">> ");
@@ -156,7 +215,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .collect();
     
     let queue_title = "| Queue: ".to_owned() 
-    + &app.queue_items.get_length().to_string() + " Songs | " + &app.queue_items.get_total_time();
+    + &app.queue_items.get_length().to_string() + " Songs |" + &app.queue_items.get_total_time();
     
     
     let queue_items = List::new(queue_items)
@@ -165,6 +224,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .title(queue_title)
         .title_alignment(Alignment::Left)
         .border_type(BorderType::Rounded))
+        .style(Style::default().fg(fg))
         .highlight_style(
             Style::default()
                 .bg(Color::LightCyan)
@@ -176,15 +236,19 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     
 
     let playing_title = "| ".to_owned() + &app.get_current_song() + " |";
-  
+
     let playing = Gauge::default()
         .block(Block::default()
         .title(playing_title)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .title_alignment(Alignment::Center))
+        .style(Style::default().fg(fg))
         .gauge_style(Style::default().fg(Color::LightCyan))
         .percent(app.song_progress());
     f.render_widget(playing, queue_playing[1]);
+}
+
+fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Color, hfg: Color){
 
 }
