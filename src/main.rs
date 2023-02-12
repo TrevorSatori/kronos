@@ -151,11 +151,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .iter()
         .map(|i| {
             
-            ListItem::new(Text::from(gen_funcs::audio_display(i)))
+            ListItem::new(Text::from(gen_funcs::audio_display(&i)))
         })
         .collect();
     
-    let queue_title = "| Queue: ".to_owned() + &app.queue_items.length().to_string() + " Songs |";
+    let queue_title = "| Queue: ".to_owned() 
+    + &app.queue_items.get_length().to_string() + " Songs | Total Length: " + &app.queue_items.get_total_time();
+    
+    
     let queue_items = List::new(queue_items)
         .block(Block::default()
         .borders(Borders::ALL)
