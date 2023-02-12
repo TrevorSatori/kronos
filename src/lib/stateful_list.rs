@@ -33,6 +33,10 @@ impl<T> StatefulList<T> {
         self.state.clone()
     }
 
+    pub fn empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
     pub fn next(&mut self) {
         
         // check if empty

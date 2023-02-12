@@ -48,6 +48,7 @@ impl App {
         if join.is_dir() {
             env::set_current_dir(join).unwrap();
             self.browser_items = StatefulList::with_items(gen_funcs::scan_folder());
+            self.browser_items.next();
         } else {
             self.music_handle.play(join);
         }
@@ -96,11 +97,16 @@ impl App {
         }
                     
     }
+    
     // get file path
     pub fn selected_item(&self) -> PathBuf{
         let current_dir = env::current_dir().unwrap();
-        let join = Path::join(&current_dir, Path::new(&self.browser_items.get_item()));
-        join
+        if self.browser_items.empty(){
+            return Path::new(&current_dir).into();
+        } else {
+            let join = Path::join(&current_dir, Path::new(&self.browser_items.get_item()));
+            join
+        }
     }  
 
 }
