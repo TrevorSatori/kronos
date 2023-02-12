@@ -1,4 +1,5 @@
-use std::{path::{PathBuf}, collections::VecDeque}; 
+use std::{path::{PathBuf, Path}, collections::VecDeque, time::Duration}; 
+use lofty::{Probe, AudioFile};
 use tui::{
     widgets::{ListState},
 };
@@ -6,7 +7,7 @@ use tui::{
 use super::gen_funcs::{bulk_add};
 pub struct Queue {
     state: ListState,
-    items: VecDeque<PathBuf>,
+    items: VecDeque<(PathBuf, u16)>,
     curr: usize,
 }
 
@@ -20,30 +21,88 @@ impl Queue {
         }
     }
 
+     // return item at index
+    pub fn get_item(&self) -> &(PathBuf, u16) {
+        &self.items[self.curr]
+    }
+
     // return all items contained in vector
-    pub fn get_items(&self) -> &VecDeque<PathBuf> {
+    pub fn get_items(&self) -> &VecDeque<(PathBuf, u16)> {
         &self.items
     }
 
-    // return item at index
-    pub fn get_item(&self) -> &PathBuf {
-        &self.items[self.curr]
+    pub fn get_length(&self) -> usize {
+        self.items.len()
+    }
+
+    pub fn get_total_time(&self)  -> String {
+
+        let mut total_time = 0;
+
+
+        for i in &self.items {
+            total_time += i.1 as u64; 
+        }
+
+        // days
+        if total_time / 86400 >= 1 {
+    
+        let days = total_time / 86400;
+        let hours = (total_time % 86400) / 3600;
+        let minutes = (total_time %  3600) / 60;
+        
+        return days.to_string() + " days " + &hours.to_string() + " hours " + &minutes.to_string() + " minutes |"
+
+        // hours
+        } else if total_time / 3600 >= 1 {
+
+            let hours = total_time / 3600;
+            let minutes = (total_time %  3600) / 60;
+            let seconds = total_time % 60;
+
+            return hours.to_string() + " hours " + &minutes.to_string() + " minutes " + &seconds.to_string() + " seconds |";  
+
+        // minutes
+        } else if total_time / 60 >= 1 {
+
+            let minutes = total_time / 60;
+            let seconds = total_time % 60;
+
+            return minutes.to_string() + " minutes " + &seconds.to_string() + " seconds |";  
+        // seconds
+        } else {
+            return total_time.to_string() + " seconds |";
+        } 
     }
 
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
 
-    pub fn pop(&mut self) -> Option<PathBuf>{
+    pub fn pop(&mut self) -> Option<(PathBuf, u16)>{
         self.items.pop_front()
     }
 
-    pub fn length(&self) -> usize {
-        self.items.len()
-    }
 
     pub fn get_state(&self) -> ListState {
         self.state.clone()
+    }
+
+
+    // get audio file length
+    pub fn item_length(&mut self, path: &PathBuf) -> u16{
+
+        let path = Path::new(&path);
+        let tagged_file = Probe::open(path)
+		.expect("ERROR: Bad path provided!")
+		.read()
+		.expect("ERROR: Failed to read file!");
+
+        let properties = &tagged_file.properties();
+	    let duration = properties.duration();
+        
+        // update song length, currently playing
+        duration.as_secs() as u16
     }
 
     pub fn next(&mut self) { 
@@ -89,14 +148,14 @@ impl Queue {
 
     pub fn add(&mut self, item: PathBuf){
         if item.is_dir(){
-
             let files = bulk_add(&item);
             for f in files{
-                self.items.push_back(f);    
+                let length = self.item_length(&f);
+                self.items.push_back((f, length));    
             }
-            return;
         } else {
-            self.items.push_back(item);
+            let length = self.item_length(&item);
+            self.items.push_back((item, length));
         }
     }
 

@@ -47,6 +47,10 @@ impl MusicHandle {
         *self.time_played.lock().unwrap() = t;
     }
 
+    // set currently playing song
+    pub fn set_currently_playing(&mut self, path: &PathBuf){
+        self.currently_playing = gen_funcs::audio_display(&path);
+    }
 
     // update current song and play
     pub fn play(&mut self, path: PathBuf){
@@ -56,7 +60,8 @@ impl MusicHandle {
         
         // set currently playing
         self.currently_playing = path.clone().file_name().unwrap().to_str().unwrap().to_string();
-        self.song_metadata(&path);
+        self.set_currently_playing(&path);
+        self.song_length(&path);
 
         // reinitialize due to rodio crate
         self.sink = Arc::new(Sink::try_new(&self.music_output.1).unwrap());
@@ -107,8 +112,7 @@ impl MusicHandle {
         self.sink.stop();
     }
 
-    pub fn song_metadata(&mut self, path: &PathBuf){
-        self.currently_playing = gen_funcs::audio_display(&path);
+    pub fn song_length(&mut self, path: &PathBuf){
 
         let path = Path::new(&path);
         let tagged_file = Probe::open(path)
@@ -122,4 +126,5 @@ impl MusicHandle {
         // update song length, currently playing
         self.song_length = duration.as_secs() as u16;
     }
+
 }

@@ -73,7 +73,7 @@ impl App {
     pub fn play_next(&mut self){
         self.music_handle.set_time_played(0);
         match self.queue_items.pop() {
-            Some(item) => self.music_handle.play(item),
+            Some(item) => self.music_handle.play(item.0),
             None => (),
         }
     }

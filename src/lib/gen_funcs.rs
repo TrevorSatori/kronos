@@ -11,12 +11,9 @@ pub fn audio_display(path: &PathBuf) -> String {
     .expect("ERROR: Bad path provided!")
     .read()
     .expect("ERROR: Failed to read file!");
-
    
     let ptag = tagged_file.primary_tag().unwrap();
-    
     let artist = ptag.artist();
-
 
     // if filename
     if let Some(i) = tagged_file.primary_tag().unwrap().title(){
@@ -27,9 +24,8 @@ pub fn audio_display(path: &PathBuf) -> String {
         } else {
             return i.into();
         }
-
-        
     };
+
 
     return path.file_name().unwrap().to_str().unwrap().to_string();
 }

@@ -87,7 +87,7 @@ fn run_app<B: Backend>(
                         KeyCode::Char('q') => return Ok(()),
                         KeyCode::Char('p') => app.music_handle.play_pause(),
                         KeyCode::Char('g') => app.music_handle.skip(),
-                        KeyCode::Enter => app.music_handle.play(app.queue_items.get_item().clone()),
+                        KeyCode::Enter => app.music_handle.play(app.queue_items.get_item().0.clone()),
                         KeyCode::Down | KeyCode::Char('j') => app.queue_items.next(),
                         KeyCode::Up | KeyCode::Char('k') => app.queue_items.previous(),
                         KeyCode::Char('r') => app.queue_items.remove(),
@@ -152,11 +152,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .iter()
         .map(|i| {
             
-            ListItem::new(Text::from(gen_funcs::audio_display(i)))
+            ListItem::new(Text::from(gen_funcs::audio_display(&i.0)))
         })
         .collect();
     
-    let queue_title = "| Queue: ".to_owned() + &app.queue_items.length().to_string() + " Songs |";
+    let queue_title = "| Queue: ".to_owned() 
+    + &app.queue_items.get_length().to_string() + " Songs | Total Length: " + &app.queue_items.get_total_time();
+    
+    
     let queue_items = List::new(queue_items)
         .block(Block::default()
         .borders(Borders::ALL)
