@@ -117,6 +117,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let size = f.size();
     let fg = Color::LightCyan;
     let hfg = Color::Black;
+    let hbg = Color::LightCyan;
 
     // chunking from top to bottom, 3 gets tabs displayed, the rest goes to item layouts
     let chunks = Layout::default()
@@ -155,8 +156,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     f.render_widget(tabs, chunks[0]);
 
     let inner = match app.index {
-        0 => music_tab(f, app,chunks[1], fg, hfg),
-        1 => instructions_tab(f, app,chunks[1], fg, hfg),
+        0 => music_tab(f, app,chunks[1], fg, hfg, hbg),
+        1 => instructions_tab(f, app,chunks[1], fg, hfg ),
         // 1 => Block::default().title("Inner 1").borders(Borders::ALL),
         // 2 => Block::default().title("Inner 2").borders(Borders::ALL),
         // 3 => Block::default().title("Inner 3").borders(Borders::ALL),
@@ -166,7 +167,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
 }
 
-fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Color, hfg: Color){
+fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Color, hfg: Color, hbg: Color){
     // split into left / right
     let browser_queue = Layout::default()
     .direction(Direction::Horizontal)
@@ -198,7 +199,7 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Colo
         .style(Style::default().fg(fg))
         .highlight_style(
             Style::default()
-                .bg(Color::Green)
+                .bg(hbg)
                 .fg(hfg)
                 .add_modifier(Modifier::BOLD),
         )
@@ -227,7 +228,8 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Colo
         .style(Style::default().fg(fg))
         .highlight_style(
             Style::default()
-                .bg(Color::LightCyan)
+                .bg(hbg)
+                .fg(hfg)
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol(">> ");
