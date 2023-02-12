@@ -46,7 +46,7 @@ impl Queue {
         let hours = (self.total_time % 86400) / 3600;
         let minutes = (self.total_time %  3600) / 60;
         
-        return days.to_string() + " days " + &hours.to_string() + " hours " + &minutes.to_string() + " minutes |"
+        return "Total Length: ".to_string() + &days.to_string() + " days " + &hours.to_string() + " hours " + &minutes.to_string() + " minutes |"
 
         // hours
         } else if self.total_time / 3600 >= 1 {
@@ -55,7 +55,7 @@ impl Queue {
             let minutes = (self.total_time %  3600) / 60;
             let seconds = self.total_time % 60;
 
-            return hours.to_string() + " hours " + &minutes.to_string() + " minutes " + &seconds.to_string() + " seconds |";  
+            return "Total Length: ".to_string() + &hours.to_string() + " hours " + &minutes.to_string() + " minutes " + &seconds.to_string() + " seconds |";  
 
         // minutes
         } else if self.total_time / 60 >= 1 {
@@ -63,10 +63,12 @@ impl Queue {
             let minutes = self.total_time / 60;
             let seconds = self.total_time % 60;
 
-            return minutes.to_string() + " minutes " + &seconds.to_string() + " seconds |";  
+            return "Total Length: ".to_string() + &minutes.to_string() + " minutes " + &seconds.to_string() + " seconds |";  
         // seconds
+        } else if self.total_time > 0 {
+            return "Total Length: ".to_string() + &self.total_time.to_string() + " seconds |";
         } else {
-            return self.total_time.to_string() + " seconds |";
+            return "".to_string();
         } 
     }
 

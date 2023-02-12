@@ -156,7 +156,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .collect();
     
     let queue_title = "| Queue: ".to_owned() 
-    + &app.queue_items.get_length().to_string() + " Songs | Total Length: " + &app.queue_items.get_total_time();
+    + &app.queue_items.get_length().to_string() + " Songs | " + &app.queue_items.get_total_time();
     
     
     let queue_items = List::new(queue_items)
@@ -173,9 +173,10 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .highlight_symbol(">> ");
     f.render_stateful_widget(queue_items, queue_playing[0], &mut app.queue_items.get_state());
 
+    
 
-    let playing_title = "| ".to_owned() + &app.music_handle.get_current_song() + " |";
-
+    let playing_title = "| ".to_owned() + &app.get_current_song() + " |";
+  
     let playing = Gauge::default()
         .block(Block::default()
         .title(playing_title)

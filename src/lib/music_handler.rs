@@ -27,7 +27,7 @@ impl MusicHandle {
         }
     }
 
-    pub fn get_current_song(&self) -> String { 
+    pub fn get_currently_playing(&self) -> String { 
         self.currently_playing.clone()
     }
 
@@ -39,8 +39,12 @@ impl MusicHandle {
         *self.time_played.lock().unwrap()
     }
 
-    pub fn get_sink_length(&self) -> usize {
-        self.sink.len()
+    pub fn sink_empty(&self) -> bool {
+        if self.sink.len() == 0 {
+            true
+        } else {
+            false
+        }
     }
 
     pub fn set_time_played(&mut self, t: u16){

@@ -41,6 +41,15 @@ impl App {
         self.input_mode = in_mode
     }
 
+    pub fn get_current_song(&self) -> String {
+
+        if self.music_handle.sink_empty() && self.queue_items.is_empty() {
+            "CURRENT SONG".to_string()
+        } else {
+            self.music_handle.get_currently_playing()
+        }
+    }
+
     // if item selected is folder, enter folder, else play record.
     pub fn evaluate(&mut self){
         let join = self.selected_item();
@@ -65,7 +74,7 @@ impl App {
     // if queue has items and nothing playing, auto play
     pub fn auto_play(&mut self){
         thread::sleep(Duration::from_millis(250));
-        if self.music_handle.get_sink_length() == 0 && !self.queue_items.is_empty() {
+        if self.music_handle.sink_empty() && !self.queue_items.is_empty() {
             self.music_handle.set_time_played(0);
             self.music_handle.play(self.queue_items.pop());
         }
@@ -84,18 +93,17 @@ impl App {
         };
 
         // edge case if nothing queued or playing
-        if self.music_handle.get_sink_length() == 0 && self.queue_items.is_empty() {
+        if self.music_handle.sink_empty() && self.queue_items.is_empty() {
             0
 
         // if something playing, calculate progress 
-        } else if self.music_handle.get_sink_length() == 1 {
+        } else if !self.music_handle.sink_empty() {
             progress()
         // if nothing playing keep rolling
         } else {
           self.auto_play();
           0
         }
-                    
     }
     
     // get file path
