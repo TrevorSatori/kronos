@@ -1,6 +1,8 @@
 # Kronos
 Terminal Music Player Written In Rust. For offline listening and local files.
 
+![Alt text](Kronos.png?raw=true "Title")
+
 # Controls
 1. Enter => play
 2. space => pause / resume
@@ -20,5 +22,5 @@ Terminal Music Player Written In Rust. For offline listening and local files.
 
 If you enjoy using this package, feel free to reach out and request additions and or changes. 
 
-![Alt text](Kronos.png?raw=true "Title")
+
 
