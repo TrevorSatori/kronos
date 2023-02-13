@@ -157,10 +157,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     let inner = match app.index {
         0 => music_tab(f, app,chunks[1], fg, hfg, hbg),
-        1 => instructions_tab(f, app,chunks[1], fg, hfg ),
-        // 1 => Block::default().title("Inner 1").borders(Borders::ALL),
-        // 2 => Block::default().title("Inner 2").borders(Borders::ALL),
-        // 3 => Block::default().title("Inner 3").borders(Borders::ALL),
+        1 => instructions_tab(f, app,chunks[1], fg, hfg, hbg),
         _ => unreachable!(),
     };
    
@@ -168,6 +165,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 }
 
 fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Color, hfg: Color, hbg: Color){
+    
     // split into left / right
     let browser_queue = Layout::default()
     .direction(Direction::Horizontal)
@@ -251,6 +249,88 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Colo
     f.render_widget(playing, queue_playing[1]);
 }
 
-fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Color, hfg: Color){
+fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Color, hfg: Color, hbg: Color){
+    
+    //  
+    let keys = Layout::default()
+    .direction(Direction::Vertical)
+    .constraints([Constraint::Percentage(10), Constraint::Percentage(10),
+    Constraint::Percentage(10),Constraint::Percentage(10),Constraint::Percentage(10),
+    Constraint::Percentage(10),
+    Constraint::Percentage(10),Constraint::Percentage(10),Constraint::Percentage(10),].as_ref())
+    .split(chunks);
 
+    let quit = Block::default().style(Style::default()
+    .bg(Color::Black)
+    .fg(fg))
+    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
+    .border_style(Style::default().fg(hfg))
+    .title("QUIT - Q"); 
+    f.render_widget(quit,  keys[0]);
+
+    let pause = Block::default().style(Style::default()
+    .bg(Color::Black)
+    .fg(fg))
+    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
+    .border_style(Style::default().fg(hfg))
+    .title("PAUSE / PLAY - SPACE or P");
+    f.render_widget(pause,  keys[1]);
+
+    let skip = Block::default().style(Style::default()
+    .bg(Color::Black)
+    .fg(fg))
+    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
+    .border_style(Style::default().fg(hfg))
+    .title("SKIP - G");
+    f.render_widget(skip,  keys[2]);
+
+    let add = Block::default().style(Style::default()
+    .bg(Color::Black)
+    .fg(fg))
+    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
+    .border_style(Style::default().fg(hfg))
+    .title("ADD TO QUEUE - A");
+    f.render_widget(add,  keys[3]);
+
+    let play = Block::default().style(Style::default()
+    .bg(Color::Black)
+    .fg(fg))
+    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
+    .border_style(Style::default().fg(hfg))
+    .title("PLAY / ENTER DIRECTORY - ENTER");
+    f.render_widget(play,  keys[4]);
+
+    let pdir = Block::default().style(Style::default()
+    .bg(Color::Black)
+    .fg(fg))
+    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
+    .border_style(Style::default().fg(hfg))
+    .title("PARENT DIRECTORY - BACKSPACE");
+    f.render_widget(pdir,  keys[5]);
+
+    let down = Block::default().style(Style::default()
+    .bg(Color::Black)
+    .fg(fg))
+    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
+    .border_style(Style::default().fg(hfg))
+    .title("NEXT ITEM - DOWN ARROW or J");
+    f.render_widget(down,  keys[6]);
+
+    let up = Block::default().style(Style::default()
+    .bg(Color::Black)
+    .fg(fg))
+    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
+    .border_style(Style::default().fg(hfg))
+    .title("PREVIOUS ITEM - UP ARROW or K");
+    f.render_widget(up,  keys[7]);
+
+    let toggle = Block::default().style(Style::default()
+    .bg(Color::Black)
+    .fg(fg))
+    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
+    .border_style(Style::default().fg(hfg))
+    .title("CHANGE FOCUS - LEFT & RIGHT ARROWS or H & L KEYS");
+    f.render_widget(toggle,  keys[8]);
+
+    
 }

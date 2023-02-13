@@ -33,7 +33,6 @@ impl<'a> App<'a> {
             queue_items: Queue::with_items(),
             music_handle: MusicHandle::new(),
             input_mode: InputMode::Browser,
-            ////
             titles: vec!["Music", "Instructions"],
             index: 0,
         }
