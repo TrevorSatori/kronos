@@ -33,20 +33,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tick_rate = Duration::from_secs(1);
     let app = App::new();
     let config = Config::new(); // NEW
-    let res = run_app(&mut terminal, app, tick_rate);
+    println!("{:#?}", config);
+    // let res = run_app(&mut terminal, app, tick_rate);
 
     // restore terminal
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
+    // disable_raw_mode()?;
+    // execute!(
+    //     terminal.backend_mut(),
+    //     LeaveAlternateScreen,
+    //     DisableMouseCapture
+    // )?;
+    // terminal.show_cursor()?;
 
-    if let Err(err) = res {
-        println!("{:?}", err)
-    }
+    // if let Err(err) = res {
+    //     println!("{:?}", err)
+    // }
 
     Ok(())
 }

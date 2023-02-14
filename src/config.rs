@@ -2,7 +2,7 @@ use std::{fs};
 use serde::{Serialize, Deserialize};
 use toml;
 
-
+// Config Controls, provides options
 #[derive(Serialize, Deserialize, Debug)]
 struct ConfigControls{
     quit: Option<char>,
@@ -11,7 +11,7 @@ struct ConfigControls{
     queue_add: Option<char>,
     queue_remove: Option<char>,
 }
-
+#[derive(Debug)]
 pub struct Config{
     quit: char,
     play_pause: char,
@@ -74,23 +74,42 @@ impl Config{
         // convert found controls to variables
         let (quit, play_pause, skip, queue_add, queue_remove) = match config_toml.controls {
             Some(controls) => {
+
                 let quit = controls.quit.unwrap_or_else(|| {
-                    'u'
+                    'q'
                 });
-                (quit)
+
+                let play_pause = controls.play_pause.unwrap_or_else(|| {
+                    'p'
+                });
+
+                let skip = controls.skip.unwrap_or_else(|| {
+                    'g'
+                });
+
+                let queue_add = controls.queue_add.unwrap_or_else(|| {
+                    'a'
+                });
+
+                let queue_remove = controls.queue_remove.unwrap_or_else(|| {
+                    'r'
+                });
+
+                (quit, play_pause, skip, queue_add, queue_remove)
             },
+            // if 0 fields filled out
             None => {
                 println!("Missing data"); 
-                'q'
+                ('q', 'p', 'g', 'a', 'r' )
             },  
         };
 
         Config {  
             quit: quit, // gathered from above 
-            play_pause: 'p',
-            skip: 'g',
-            queue_add: 'a',
-            queue_remove: 'r',
+            play_pause: play_pause,
+            skip: skip,
+            queue_add: queue_add,
+            queue_remove: queue_remove,
         }
     }
 
