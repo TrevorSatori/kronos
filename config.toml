@@ -1,0 +1,6 @@
+[controls]
+quit = 'q'
+play_pause = 'p'
+skip = 'g'
+queue_add = 'a'
+queue_remove = 'r'

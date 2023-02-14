@@ -1,3 +1,4 @@
+use std::time::{Instant, Duration};
 use crossterm::{
     event::{self, DisableMouseCapture, Event, KeyCode},
     execute,
@@ -16,7 +17,8 @@ use tui::{
 
 mod lib;
 use crate::lib::{app::*};
-use std::time::{Instant, Duration};
+pub mod config;
+use config::Config;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // setup terminal
@@ -30,6 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // create app and run it
     let tick_rate = Duration::from_secs(1);
     let app = App::new();
+    let config = Config::new(); // NEW
     let res = run_app(&mut terminal, app, tick_rate);
 
     // restore terminal
@@ -81,9 +84,7 @@ fn run_app<B: Backend>(
                             app.queue_items.next();
 
                         },
-                        /////
                         KeyCode::Tab => app.next(),
-
                         _ => {}
                     },
                     InputMode::Queue => match key.code {
@@ -101,7 +102,7 @@ fn run_app<B: Backend>(
                         }
                         _ => {}
                     }      
-                }
+                }                   
             }
         }
         if last_tick.elapsed() >= tick_rate {
@@ -155,13 +156,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     );
     f.render_widget(tabs, chunks[0]);
 
-    let inner = match app.index {
+    let _inner = match app.index {
         0 => music_tab(f, app,chunks[1], fg, hfg, hbg),
         1 => instructions_tab(f, app,chunks[1], fg, hfg, hbg),
         _ => unreachable!(),
-    };
-   
-
+    };      
 }
 
 fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Color, hfg: Color, hbg: Color){
@@ -287,7 +286,8 @@ fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, f
     let add = Block::default().style(Style::default()
     .bg(Color::Black)
     .fg(fg))
-    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
+    .title_alignment(Alignment::Center)
+    .borders(Borders::ALL)
     .border_style(Style::default().fg(hfg))
     .title("ADD TO QUEUE - A");
     f.render_widget(add,  keys[3]);
@@ -295,7 +295,8 @@ fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, f
     let play = Block::default().style(Style::default()
     .bg(Color::Black)
     .fg(fg))
-    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
+    .title_alignment(Alignment::Center)
+    .borders(Borders::ALL)
     .border_style(Style::default().fg(hfg))
     .title("PLAY / ENTER DIRECTORY - ENTER");
     f.render_widget(play,  keys[4]);
@@ -311,8 +312,8 @@ fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, f
     let down = Block::default().style(Style::default()
     .bg(Color::Black)
     .fg(fg))
-    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
-    .border_style(Style::default().fg(hfg))
+    .title_alignment(Alignment::Center)
+    .border_type(BorderType::Rounded)
     .title("NEXT ITEM - DOWN ARROW or J");
     f.render_widget(down,  keys[6]);
 

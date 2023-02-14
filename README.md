@@ -18,9 +18,6 @@ Terminal Music Player Written In Rust. For offline listening and local files.
 ``
 2. run program
 
-# Something Else? 
-
-If you enjoy using this package, feel free to reach out and request additions and or changes. 
 
 
 

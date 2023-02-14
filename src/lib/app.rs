@@ -5,9 +5,6 @@ use crate::lib::stateful_list::*;
 use super::{queue::Queue, gen_funcs};
 use super::music_handler::{MusicHandle};
 
-// app is responsible for handling state
-// keeps track of which Field you are in (QUEUE, Browser)
-// updates and handles list state
 
 #[derive(Clone, Copy)]
 pub enum InputMode {
