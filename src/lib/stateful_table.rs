@@ -1,6 +1,6 @@
 use tui::{
 
-    widgets::{Block, Borders, Cell, Row, Table, TableState},
+    widgets::{TableState},
 
 };
 

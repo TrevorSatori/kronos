@@ -4,7 +4,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use lib::{gen_funcs, stateful_list::StatefulList, stateful_table::StatefulTable};
+use lib::{gen_funcs};
 use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -288,12 +288,6 @@ fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, c
         )
         .split(chunks);
 
-    // style modifiers used throughout
-    let selected_style = Style::default().add_modifier(Modifier::REVERSED);
-    let normal_style = Style::default()
-    .bg(cfg.get_background())
-    .fg(cfg.get_foreground());
-    
     // map header to tui object
     let header = app.control_table.header
     .iter()
@@ -301,7 +295,9 @@ fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, c
     
     // Header and first row
     let header = Row::new(header)
-        .style(normal_style)
+        .style(Style::default()
+        .bg(cfg.get_background())
+        .fg(cfg.get_foreground()))
         .height(1)
         .bottom_margin(1);
 
@@ -326,10 +322,10 @@ fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, c
         .highlight_style(
             Style::default()
                 .add_modifier(Modifier::BOLD)
-                .bg(cfg.get_background())
-                .fg(cfg.get_foreground())
+                .bg(cfg.get_highlight_background())
+                .fg(cfg.get_highlight_foreground())
         )
-        .highlight_symbol(">> ")
+        // .highlight_symbol(">> ")
         .widths(&[
             Constraint::Percentage(50),
             Constraint::Length(30),
