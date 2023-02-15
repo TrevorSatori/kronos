@@ -30,27 +30,27 @@ If the color scheme above isn't for you, change it. Kronos default config path i
 ``
     ~/.config/kronos/config.toml
 ``
-check the repo for config.toml as a template. Below are all the color options for each parameter in the toml file. 
 
-Colors | 
---- | 
-black |
-blue |
-green |
-red |
-yellow | 
-magenta | 
-cyan |
-gray |
-dark gray |
-light red | 
-light green |
-light yellow | 
-light blue | 
-light magenta |
-light cyan | 
-white |
+Below are all the color options for each parameter in the toml file. 
+
+black | blue | green | red |
+yellow | magenta | cyan | gray |
+dark gray | light red | light green | light yellow | light blue | 
+light magenta | light cyan | white | 
 rgb 0 - 255 |
+
+
+![Customized](assets/customized.png?raw=true)
+
+The above makes use of both premade color options as well as rgb values and can be recreated with the following inside a config.toml.
+
+``
+[theme]
+foreground = "200, 100, 250"
+background = "black"
+highlight_foreground = "white"
+highlight_background = "255, 165, 0" 
+``
                         
 # Using This Software?
 Make sure to leave a star.
