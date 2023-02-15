@@ -56,10 +56,8 @@ impl Config{
     pub fn new() -> Config {
 
         let config_paths = [
-            "./config.toml",
-            "./Config.toml", 
-            "~/.config/kronos/config.toml",
-            "~/.config/kronos/Config.toml",
+            "./config.toml".to_ascii_lowercase(),
+            "~/.config/kronos/config.toml".to_ascii_lowercase(),
         ];
 
         // placeholder to store config in
@@ -122,87 +120,33 @@ impl Config{
         let (foreground, background, hfg, hbg) = match config_toml.theme {
 
             Some(theme) => {
-
-                // let foreground = theme.foreground.unwrap_or(Color::Black);
-                let foreground = match theme.foreground.unwrap_or("LightCyan".to_string()).to_ascii_lowercase().as_ref() {
-                    "black" => Color::Black, 
-                    "blue" => Color::Blue,
-                    "green" => Color::Green,
-                    "red" => Color::Red,
-                    "yellow" => Color::Yellow,
-                    "magenta" => Color::Magenta,
-                    "cyan" => Color::Cyan,
-                    "gray" => Color::Gray,
-                    "dark gray" => Color::DarkGray,
-                    "light red" => Color::LightRed,
-                    "light green" => Color::LightGreen,
-                    "light yellow" => Color::LightYellow,
-                    "light blue" => Color::LightBlue,
-                    "light magenta" => Color::LightMagenta,
-                    "light cyan" => Color::LightCyan,
-                    "white" => Color::White,
-                    _ => Color::Black,
+                // item, if error, _value
+                let map = |i: Option<String>, s: String| {
+                    match i.unwrap_or(s).to_ascii_lowercase().as_ref() {
+                        "black" => Color::Black, 
+                        "blue" => Color::Blue,
+                        "green" => Color::Green,
+                        "red" => Color::Red,
+                        "yellow" => Color::Yellow,
+                        "magenta" => Color::Magenta,
+                        "cyan" => Color::Cyan,
+                        "gray" => Color::Gray,
+                        "dark gray" => Color::DarkGray,
+                        "light red" => Color::LightRed,
+                        "light green" => Color::LightGreen,
+                        "light yellow" => Color::LightYellow,
+                        "light blue" => Color::LightBlue,
+                        "light magenta" => Color::LightMagenta,
+                        "light cyan" => Color::LightCyan,
+                        "white" => Color::White,
+                        _ => Color::Black,
+                    }
                 };
 
-                let background = match theme.background.unwrap_or("Black".to_string()).to_ascii_lowercase().as_ref() {
-                    "black" => Color::Black, 
-                    "blue" => Color::Blue,
-                    "green" => Color::Green,
-                    "red" => Color::Red,
-                    "yellow" => Color::Yellow,
-                    "magenta" => Color::Magenta,
-                    "cyan" => Color::Cyan,
-                    "gray" => Color::Gray,
-                    "dark gray" => Color::DarkGray,
-                    "light red" => Color::LightRed,
-                    "light green" => Color::LightGreen,
-                    "light yellow" => Color::LightYellow,
-                    "light blue" => Color::LightBlue,
-                    "light magenta" => Color::LightMagenta,
-                    "light cyan" => Color::LightCyan,
-                    "white" => Color::White,
-                    _ => Color::Black,
-                };
-
-                let hfg = match theme.highlight_foreground.unwrap_or("Black".to_string()).to_ascii_lowercase().as_ref() {
-                    "black" => Color::Black, 
-                    "blue" => Color::Blue,
-                    "green" => Color::Green,
-                    "red" => Color::Red,
-                    "yellow" => Color::Yellow,
-                    "magenta" => Color::Magenta,
-                    "cyan" => Color::Cyan,
-                    "gray" => Color::Gray,
-                    "dark gray" => Color::DarkGray,
-                    "light red" => Color::LightRed,
-                    "light green" => Color::LightGreen,
-                    "light yellow" => Color::LightYellow,
-                    "light blue" => Color::LightBlue,
-                    "light magenta" => Color::LightMagenta,
-                    "light cyan" => Color::LightCyan,
-                    "white" => Color::White,
-                    _ => Color::Black,
-                };
-
-                let hbg = match theme.highlight_background.unwrap_or("Light Cyan".to_string()).to_ascii_lowercase().as_ref() {
-                    "black" => Color::Black, 
-                    "blue" => Color::Blue,
-                    "green" => Color::Green,
-                    "red" => Color::Red,
-                    "yellow" => Color::Yellow,
-                    "magenta" => Color::Magenta,
-                    "cyan" => Color::Cyan,
-                    "gray" => Color::Gray,
-                    "dark gray" => Color::DarkGray,
-                    "light red" => Color::LightRed,
-                    "light green" => Color::LightGreen,
-                    "light yellow" => Color::LightYellow,
-                    "light blue" => Color::LightBlue,
-                    "light magenta" => Color::LightMagenta,
-                    "light cyan" => Color::LightCyan,
-                    "white" => Color::White,
-                    _ => Color::Black,
-                };
+                let foreground = map(theme.foreground, "LightCyan".to_string());
+                let background = map(theme.background, "Black".to_string());
+                let hfg = map(theme.highlight_foreground, "Black".to_string());
+                let hbg = map(theme.highlight_background, "Light Cyan".to_string());
 
                 (foreground, background, hfg, hbg)
             }, 
@@ -212,10 +156,6 @@ impl Config{
             }, 
             
         }; 
-
-        
-
-    
  
         Config {  
             quit: quit, // gathered from above 

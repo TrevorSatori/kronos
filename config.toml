@@ -5,6 +5,7 @@ skip = 'g'
 queue_add = 'a'
 queue_remove = 'r'
 
+
 [theme]
 foreground = "white"
 background = "black"

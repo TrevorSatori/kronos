@@ -50,6 +50,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("{:?}", err)
     }
 
+    
+
     Ok(())
 }
 
@@ -143,7 +145,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
             let (first, rest) = t.split_at(1);
             Spans::from(vec![
                 Span::styled(first, Style::default().fg(Color::Green)), // CHANGE FOR CUSTOMIZATION
-                Span::styled(rest, Style::default().fg(Color::Green)), // SAME HERE DOG
+                Span::styled(rest, Style::default().fg(Color::Green)), // These are tab highlights, first vs rest diff colors
             ])
         })
         .collect();
@@ -251,6 +253,8 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Colo
         .percent(app.song_progress());
     f.render_widget(playing, queue_playing[1]);
 }
+//  GOOD
+
 
 fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Color, hfg: Color, hbg: Color){
     
