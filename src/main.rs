@@ -164,8 +164,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
         .map(|t| {
             let (first, rest) = t.split_at(1);
             Spans::from(vec![
-                Span::styled(first, Style::default().fg(Color::Green)), // CHANGE FOR CUSTOMIZATION
-                Span::styled(rest, Style::default().fg(Color::Green)), // These are tab highlights, first vs rest diff colors
+                Span::styled(first, Style::default().fg(cfg.get_highlight_background())), // CHANGE FOR CUSTOMIZATION
+                Span::styled(rest, Style::default().fg(cfg.get_highlight_background())), // These are tab highlights, first vs rest diff colors
             ])
         })
         .collect();
