@@ -41,14 +41,6 @@ impl<'a> App<'a> {
         self.index = (self.index + 1) % self.titles.len();
     }
 
-    pub fn previous(&mut self) {
-        if self.index > 0 {
-            self.index -= 1;
-        } else {
-            self.index = self.titles.len() - 1;
-        }
-    }
-
     pub fn get_input_mode(&self) -> InputMode{
         self.input_mode.clone()
     }
