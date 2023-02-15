@@ -2,7 +2,7 @@ use std::{path::{PathBuf, Path}, thread::{self}, time::{Duration}};
 extern crate glob;
 use std::env;
 use crate::lib::stateful_list::*;
-use super::{queue::Queue, gen_funcs};
+use super::{queue::Queue, gen_funcs, stateful_table::*};
 use super::music_handler::{MusicHandle};
 
 
@@ -10,14 +10,15 @@ use super::music_handler::{MusicHandle};
 pub enum InputMode {
     Browser,
     Queue,
+    Controls,
 }
 
 pub struct App<'a>{
     pub browser_items: StatefulList<String>,
     pub queue_items: Queue,
+    pub control_table: StatefulTable<'a>,
     pub music_handle: MusicHandle,
     input_mode: InputMode,
-
     pub titles: Vec<&'a str>,
     pub index: usize,
 }
@@ -28,6 +29,7 @@ impl<'a> App<'a> {
         App {
             browser_items: StatefulList::with_items(gen_funcs::scan_folder()),
             queue_items: Queue::with_items(),
+            control_table: StatefulTable::new(),
             music_handle: MusicHandle::new(),
             input_mode: InputMode::Browser,
             titles: vec!["Music", "Controls"],

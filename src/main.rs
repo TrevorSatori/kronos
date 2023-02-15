@@ -1,17 +1,17 @@
-use std::time::{Instant, Duration};
+use std::{time::{Instant, Duration}};
 use crossterm::{
     event::{self, DisableMouseCapture, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use lib::{gen_funcs, stateful_list::StatefulList};
+use lib::{gen_funcs, stateful_list::StatefulList, stateful_table::StatefulTable};
 use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Text, Spans, Span},
-    widgets::{Block, BorderType, Borders, List, ListItem, Gauge, Tabs},
+    widgets::{Block, BorderType, Borders, List, ListItem, Gauge, Tabs, Cell, Row, Table},
     Frame, Terminal,
 };
 
@@ -85,7 +85,13 @@ fn run_app<B: Backend>(
                             app.set_input_mode(InputMode::Queue);
                             app.queue_items.next();
                         },
-                        KeyCode::Tab => app.next(),
+                        KeyCode::Tab => {
+                            app.next();
+                            match app.get_input_mode() {
+                                InputMode::Controls => app.set_input_mode(InputMode::Browser),
+                                _ => app.set_input_mode(InputMode::Controls),
+                            };
+                        }, 
                         _ => {}
                     },
                     InputMode::Queue => match key.code {
@@ -100,9 +106,31 @@ fn run_app<B: Backend>(
                             app.queue_items.unselect();
                             app.set_input_mode(InputMode::Browser);
                             app.browser_items.next();
-                        }
+                        }, 
+                        KeyCode::Tab => {
+                            app.next();
+                            match app.get_input_mode() {
+                                InputMode::Controls => app.set_input_mode(InputMode::Browser),
+                                _ => app.set_input_mode(InputMode::Controls),
+                            };
+                        }, 
                         _ => {}
-                    }      
+                    },
+                    InputMode::Controls => match key.code {
+                        KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Char('p') => app.music_handle.play_pause(),
+                        KeyCode::Char('g') => app.music_handle.skip(),
+                        KeyCode::Down | KeyCode::Char('j') => app.control_table.next(),
+                        KeyCode::Up | KeyCode::Char('k') => app.control_table.previous(),
+                        KeyCode::Tab =>  {
+                            app.next();
+                            match app.get_input_mode() {
+                                InputMode::Controls => app.set_input_mode(InputMode::Browser),
+                                _ => app.set_input_mode(InputMode::Controls),
+                            };
+                        }, 
+                        _ => {}
+                    }
                 }                   
             }
         }
@@ -117,10 +145,6 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
     
     // Total Size
     let size = f.size();
-    let fg = cfg.get_foreground(); 
-    let bg = cfg.get_background();
-    let hfg = cfg.get_highlight_foreground();
-    let hbg = cfg.get_highlight_background();
 
     // chunking from top to bottom, 3 gets tabs displayed, the rest goes to item layouts
     let chunks = Layout::default()
@@ -129,7 +153,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
     .split(size);
 
     // Main Background block, covers entire screen 
-    let block = Block::default().style(Style::default().bg(bg));
+    let block = Block::default().style(Style::default().bg(cfg.get_background()));
     f.render_widget(block, size);
 
     
@@ -150,22 +174,22 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
     let tabs = Tabs::new(titles)
     .block(Block::default().borders(Borders::ALL).title("Tabs"))
     .select(app.index)
-    .style(Style::default().fg(fg))
+    .style(Style::default().fg(cfg.get_foreground()))
     .highlight_style(
         Style::default()
             .add_modifier(Modifier::BOLD)
-            .bg(bg),
+            .bg(cfg.get_background()),
     );
     f.render_widget(tabs, chunks[0]);
 
     let _inner = match app.index {
-        0 => music_tab(f, app,chunks[1], fg, hfg, hbg),
-        1 => instructions_tab(f, app,chunks[1], fg, hfg, hbg),
+        0 => music_tab(f, app,chunks[1], cfg),
+        1 => instructions_tab(f, app,chunks[1], cfg),
         _ => unreachable!(),
     };      
 }
 
-fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Color, hfg: Color, hbg: Color){
+fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Config){
     
     // split into left / right
     let browser_queue = Layout::default()
@@ -195,11 +219,11 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Colo
         .title("Browser")
         .title_alignment(Alignment::Left)
         .border_type(BorderType::Rounded))
-        .style(Style::default().fg(fg))
+        .style(Style::default().fg(cfg.get_foreground()))
         .highlight_style(
             Style::default()
-                .bg(hbg)
-                .fg(hfg)
+                .bg(cfg.get_highlight_background())
+                .fg(cfg.get_highlight_foreground())
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol(">> ");
@@ -224,11 +248,11 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Colo
         .title(queue_title)
         .title_alignment(Alignment::Left)
         .border_type(BorderType::Rounded))
-        .style(Style::default().fg(fg))
+        .style(Style::default().fg(cfg.get_foreground()))
         .highlight_style(
             Style::default()
-                .bg(hbg)
-                .fg(hfg)
+                .bg(cfg.get_highlight_background())
+                .fg(cfg.get_highlight_foreground())
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol(">> ");
@@ -244,50 +268,75 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Colo
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .title_alignment(Alignment::Center))
-        .style(Style::default().fg(fg))
+        .style(Style::default().fg(cfg.get_foreground()))
         .gauge_style(Style::default().fg(Color::LightCyan))
         .percent(app.song_progress());
     f.render_widget(playing, queue_playing[1]);
 }
-//  GOOD
 
 
-fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Color, hfg: Color, hbg: Color){
+fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Config){
 
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(2)
+        .constraints(
+            [
+                Constraint::Percentage(100),
+            ]
+            .as_ref(),
+        )
+        .split(chunks);
 
-    let controls = vec![("Q", "Quit"), ("P", "Play / Pause"), ("G", "Skip Song"), 
-    ("A", "Add To Queue"), ("R", "Remove From Queue"), ("Enter", "Enter Directory"), ("Backspace", "Previous Directory"), 
-    ("Down", "Next Item"), ("Up", "Previous Item"), ("Right / Left", "Enter Queue / Browser"), ("Tab", "Change Tabs")
-    ];
+    // style modifiers used throughout
+    let selected_style = Style::default().add_modifier(Modifier::REVERSED);
+    let normal_style = Style::default()
+    .bg(cfg.get_background())
+    .fg(cfg.get_foreground());
+    
+    // map header to tui object
+    let header = app.control_table.header
+    .iter()
+    .map(|h| Cell::from(*h).style(Style::default().fg(cfg.get_highlight_foreground())));
+    
+    // Header and first row
+    let header = Row::new(header)
+        .style(normal_style)
+        .height(1)
+        .bottom_margin(1);
 
-    // let controls = StatefulList::with_items(controls);
+    
+    // map items from table to Row items
+    let rows = app.control_table.items.iter().map(|item| {
+        let height = item
+            .iter()
+            .map(|content| content.chars().filter(|c| *c == '\n').count())
+            .max()
+            .unwrap_or(0)
+            + 1;
+        let cells = item.iter().map(|c| Cell::from(*c));
+        Row::new(cells).height(height as u16).bottom_margin(1)
+    });
 
-
-    let controls: Vec<ListItem> = controls
-        .iter()
-        .map(|i| {
-            ListItem::new(Text::from(i.0.to_owned() + " - " + i.1))
-        })
-        .collect();
-
-    let controls = List::new(controls)
-        .block(Block::default()
-        .borders(Borders::ALL)
-        .title("Controls")
-        .title_alignment(Alignment::Left)
-        .border_type(BorderType::Rounded))
-        .style(Style::default().fg(fg))
+    let t = Table::new(rows)
+        .header(header)
+        .block(Block::default().borders(Borders::ALL)
+        .title("Controls"))
+        .style(Style::default().fg(cfg.get_foreground()).bg(cfg.get_background()))
         .highlight_style(
             Style::default()
-                .bg(hbg)
-                .fg(hfg)
-                .add_modifier(Modifier::BOLD),
+                .add_modifier(Modifier::BOLD)
+                .bg(cfg.get_background())
+                .fg(cfg.get_foreground())
         )
-        .highlight_symbol(">> ");
-
-    
-    f.render_stateful_widget(controls, chunks, &mut app.queue_items.get_state());
-
-
+        .highlight_symbol(">> ")
+        .widths(&[
+            Constraint::Percentage(50),
+            Constraint::Length(30),
+            Constraint::Min(10),
+        ]);
+    f.render_stateful_widget(t, chunks[0], &mut app.control_table.state);
     
 }
+
+
