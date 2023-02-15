@@ -44,13 +44,13 @@ rgb 0 - 255 |
 
 The above makes use of both premade color options as well as rgb values and can be recreated with the following inside a config.toml.
 
-``toml
+```toml
 [theme]
 foreground = "200, 100, 250"
 background = "black"
 highlight_foreground = "white"
 highlight_background = "255, 165, 0" 
-``
+```
                         
 # Using This Software?
 Make sure to leave a star.
