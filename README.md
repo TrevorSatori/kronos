@@ -44,7 +44,7 @@ rgb 0 - 255 |
 
 The above makes use of both premade color options as well as rgb values and can be recreated with the following inside a config.toml.
 
-``
+``toml
 [theme]
 foreground = "200, 100, 250"
 background = "black"
