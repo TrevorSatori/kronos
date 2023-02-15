@@ -1,8 +1,9 @@
-use std::{fs};
+use std::{fs, clone, ascii::AsciiExt};
 use serde::{Serialize, Deserialize};
 use toml;
+use tui::style::Color;
 
-// Config Controls, provides options
+// Controls
 #[derive(Serialize, Deserialize, Debug)]
 struct ConfigControls{
     quit: Option<char>,
@@ -11,6 +12,15 @@ struct ConfigControls{
     queue_add: Option<char>,
     queue_remove: Option<char>,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Theme{
+    foreground: Option<String>,
+    background: Option<String>, 
+}
+
+
+// everything
 #[derive(Debug)]
 pub struct Config{
     quit: char,
@@ -18,14 +28,16 @@ pub struct Config{
     skip: char,
     queue_add: char,
     queue_remove: char,
+    foreground: Color,
+    background: Color,
 }
+
 
 // for tables
 #[derive(Serialize, Deserialize, Debug)]
 struct ConfigTOML{
-
-    controls: Option<ConfigControls>, 
-    // TODO add colorscheme
+    controls: Option<ConfigControls>,
+    theme: Option<Theme>, 
 }
 
 // cd
@@ -33,7 +45,9 @@ struct ConfigTOML{
 // select list item (up Down)
 // switch grid focus (Left, right)
 // chage tabs 
-
+// # Black, Red, Yellow, Blue, Magenta, Green, Cyan, Gray, DarkGray, LightRed, LightGreen
+// LightYellow, LightBlue, LightMagenta, LightCyan
+ 
 
 
 impl Config{
@@ -62,12 +76,13 @@ impl Config{
         // print content
         // println!("{:?}", content);
 
-        // 
+        // convert toml file to serialized data
         let config_toml: ConfigTOML = toml::from_str(&content).unwrap_or_else(|_|{
             // if config file not found, set defaults
             println!("FAILED TO CREATE CONFIG OBJECT FROM FILE");
             ConfigTOML{
-                controls: None
+                controls: None,
+                theme: None,
             }
         });
 
@@ -104,12 +119,73 @@ impl Config{
             },  
         };
 
+        // match theme
+        let (foreground, background) = match config_toml.theme {
+
+            Some(theme) => {
+
+                // let foreground = theme.foreground.unwrap_or(Color::Black);
+                let foreground = match theme.foreground.unwrap_or("LightCyan".to_string()).to_ascii_lowercase().as_ref() {
+                    "black" => Color::Black, 
+                    "blue" => Color::Blue,
+                    "green" => Color::Green,
+                    "red" => Color::Blue,
+                    "yellow" => Color::Yellow,
+                    "magenta" => Color::Magenta,
+                    "cyan" => Color::Cyan,
+                    "gray" => Color::Gray,
+                    "darkgray" => Color::DarkGray,
+                    "lightred" => Color::LightRed,
+                    "lightgreen" => Color::LightGreen,
+                    "lightyellow" => Color::LightYellow,
+                    "lightblue" => Color::LightBlue,
+                    "lightmagenta" => Color::LightMagenta,
+                    "lightcyan" => Color::LightCyan,
+                    "white" => Color::White,
+                    _ => Color::Black,
+                };
+
+                let background = match theme.background.unwrap().to_ascii_lowercase().as_ref() {
+                    "black" => Color::Black, 
+                    "blue" => Color::Blue,
+                    "green" => Color::Green,
+                    "red" => Color::Blue,
+                    "yellow" => Color::Yellow,
+                    "magenta" => Color::Magenta,
+                    "cyan" => Color::Cyan,
+                    "gray" => Color::Gray,
+                    "darkgray" => Color::DarkGray,
+                    "lightred" => Color::LightRed,
+                    "lightgreen" => Color::LightGreen,
+                    "lightyellow" => Color::LightYellow,
+                    "lightblue" => Color::LightBlue,
+                    "lightmagenta" => Color::LightMagenta,
+                    "lightcyan" => Color::LightCyan,
+                    "white" => Color::White,
+                    _ => Color::Black,
+                };
+
+                (foreground, background)
+            }, 
+
+            None => {
+                (Color::LightCyan, Color::Black)
+            }, 
+            
+        }; 
+
+        
+
+    
+ 
         Config {  
             quit: quit, // gathered from above 
             play_pause: play_pause,
             skip: skip,
             queue_add: queue_add,
             queue_remove: queue_remove,
+            foreground: foreground,
+            background: background,
         }
     }
 
@@ -133,5 +209,12 @@ impl Config{
         self.queue_remove
     }
 
+    pub fn get_foreground(&self) -> Color {
+        self.foreground
+    }
+
+    pub fn get_background(&self) -> Color {
+        self.background
+    }
 
 }

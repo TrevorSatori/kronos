@@ -4,3 +4,7 @@ play_pause = 'p'
 skip = 'g'
 queue_add = 'a'
 queue_remove = 'r'
+
+[theme]
+foreground = "Green"
+background = "YelLow"

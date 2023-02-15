@@ -32,22 +32,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     // create app and run it
     let tick_rate = Duration::from_secs(1);
     let app = App::new();
-    let config = Config::new(); // NEW
-    println!("{:#?}", config);
-    // let res = run_app(&mut terminal, app, tick_rate);
+    let cfg = Config::new();
+
+    println!("{:#?}", cfg);
+    let res = run_app(&mut terminal, app, cfg, tick_rate);
 
     // restore terminal
-    // disable_raw_mode()?;
-    // execute!(
-    //     terminal.backend_mut(),
-    //     LeaveAlternateScreen,
-    //     DisableMouseCapture
-    // )?;
-    // terminal.show_cursor()?;
+    disable_raw_mode()?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
+    terminal.show_cursor()?;
 
-    // if let Err(err) = res {
-    //     println!("{:?}", err)
-    // }
+    if let Err(err) = res {
+        println!("{:?}", err)
+    }
 
     Ok(())
 }
@@ -56,11 +57,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     mut app: App,
+    cfg: Config, 
     tick_rate: Duration,
 ) -> io::Result<()> {
     let mut last_tick = Instant::now();
     loop {
-        terminal.draw(|f| ui(f, &mut app))?;
+        terminal.draw(|f| ui(f, &mut app, &cfg))?;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
@@ -113,11 +115,11 @@ fn run_app<B: Backend>(
 }
 
 
-fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
     
     // Total Size
     let size = f.size();
-    let fg = Color::LightCyan;
+    let fg = cfg.get_foreground(); 
     let hfg = Color::Black;
     let hbg = Color::LightCyan;
 
