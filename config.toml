@@ -6,5 +6,7 @@ queue_add = 'a'
 queue_remove = 'r'
 
 [theme]
-foreground = "Green"
-background = "YelLow"
+foreground = "white"
+background = "black"
+highlight_foreground = "Red"
+highlight_background = "Yellow" 

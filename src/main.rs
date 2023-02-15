@@ -120,8 +120,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
     // Total Size
     let size = f.size();
     let fg = cfg.get_foreground(); 
-    let hfg = Color::Black;
-    let hbg = Color::LightCyan;
+    let bg = cfg.get_background();
+    let hfg = cfg.get_highlight_foreground();
+    let hbg = cfg.get_highlight_background();
 
     // chunking from top to bottom, 3 gets tabs displayed, the rest goes to item layouts
     let chunks = Layout::default()
@@ -130,7 +131,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
     .split(size);
 
     // Main Background block, covers entire screen 
-    let block = Block::default().style(Style::default().bg(Color::Black).fg(Color::Black));
+    let block = Block::default().style(Style::default().bg(bg));
     f.render_widget(block, size);
 
     
@@ -141,8 +142,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
         .map(|t| {
             let (first, rest) = t.split_at(1);
             Spans::from(vec![
-                Span::styled(first, Style::default().fg(Color::Yellow)),
-                Span::styled(rest, Style::default().fg(Color::Green)),
+                Span::styled(first, Style::default().fg(Color::Green)), // CHANGE FOR CUSTOMIZATION
+                Span::styled(rest, Style::default().fg(Color::Green)), // SAME HERE DOG
             ])
         })
         .collect();
@@ -155,7 +156,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
     .highlight_style(
         Style::default()
             .add_modifier(Modifier::BOLD)
-            .bg(Color::Black),
+            .bg(bg),
     );
     f.render_widget(tabs, chunks[0]);
 
@@ -190,7 +191,7 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Colo
     })
     .collect();
 
-    // Create a List from all list items and highlight the currently selected one
+    // Create a List from all list items and highlight the currently selected one // RENDER 1
     let items = List::new(items)
         .block(Block::default().borders(Borders::ALL)
         .title("Browser")

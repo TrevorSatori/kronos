@@ -17,19 +17,8 @@ struct ConfigControls{
 struct Theme{
     foreground: Option<String>,
     background: Option<String>, 
-}
-
-
-// everything
-#[derive(Debug)]
-pub struct Config{
-    quit: char,
-    play_pause: char,
-    skip: char,
-    queue_add: char,
-    queue_remove: char,
-    foreground: Color,
-    background: Color,
+    highlight_foreground: Option<String>,
+    highlight_background: Option<String>,
 }
 
 
@@ -48,6 +37,19 @@ struct ConfigTOML{
 // # Black, Red, Yellow, Blue, Magenta, Green, Cyan, Gray, DarkGray, LightRed, LightGreen
 // LightYellow, LightBlue, LightMagenta, LightCyan
  
+// everything
+#[derive(Debug)]
+pub struct Config{
+    quit: char,
+    play_pause: char,
+    skip: char,
+    queue_add: char,
+    queue_remove: char,
+    foreground: Color,
+    background: Color,
+    highlight_foreground: Color, 
+    highlight_background: Color,
+}
 
 
 impl Config{
@@ -72,9 +74,6 @@ impl Config{
                 break;
             }
         }
-
-        // print content
-        // println!("{:?}", content);
 
         // convert toml file to serialized data
         let config_toml: ConfigTOML = toml::from_str(&content).unwrap_or_else(|_|{
@@ -120,7 +119,7 @@ impl Config{
         };
 
         // match theme
-        let (foreground, background) = match config_toml.theme {
+        let (foreground, background, hfg, hbg) = match config_toml.theme {
 
             Some(theme) => {
 
@@ -129,47 +128,87 @@ impl Config{
                     "black" => Color::Black, 
                     "blue" => Color::Blue,
                     "green" => Color::Green,
-                    "red" => Color::Blue,
+                    "red" => Color::Red,
                     "yellow" => Color::Yellow,
                     "magenta" => Color::Magenta,
                     "cyan" => Color::Cyan,
                     "gray" => Color::Gray,
-                    "darkgray" => Color::DarkGray,
-                    "lightred" => Color::LightRed,
-                    "lightgreen" => Color::LightGreen,
-                    "lightyellow" => Color::LightYellow,
-                    "lightblue" => Color::LightBlue,
-                    "lightmagenta" => Color::LightMagenta,
-                    "lightcyan" => Color::LightCyan,
+                    "dark gray" => Color::DarkGray,
+                    "light red" => Color::LightRed,
+                    "light green" => Color::LightGreen,
+                    "light yellow" => Color::LightYellow,
+                    "light blue" => Color::LightBlue,
+                    "light magenta" => Color::LightMagenta,
+                    "light cyan" => Color::LightCyan,
                     "white" => Color::White,
                     _ => Color::Black,
                 };
 
-                let background = match theme.background.unwrap().to_ascii_lowercase().as_ref() {
+                let background = match theme.background.unwrap_or("Black".to_string()).to_ascii_lowercase().as_ref() {
                     "black" => Color::Black, 
                     "blue" => Color::Blue,
                     "green" => Color::Green,
-                    "red" => Color::Blue,
+                    "red" => Color::Red,
                     "yellow" => Color::Yellow,
                     "magenta" => Color::Magenta,
                     "cyan" => Color::Cyan,
                     "gray" => Color::Gray,
-                    "darkgray" => Color::DarkGray,
-                    "lightred" => Color::LightRed,
-                    "lightgreen" => Color::LightGreen,
-                    "lightyellow" => Color::LightYellow,
-                    "lightblue" => Color::LightBlue,
-                    "lightmagenta" => Color::LightMagenta,
-                    "lightcyan" => Color::LightCyan,
+                    "dark gray" => Color::DarkGray,
+                    "light red" => Color::LightRed,
+                    "light green" => Color::LightGreen,
+                    "light yellow" => Color::LightYellow,
+                    "light blue" => Color::LightBlue,
+                    "light magenta" => Color::LightMagenta,
+                    "light cyan" => Color::LightCyan,
                     "white" => Color::White,
                     _ => Color::Black,
                 };
 
-                (foreground, background)
+                let hfg = match theme.highlight_foreground.unwrap_or("Black".to_string()).to_ascii_lowercase().as_ref() {
+                    "black" => Color::Black, 
+                    "blue" => Color::Blue,
+                    "green" => Color::Green,
+                    "red" => Color::Red,
+                    "yellow" => Color::Yellow,
+                    "magenta" => Color::Magenta,
+                    "cyan" => Color::Cyan,
+                    "gray" => Color::Gray,
+                    "dark gray" => Color::DarkGray,
+                    "light red" => Color::LightRed,
+                    "light green" => Color::LightGreen,
+                    "light yellow" => Color::LightYellow,
+                    "light blue" => Color::LightBlue,
+                    "light magenta" => Color::LightMagenta,
+                    "light cyan" => Color::LightCyan,
+                    "white" => Color::White,
+                    _ => Color::Black,
+                };
+
+                let hbg = match theme.highlight_background.unwrap_or("Light Cyan".to_string()).to_ascii_lowercase().as_ref() {
+                    "black" => Color::Black, 
+                    "blue" => Color::Blue,
+                    "green" => Color::Green,
+                    "red" => Color::Red,
+                    "yellow" => Color::Yellow,
+                    "magenta" => Color::Magenta,
+                    "cyan" => Color::Cyan,
+                    "gray" => Color::Gray,
+                    "dark gray" => Color::DarkGray,
+                    "light red" => Color::LightRed,
+                    "light green" => Color::LightGreen,
+                    "light yellow" => Color::LightYellow,
+                    "light blue" => Color::LightBlue,
+                    "light magenta" => Color::LightMagenta,
+                    "light cyan" => Color::LightCyan,
+                    "white" => Color::White,
+                    _ => Color::Black,
+                };
+
+                (foreground, background, hfg, hbg)
             }, 
 
             None => {
-                (Color::LightCyan, Color::Black)
+                (Color::LightCyan, Color::Black, Color::Black, Color::LightCyan)
             }, 
             
         }; 
@@ -186,6 +225,8 @@ impl Config{
             queue_remove: queue_remove,
             foreground: foreground,
             background: background,
+            highlight_foreground: hfg, 
+            highlight_background: hbg,
         }
     }
 
@@ -215,6 +256,14 @@ impl Config{
 
     pub fn get_background(&self) -> Color {
         self.background
+    }
+
+    pub fn get_highlight_foreground(&self) -> Color {
+        self.highlight_foreground
+    }
+
+    pub fn get_highlight_background(&self) -> Color {
+        self.highlight_background
     }
 
 }
