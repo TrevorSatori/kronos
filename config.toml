@@ -1,5 +1,5 @@
 [theme]
-foreground = "white"
+foreground = "LightCyan"
 background = "black"
-highlight_foreground = "Red"
-highlight_background = "Yellow" 
+highlight_foreground = "black"
+highlight_background = "light cyan" 
