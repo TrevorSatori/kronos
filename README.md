@@ -1,7 +1,5 @@
 
 
-![Kronos Build](https://img.shields.io/appveyor/build/trevorsatori/kronos)
-
 # Kronos
 Terminal Music Player Written In Rust. For offline listening and local files.
 
