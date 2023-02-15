@@ -50,6 +50,7 @@ light blue |
 light magenta |
 light cyan | 
 white |
+rgb 0 - 255 |
                         
 # Using This Software?
 Make sure to leave a star.

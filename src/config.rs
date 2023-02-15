@@ -24,8 +24,6 @@ struct ConfigTOML{
 // select list item (up Down)
 // switch grid focus (Left, right)
 // chage tabs 
-// # Black, Red, Yellow, Blue, Magenta, Green, Cyan, Gray, DarkGray, LightRed, LightGreen
-// LightYellow, LightBlue, LightMagenta, LightCyan
  
 // everything
 #[derive(Debug)]
@@ -69,10 +67,11 @@ impl Config{
 
         // match theme
         let (foreground, background, hfg, hbg) = match config_toml.theme {
-
+            // 200, 100, 255
             Some(theme) => {
                 // item, if error
                 let map = |i: Option<String>, s: String| {
+                    let rgb = i.clone();
                     match i.unwrap_or(s).to_ascii_lowercase().as_ref() {
                         "black" => Color::Black, 
                         "blue" => Color::Blue,
@@ -90,7 +89,19 @@ impl Config{
                         "light magenta" => Color::LightMagenta,
                         "light cyan" => Color::LightCyan,
                         "white" => Color::White,
-                        _ => Color::Black,
+                        _ => {
+                            let colors: Vec<u8> = rgb.unwrap()
+                            .split(|i| i == ',')
+                            .map(|i| i.to_string().trim().parse().expect("Couldn't read RGB Values. Make sure each value is between 0 & 255"))
+                            .collect();
+
+                            if colors.len() == 3{
+                                Color::Rgb(colors[0], colors[1], colors[2])
+                            } else {
+                                println!("Couldn't read RGB Values. Make sure each value is comma seperated");
+                                Color::Black
+                            }   
+                        },
                     }
                 };
 
