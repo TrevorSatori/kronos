@@ -1,4 +1,5 @@
-use std::{fs};
+use std::{fs, path::PathBuf};
+use home::cargo_home;
 use serde::{Serialize, Deserialize};
 use toml;
 use tui::style::Color;
@@ -40,7 +41,7 @@ impl Config{
 
         // may want to add more path options later
         let config_paths = [
-            home::home_dir().unwrap().as_path().join(".config/kronos/config.toml")
+            home::home_dir().unwrap().as_path().join(".config/kronos/config.toml"),
         ];
 
         // placeholder to store config in

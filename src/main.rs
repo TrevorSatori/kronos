@@ -261,7 +261,8 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Co
     
 
     let playing_title = "| ".to_owned() + &app.get_current_song() + " |";
-
+    
+    // Note Gauge is using background color for progress
     let playing = Gauge::default()
         .block(Block::default()
         .title(playing_title)
@@ -269,7 +270,8 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Co
         .border_type(BorderType::Rounded)
         .title_alignment(Alignment::Center))
         .style(Style::default().fg(cfg.get_foreground()))
-        .gauge_style(Style::default().fg(Color::LightCyan))
+        .gauge_style(Style::default()
+        .fg(cfg.get_highlight_background()))
         .percent(app.song_progress());
     f.render_widget(playing, queue_playing[1]);
 }
