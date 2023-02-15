@@ -14,3 +14,4 @@ rodio = { version = "0.16.0", features = ["symphonia-all"]}
 lofty = "0.11.0"
 toml = "0.7.2"
 serde = {version = "1.0.152", features = ["derive"]}
+home = "0.5.4"

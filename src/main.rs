@@ -4,7 +4,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use lib::gen_funcs;
+use lib::{gen_funcs, stateful_list::StatefulList};
 use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -34,7 +34,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let app = App::new();
     let cfg = Config::new();
 
-    println!("{:#?}", cfg);
     let res = run_app(&mut terminal, app, cfg, tick_rate);
 
     // restore terminal
@@ -49,8 +48,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Err(err) = res {
         println!("{:?}", err)
     }
-
-    
 
     Ok(())
 }
@@ -87,7 +84,6 @@ fn run_app<B: Backend>(
                             app.browser_items.unselect();
                             app.set_input_mode(InputMode::Queue);
                             app.queue_items.next();
-
                         },
                         KeyCode::Tab => app.next(),
                         _ => {}
@@ -257,89 +253,41 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Colo
 
 
 fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, fg: Color, hfg: Color, hbg: Color){
+
+
+    let controls = vec![("Q", "Quit"), ("P", "Play / Pause"), ("G", "Skip Song"), 
+    ("A", "Add To Queue"), ("R", "Remove From Queue"), ("Enter", "Enter Directory"), ("Backspace", "Previous Directory"), 
+    ("Down", "Next Item"), ("Up", "Previous Item"), ("Right / Left", "Enter Queue / Browser"), ("Tab", "Change Tabs")
+    ];
+
+    // let controls = StatefulList::with_items(controls);
+
+
+    let controls: Vec<ListItem> = controls
+        .iter()
+        .map(|i| {
+            ListItem::new(Text::from(i.0.to_owned() + " - " + i.1))
+        })
+        .collect();
+
+    let controls = List::new(controls)
+        .block(Block::default()
+        .borders(Borders::ALL)
+        .title("Controls")
+        .title_alignment(Alignment::Left)
+        .border_type(BorderType::Rounded))
+        .style(Style::default().fg(fg))
+        .highlight_style(
+            Style::default()
+                .bg(hbg)
+                .fg(hfg)
+                .add_modifier(Modifier::BOLD),
+        )
+        .highlight_symbol(">> ");
+
     
-    //  
-    let keys = Layout::default()
-    .direction(Direction::Vertical)
-    .constraints([Constraint::Percentage(10), Constraint::Percentage(10),
-    Constraint::Percentage(10),Constraint::Percentage(10),Constraint::Percentage(10),
-    Constraint::Percentage(10),
-    Constraint::Percentage(10),Constraint::Percentage(10),Constraint::Percentage(10),].as_ref())
-    .split(chunks);
+    f.render_stateful_widget(controls, chunks, &mut app.queue_items.get_state());
 
-    let quit = Block::default().style(Style::default()
-    .bg(Color::Black)
-    .fg(fg))
-    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
-    .border_style(Style::default().fg(hfg))
-    .title("QUIT - Q"); 
-    f.render_widget(quit,  keys[0]);
-
-    let pause = Block::default().style(Style::default()
-    .bg(Color::Black)
-    .fg(fg))
-    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
-    .border_style(Style::default().fg(hfg))
-    .title("PAUSE / PLAY - SPACE or P");
-    f.render_widget(pause,  keys[1]);
-
-    let skip = Block::default().style(Style::default()
-    .bg(Color::Black)
-    .fg(fg))
-    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
-    .border_style(Style::default().fg(hfg))
-    .title("SKIP - G");
-    f.render_widget(skip,  keys[2]);
-
-    let add = Block::default().style(Style::default()
-    .bg(Color::Black)
-    .fg(fg))
-    .title_alignment(Alignment::Center)
-    .borders(Borders::ALL)
-    .border_style(Style::default().fg(hfg))
-    .title("ADD TO QUEUE - A");
-    f.render_widget(add,  keys[3]);
-
-    let play = Block::default().style(Style::default()
-    .bg(Color::Black)
-    .fg(fg))
-    .title_alignment(Alignment::Center)
-    .borders(Borders::ALL)
-    .border_style(Style::default().fg(hfg))
-    .title("PLAY / ENTER DIRECTORY - ENTER");
-    f.render_widget(play,  keys[4]);
-
-    let pdir = Block::default().style(Style::default()
-    .bg(Color::Black)
-    .fg(fg))
-    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
-    .border_style(Style::default().fg(hfg))
-    .title("PARENT DIRECTORY - BACKSPACE");
-    f.render_widget(pdir,  keys[5]);
-
-    let down = Block::default().style(Style::default()
-    .bg(Color::Black)
-    .fg(fg))
-    .title_alignment(Alignment::Center)
-    .border_type(BorderType::Rounded)
-    .title("NEXT ITEM - DOWN ARROW or J");
-    f.render_widget(down,  keys[6]);
-
-    let up = Block::default().style(Style::default()
-    .bg(Color::Black)
-    .fg(fg))
-    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
-    .border_style(Style::default().fg(hfg))
-    .title("PREVIOUS ITEM - UP ARROW or K");
-    f.render_widget(up,  keys[7]);
-
-    let toggle = Block::default().style(Style::default()
-    .bg(Color::Black)
-    .fg(fg))
-    .title_alignment(Alignment::Center).border_type(BorderType::Rounded)
-    .border_style(Style::default().fg(hfg))
-    .title("CHANGE FOCUS - LEFT & RIGHT ARROWS or H & L KEYS");
-    f.render_widget(toggle,  keys[8]);
 
     
 }
