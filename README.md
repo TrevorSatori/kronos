@@ -1,34 +1,65 @@
-
-
-# Kronos
-Terminal Music Player Written In Rust. For offline listening and local files.
+# Kronos - A Lightweight Terminal Music Player For Offline Listening
 
 ![Music](assets/music_tab.png?raw=true)
 ![Controls](assets/controls_tab.png?raw=true)
 
+# Table of contents
+1. [About](#About)
+2. [Specification](#Specifications)
+3. [Install](#Installation)
+    1. [Binary](#Binary)
+    2. [Build From Source](#Source)
+4. [Customization](#Customization)
+5. [Contribute](#Contribute)
 
-# Specs 
+## About 
+
+Kronos is a modern take on terminal music players. Written entirely in the Rust programming language to ensure minimal resource usage and memory safety. Meant for consuming local audio files without the need for internet.  
+
+## Specification
 
 Supports the following formats
 
-+ mp3
-+ mp4
-+ m4a 
-+ wav
-+ aac
-+ flac
+Format
+--- | 
+mp3 |
+mp4 |
+m4a |
+wav |
+aac |
+flac |
 
-# Setup
+## Installation
+
+*Works on Linux, untested on Mac*
+
+### Binary
 
 1. Download Release 
 ``
     https://github.com/TrevorSatori/Kronos/releases/tag/v0.69
 ``
-2. run program
+### Build From Source
 
-# Customization
+1. Enter the following in Terminal, or download zip from the code dropdown at top of the page.
+``
+    git clone https://github.com/TrevorSatori/Kronos.git
+``
 
-If the color scheme above isn't for you, change it. Kronos default config path is
+2. Change into directory
+``
+    cd Kronos/
+``
+
+3. compile and run
+``
+    cargo run
+``
+
+## Customization
+
+If the color scheme above isn't for you, it can be changed! Kronos default config path is
+
 ``
     ~/.config/kronos/config.toml
 ``
@@ -54,8 +85,12 @@ highlight_foreground = "white"
 highlight_background = "255, 165, 0" 
 ```
                         
-# Using This Software?
-Make sure to leave a star.
+## Contribute
+
+Currently this repo is being built by one full time college student. If you want to help besides leaving a star(Wink wink nudge nudge), make sure to open issues about all problems so they can be resolved immediately. Further, if anything could be added to make listening experience better feel free to fork the repo and send a pull request.
+
+## Calling All Ricers
+Actively looking for custom themes to integrate into Kronos, if you enjoy ricing leave a comment on the discussions page.
 
 
 
