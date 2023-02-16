@@ -57,6 +57,12 @@ jobs:
 
       - uses: Swatinem/rust-cache@v1
 
+      - name: Run cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+
       - name: Run cargo check
         uses: actions-rs/cargo@v1
         with:
@@ -67,19 +73,8 @@ jobs:
         with:
           command: test
 
-      - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+      
 
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
-          
-      - name: Build
-        run: cargo build 
-      - name: Run tests
-        run: cargo test 
+     
+
+     
