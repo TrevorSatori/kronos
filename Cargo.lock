@@ -3,20 +3,6 @@
 version = 3
 
 [[package]]
-name = "Kronos"
-version = "0.1.0"
-dependencies = [
- "crossterm",
- "glob",
- "home",
- "lofty",
- "rodio",
- "serde",
- "toml",
- "tui",
-]
-
-[[package]]
 name = "adler"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -374,6 +360,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "445dde2150c55e483f3d8416706b97ec8e8237c307e5b7b4b8dd15e6af2a0730"
 dependencies = [
  "wasm-bindgen",
+]
+
+[[package]]
+name = "kronos"
+version = "0.1.0"
+dependencies = [
+ "crossterm",
+ "glob",
+ "home",
+ "lofty",
+ "rodio",
+ "serde",
+ "toml",
+ "tui",
 ]
 
 [[package]]

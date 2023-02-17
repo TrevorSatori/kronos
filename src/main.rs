@@ -9,14 +9,18 @@ use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     text::{Text, Spans, Span},
     widgets::{Block, BorderType, Borders, List, ListItem, Gauge, Tabs, Cell, Row, Table},
     Frame, Terminal,
 };
 
 mod lib;
-use crate::lib::{app::*};
+
+mod app;
+use crate::app::*;
+
+
 pub mod config;
 use config::Config;
 

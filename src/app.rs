@@ -2,8 +2,7 @@ use std::{path::{PathBuf, Path}, thread::{self}, time::{Duration}};
 extern crate glob;
 use std::env;
 use crate::lib::stateful_list::*;
-use super::{queue::Queue, gen_funcs, stateful_table::*};
-use super::music_handler::{MusicHandle};
+use crate::lib::{queue::Queue, gen_funcs, stateful_table::*, music_handler::{MusicHandle}};
 
 
 #[derive(Clone, Copy)]

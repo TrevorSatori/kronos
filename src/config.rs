@@ -1,5 +1,4 @@
-use std::{fs, path::PathBuf};
-use home::cargo_home;
+use std::{fs};
 use serde::{Serialize, Deserialize};
 use toml;
 use tui::style::Color;
