@@ -34,6 +34,12 @@ flac |
 
 *Works on Linux, untested on Mac*
 
+### Arch Based Distros
+
+``
+    paru -S satori-kronos-git
+``
+
 ### Binary
 
 1. Download Release 
