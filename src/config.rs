@@ -18,12 +18,6 @@ struct Theme{
 struct ConfigTOML{
     theme: Option<Theme>, 
 }
-
-// cd
-// parent dir
-// select list item (up Down)
-// switch grid focus (Left, right)
-// chage tabs 
  
 // everything
 #[derive(Debug)]

@@ -78,11 +78,8 @@ impl Queue {
 
 
     pub fn pop(&mut self) -> PathBuf{
-
-       
         self.decrement_total_time();
         self.items.pop_front().unwrap()
-  
     }
 
     pub fn get_state(&self) -> ListState {

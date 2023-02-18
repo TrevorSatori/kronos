@@ -50,7 +50,6 @@ impl MusicHandle {
     pub fn set_time_played(&mut self, t: u16){
         *self.time_played.lock().unwrap() = t;
     }
-
     // set currently playing song
     pub fn set_currently_playing(&mut self, path: &PathBuf){
         self.currently_playing = gen_funcs::audio_display(&path);
