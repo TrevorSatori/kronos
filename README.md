@@ -24,12 +24,14 @@ Supports the following formats
 
 Format
 --- | 
+aac |
+flac |
 mp3 |
 mp4 |
 m4a |
+ogg |
 wav |
-aac |
-flac |
+
 
 ## Installation
 
