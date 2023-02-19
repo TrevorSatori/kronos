@@ -1,8 +1,4 @@
-use tui::{
-
-    widgets::{TableState},
-
-};
+use tui::widgets::TableState;
 
 pub struct StatefulTable<'a> {
     pub header: Vec<&'a str>,
@@ -10,13 +6,16 @@ pub struct StatefulTable<'a> {
     pub items: Vec<Vec<&'a str>>,
 }
 
+impl<'a> Default for StatefulTable<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl<'a> StatefulTable<'a> {
-
-
-    pub fn new() -> StatefulTable<'a> {
-        StatefulTable {
-            header: vec!["Keys", "Commands"],  
+    pub fn new() -> Self {
+        Self {
+            header: vec!["Keys", "Commands"],
             state: TableState::default(),
             items: vec![
                 vec!["Q", "Quit"],

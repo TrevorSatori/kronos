@@ -1,9 +1,15 @@
-use std::{path::{PathBuf, Path}, thread::{self}, time::{Duration}}; 
-extern crate glob;
-use std::env;
-use crate::lib::stateful_list::*;
-use crate::lib::{queue::Queue, gen_funcs, stateful_table::*, music_handler::{MusicHandle}};
+use std::{
+    env,
+    path::{Path, PathBuf},
+    thread,
+    time::Duration,
+};
 
+use kronos::gen_funcs;
+use kronos::music_handler::MusicHandle;
+use kronos::queue::Queue;
+use kronos::stateful_list::StatefulList;
+use kronos::stateful_table::StatefulTable;
 
 #[derive(Clone, Copy)]
 pub enum InputMode {
@@ -12,7 +18,7 @@ pub enum InputMode {
     Controls,
 }
 
-pub struct App<'a>{
+pub struct App<'a> {
     pub browser_items: StatefulList<String>,
     pub queue_items: Queue,
     pub control_table: StatefulTable<'a>,
@@ -23,9 +29,8 @@ pub struct App<'a>{
 }
 
 impl<'a> App<'a> {
-
-    pub fn new() -> App<'a> {
-        App {
+    pub fn new() -> Self {
+        Self {
             browser_items: StatefulList::with_items(gen_funcs::scan_folder()),
             queue_items: Queue::with_items(),
             control_table: StatefulTable::new(),
@@ -40,16 +45,15 @@ impl<'a> App<'a> {
         self.index = (self.index + 1) % self.titles.len();
     }
 
-    pub fn get_input_mode(&self) -> InputMode{
-        self.input_mode.clone()
+    pub fn get_input_mode(&self) -> InputMode {
+        self.input_mode
     }
 
-    pub fn set_input_mode(&mut self, in_mode: InputMode){
+    pub fn set_input_mode(&mut self, in_mode: InputMode) {
         self.input_mode = in_mode
     }
 
     pub fn get_current_song(&self) -> String {
-
         if self.music_handle.sink_empty() && self.queue_items.is_empty() {
             "CURRENT SONG".to_string()
         } else {
@@ -58,7 +62,7 @@ impl<'a> App<'a> {
     }
 
     // if item selected is folder, enter folder, else play record.
-    pub fn evaluate(&mut self){
+    pub fn evaluate(&mut self) {
         let join = self.selected_item();
         // if folder enter, else play song
         if join.is_dir() {
@@ -71,15 +75,14 @@ impl<'a> App<'a> {
     }
 
     // cd into selected directory
-    pub fn backpedal(&mut self){
-      env::set_current_dir("../").unwrap();
-      self.browser_items = StatefulList::with_items(gen_funcs::scan_folder());
-      self.browser_items.next();
+    pub fn backpedal(&mut self) {
+        env::set_current_dir("../").unwrap();
+        self.browser_items = StatefulList::with_items(gen_funcs::scan_folder());
+        self.browser_items.next();
     }
 
-
     // if queue has items and nothing playing, auto play
-    pub fn auto_play(&mut self){
+    pub fn auto_play(&mut self) {
         thread::sleep(Duration::from_millis(250));
         if self.music_handle.sink_empty() && !self.queue_items.is_empty() {
             self.music_handle.set_time_played(0);
@@ -87,11 +90,11 @@ impl<'a> App<'a> {
         }
     }
 
-
-    // if playing and 
-    pub fn song_progress(&mut self) -> u16 { 
+    // if playing and
+    pub fn song_progress(&mut self) -> u16 {
         let progress = || {
-            let percentage = (self.music_handle.get_time_played() * 100) / self.music_handle.get_song_length();
+            let percentage =
+                (self.music_handle.get_time_played() * 100) / self.music_handle.get_song_length();
             if percentage >= 100 {
                 100
             } else {
@@ -103,26 +106,24 @@ impl<'a> App<'a> {
         if self.music_handle.sink_empty() && self.queue_items.is_empty() {
             0
 
-        // if something playing, calculate progress 
+        // if something playing, calculate progress
         } else if !self.music_handle.sink_empty() {
             progress()
         // if nothing playing keep rolling
         } else {
-          self.auto_play();
-          0
+            self.auto_play();
+            0
         }
     }
-    
+
     // get file path
-    pub fn selected_item(&self) -> PathBuf{
+    pub fn selected_item(&self) -> PathBuf {
         let current_dir = env::current_dir().unwrap();
-        if self.browser_items.empty(){
-            return Path::new(&current_dir).into();
+        if self.browser_items.empty() {
+            Path::new(&current_dir).into()
         } else {
             let join = Path::join(&current_dir, Path::new(&self.browser_items.get_item()));
             join
         }
-    }  
-
+    }
 }
-

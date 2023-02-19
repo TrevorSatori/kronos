@@ -1,10 +1,14 @@
-use std::{path::{PathBuf, Path}, collections::VecDeque}; 
-use lofty::{Probe, AudioFile};
-use tui::{
-    widgets::{ListState},
+use std::{
+    collections::VecDeque,
+    path::{Path, PathBuf},
 };
 
-use super::gen_funcs::{bulk_add};
+use lofty::{AudioFile, Probe};
+use tui::widgets::ListState;
+
+use super::gen_funcs::bulk_add;
+use crate::constants::{SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
+
 pub struct Queue {
     state: ListState,
     items: VecDeque<PathBuf>,
@@ -13,17 +17,16 @@ pub struct Queue {
 }
 
 impl Queue {
-
-    pub fn with_items() -> Queue {
-        Queue {
+    pub fn with_items() -> Self {
+        Self {
             state: ListState::default(),
             items: VecDeque::new(),
             curr: 0,
-            total_time: 0, 
+            total_time: 0,
         }
     }
 
-     // return item at index
+    // return item at index
     pub fn get_item(&self) -> &PathBuf {
         &self.items[self.curr]
     }
@@ -37,47 +40,57 @@ impl Queue {
         self.items.len()
     }
 
-    pub fn get_total_time(&self)  -> String {
-
+    pub fn get_total_time(&self) -> String {
         // days
-        if self.total_time / 86400 >= 1 {
-    
-        let days = self.total_time / 86400;
-        let hours = (self.total_time % 86400) / 3600;
-        let minutes = (self.total_time %  3600) / 60;
-        
-        return " Total Length: ".to_string() + &days.to_string() + " days " + &hours.to_string() + " hours " + &minutes.to_string() + " minutes |"
+        if self.total_time / SECONDS_PER_DAY >= 1 {
+            let days = self.total_time / SECONDS_PER_DAY;
+            let hours = (self.total_time % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
+            let minutes = (self.total_time % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
 
+            format!(
+                " Total Length: {days} days {hours} hours {minutes} minutes |",
+                days = days,
+                hours = hours,
+                minutes = minutes
+            )
         // hours
-        } else if self.total_time / 3600 >= 1 {
+        } else if self.total_time / SECONDS_PER_HOUR >= 1 {
+            let hours = self.total_time / SECONDS_PER_HOUR;
+            let minutes = (self.total_time % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
+            let seconds = self.total_time % SECONDS_PER_MINUTE;
 
-            let hours = self.total_time / 3600;
-            let minutes = (self.total_time %  3600) / 60;
-            let seconds = self.total_time % 60;
-
-            return " Total Length: ".to_string() + &hours.to_string() + " hours " + &minutes.to_string() + " minutes " + &seconds.to_string() + " seconds |";  
-
+            format!(
+                " Total Length: {hours} hours {minutes} minutes {seconds} seconds |",
+                hours = hours,
+                minutes = minutes,
+                seconds = seconds
+            )
         // minutes
-        } else if self.total_time / 60 >= 1 {
+        } else if self.total_time / SECONDS_PER_MINUTE >= 1 {
+            let minutes = self.total_time / SECONDS_PER_MINUTE;
+            let seconds = self.total_time % SECONDS_PER_MINUTE;
 
-            let minutes = self.total_time / 60;
-            let seconds = self.total_time % 60;
-
-            return " Total Length: ".to_string() + &minutes.to_string() + " minutes " + &seconds.to_string() + " seconds |";  
+            format!(
+                " Total Length: {minutes} minutes {seconds} seconds |",
+                minutes = minutes,
+                seconds = seconds
+            )
         // seconds
         } else if self.total_time > 0 {
-            return " Total Length: ".to_string() + &self.total_time.to_string() + " seconds |";
+            format!(
+                " Total Length: {total_time} seconds |",
+                total_time = self.total_time
+            )
         } else {
-            return "".to_string();
-        } 
+            "".to_string()
+        }
     }
 
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
 
-
-    pub fn pop(&mut self) -> PathBuf{
+    pub fn pop(&mut self) -> PathBuf {
         self.decrement_total_time();
         self.items.pop_front().unwrap()
     }
@@ -86,33 +99,32 @@ impl Queue {
         self.state.clone()
     }
 
-    fn decrement_total_time(&mut self){
-
+    fn decrement_total_time(&mut self) {
         let item = self.items[self.curr].clone();
         let length = self.item_length(&item);
         self.total_time -= length;
     }
 
-
     // get audio file length
-    pub fn item_length(&mut self, path: &PathBuf) -> u32{
-
+    pub fn item_length(&mut self, path: &PathBuf) -> u32 {
         let path = Path::new(&path);
         let tagged_file = Probe::open(path)
-		.expect("ERROR: Bad path provided!")
-		.read()
-		.expect("ERROR: Failed to read file!");
+            .expect("ERROR: Bad path provided!")
+            .read()
+            .expect("ERROR: Failed to read file!");
 
         let properties = &tagged_file.properties();
-	    let duration = properties.duration();
-        
+        let duration = properties.duration();
+
         // update song length, currently playing
         duration.as_secs() as u32
     }
 
-    pub fn next(&mut self) { 
+    pub fn next(&mut self) {
         // check if empty
-        if self.items.is_empty(){return};
+        if self.items.is_empty() {
+            return;
+        };
 
         let i = match self.state.selected() {
             Some(i) => {
@@ -130,7 +142,9 @@ impl Queue {
 
     pub fn previous(&mut self) {
         // check if empty
-        if self.items.is_empty(){return};
+        if self.items.is_empty() {
+            return;
+        };
 
         let i = match self.state.selected() {
             Some(i) => {
@@ -150,14 +164,13 @@ impl Queue {
         self.state.select(None);
     }
 
-
-    pub fn add(&mut self, item: PathBuf){
-        if item.is_dir(){
+    pub fn add(&mut self, item: PathBuf) {
+        if item.is_dir() {
             let files = bulk_add(&item);
-            for f in files{
+            for f in files {
                 let length = self.item_length(&f);
                 self.total_time += length;
-                self.items.push_back(f);    
+                self.items.push_back(f);
             }
         } else {
             self.total_time += self.item_length(&item);
@@ -166,32 +179,23 @@ impl Queue {
     }
 
     // remove item from items vector
-    pub fn remove(&mut self){
-
-
-        // if list is empty ignore
-        if self.items.len() == 0{
-            return;
+    pub fn remove(&mut self) {
         // top of queue
-        } else if self.items.len() == 1 {
-            
+        if self.items.len() == 1 {
             self.decrement_total_time();
             self.items.remove(self.curr);
             self.unselect();
         // if at bottom of queue, remove item and select item above above
-        } else if (self.state.selected().unwrap()) >= (self.items.len() - 1){
-            
+        } else if self.state.selected().unwrap() >= (self.items.len() - 1) {
             self.decrement_total_time();
 
             self.items.remove(self.curr);
             self.curr -= 1;
             self.state.select(Some(self.curr));
         // else delete item
-        } else if !(self.items.is_empty()){
+        } else if !self.items.is_empty() {
             self.decrement_total_time();
             self.items.remove(self.curr);
         };
-
     }
-
 }
