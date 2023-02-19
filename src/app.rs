@@ -63,7 +63,7 @@ impl<'a> App<'a> {
         self.active_tab = self.active_tab.next();
     }
 
-    pub fn get_input_mode(&self) -> InputMode {
+    pub fn input_mode(&self) -> InputMode {
         self.input_mode
     }
 
@@ -71,11 +71,11 @@ impl<'a> App<'a> {
         self.input_mode = in_mode
     }
 
-    pub fn get_current_song(&self) -> String {
+    pub fn current_song(&self) -> String {
         if self.music_handle.sink_empty() && self.queue_items.is_empty() {
             "CURRENT SONG".to_string()
         } else {
-            self.music_handle.get_currently_playing()
+            self.music_handle.currently_playing()
         }
     }
 
@@ -112,7 +112,7 @@ impl<'a> App<'a> {
     pub fn song_progress(&mut self) -> u16 {
         let progress = || {
             let percentage =
-                (self.music_handle.get_time_played() * 100) / self.music_handle.get_song_length();
+                (self.music_handle.time_played() * 100) / self.music_handle.song_length();
             if percentage >= 100 {
                 100
             } else {
@@ -140,7 +140,7 @@ impl<'a> App<'a> {
         if self.browser_items.empty() {
             Path::new(&current_dir).into()
         } else {
-            let join = Path::join(&current_dir, Path::new(&self.browser_items.get_item()));
+            let join = Path::join(&current_dir, Path::new(&self.browser_items.item()));
             join
         }
     }

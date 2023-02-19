@@ -37,15 +37,15 @@ impl MusicHandle {
         }
     }
 
-    pub fn get_currently_playing(&self) -> String {
+    pub fn currently_playing(&self) -> String {
         self.currently_playing.clone()
     }
 
-    pub fn get_song_length(&self) -> u16 {
+    pub fn song_length(&self) -> u16 {
         self.song_length
     }
 
-    pub fn get_time_played(&self) -> u16 {
+    pub fn time_played(&self) -> u16 {
         *self.time_played.lock().unwrap()
     }
 
@@ -76,7 +76,7 @@ impl MusicHandle {
             .unwrap()
             .to_string();
         self.set_currently_playing(&path);
-        self.song_length(&path);
+        self.update_song_length(&path);
 
         // reinitialize due to rodio crate
         self.sink = Arc::new(Sink::try_new(&self.music_output.1).unwrap());
@@ -124,7 +124,8 @@ impl MusicHandle {
         self.sink.stop();
     }
 
-    pub fn song_length(&mut self, path: &PathBuf) {
+    /// Update `self.song_length` with the provided file.
+    pub fn update_song_length(&mut self, path: &PathBuf) {
         let path = Path::new(&path);
         let tagged_file = Probe::open(path)
             .expect("ERROR: Bad path provided!")
