@@ -61,7 +61,7 @@ flac |
 
 3. compile and run
 ``
-    cargo run
+    cargo run --release
 ``
 
 ## Customization
