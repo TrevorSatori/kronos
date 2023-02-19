@@ -180,15 +180,19 @@ impl Queue {
 
     // remove item from items vector
     pub fn remove(&mut self) {
+
+
+        if self.items.len() == 0{
+            return
+        
         // top of queue
-        if self.items.len() == 1 {
+        } else if self.items.len() == 1 {
             self.decrement_total_time();
             self.items.remove(self.curr);
             self.unselect();
         // if at bottom of queue, remove item and select item above above
         } else if self.state.selected().unwrap() >= (self.items.len() - 1) {
             self.decrement_total_time();
-
             self.items.remove(self.curr);
             self.curr -= 1;
             self.state.select(Some(self.curr));
