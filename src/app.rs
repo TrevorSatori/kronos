@@ -1,12 +1,15 @@
 use std::{
+    env,
     path::{Path, PathBuf},
-    thread::{self},
+    thread,
     time::Duration,
 };
-extern crate glob;
-use kronos::stateful_list::*;
-use kronos::{gen_funcs, music_handler::MusicHandle, queue::Queue, stateful_table::*};
-use std::env;
+
+use kronos::gen_funcs;
+use kronos::music_handler::MusicHandle;
+use kronos::queue::Queue;
+use kronos::stateful_list::StatefulList;
+use kronos::stateful_table::StatefulTable;
 
 #[derive(Clone, Copy)]
 pub enum InputMode {

@@ -1,11 +1,17 @@
+mod app;
+mod config;
+
+use std::{
+    error::Error,
+    io,
+    time::{Duration, Instant},
+};
+
 use crossterm::{
     event::{self, DisableMouseCapture, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use kronos::gen_funcs;
-use std::time::{Duration, Instant};
-use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -15,11 +21,9 @@ use tui::{
     Frame, Terminal,
 };
 
-mod app;
-use crate::app::*;
-
-pub mod config;
+use app::{App, InputMode};
 use config::Config;
+use kronos::gen_funcs;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // setup terminal

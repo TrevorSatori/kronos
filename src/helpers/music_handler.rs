@@ -1,16 +1,17 @@
 use std::{
+    fs::File,
+    io::BufReader,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
     thread,
     time::Duration,
 };
-extern crate glob;
+
 use lofty::{AudioFile, Probe};
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
-use std::fs::File;
-use std::io::BufReader;
 
 use super::gen_funcs;
+
 pub struct MusicHandle {
     music_output: Arc<(OutputStream, OutputStreamHandle)>,
     sink: Arc<Sink>,

@@ -1,10 +1,11 @@
-use glob::{glob_with, MatchOptions};
-use lofty::{Accessor, Probe, TaggedFileExt};
 use std::{
     env,
     ffi::OsStr,
     path::{Path, PathBuf},
 };
+
+use glob::{glob_with, MatchOptions};
+use lofty::{Accessor, Probe, TaggedFileExt};
 
 // converts queue items to what's displayed for user
 pub fn audio_display(path: &PathBuf) -> String {

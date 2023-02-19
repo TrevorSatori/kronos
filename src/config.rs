@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::fs;
-use toml;
+
+use serde::{Deserialize, Serialize};
 use tui::style::Color;
 
 #[derive(Serialize, Deserialize, Debug)]

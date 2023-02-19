@@ -1,11 +1,13 @@
-use lofty::{AudioFile, Probe};
 use std::{
     collections::VecDeque,
     path::{Path, PathBuf},
 };
+
+use lofty::{AudioFile, Probe};
 use tui::widgets::ListState;
 
 use super::gen_funcs::bulk_add;
+
 pub struct Queue {
     state: ListState,
     items: VecDeque<PathBuf>,
