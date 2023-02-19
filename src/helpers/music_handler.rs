@@ -1,7 +1,7 @@
 use std::{
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
-    thread::{self},
+    thread,
     time::Duration,
 };
 extern crate glob;
@@ -19,9 +19,15 @@ pub struct MusicHandle {
     currently_playing: String,
 }
 
+impl Default for MusicHandle {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MusicHandle {
-    pub fn new() -> MusicHandle {
-        MusicHandle {
+    pub fn new() -> Self {
+        Self {
             music_output: Arc::new(OutputStream::try_default().unwrap()),
             sink: Arc::new(Sink::new_idle().0), // more efficient way, shouldnt have to do twice?
             song_length: 0,
@@ -43,11 +49,7 @@ impl MusicHandle {
     }
 
     pub fn sink_empty(&self) -> bool {
-        if self.sink.len() == 0 {
-            true
-        } else {
-            false
-        }
+        self.sink.empty()
     }
 
     pub fn set_time_played(&mut self, t: u16) {
@@ -55,7 +57,7 @@ impl MusicHandle {
     }
     // set currently playing song
     pub fn set_currently_playing(&mut self, path: &PathBuf) {
-        self.currently_playing = gen_funcs::audio_display(&path);
+        self.currently_playing = gen_funcs::audio_display(path);
     }
 
     // update current song and play

@@ -47,7 +47,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     terminal.show_cursor()?;
 
     if let Err(err) = res {
-        println!("{:?}", err)
+        eprintln!("{:?}", err)
     }
 
     Ok(())
@@ -178,7 +178,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
         );
     f.render_widget(tabs, chunks[0]);
 
-    let _inner = match app.index {
+    match app.index {
         0 => music_tab(f, app, chunks[1], cfg),
         1 => instructions_tab(f, app, chunks[1], cfg),
         _ => unreachable!(),
@@ -230,13 +230,14 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Co
         .queue_items
         .get_items()
         .iter()
-        .map(|i| ListItem::new(Text::from(gen_funcs::audio_display(&i))))
+        .map(|i| ListItem::new(Text::from(gen_funcs::audio_display(i))))
         .collect();
 
-    let queue_title = "| Queue: ".to_owned()
-        + &app.queue_items.get_length().to_string()
-        + " Songs |"
-        + &app.queue_items.get_total_time();
+    let queue_title = format!(
+        "| Queue: {queue_items} Songs |{total_time}",
+        queue_items = app.queue_items.get_length(),
+        total_time = app.queue_items.get_total_time(),
+    );
 
     let queue_items = List::new(queue_items)
         .block(
@@ -260,7 +261,7 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Co
         &mut app.queue_items.get_state(),
     );
 
-    let playing_title = "| ".to_owned() + &app.get_current_song() + " |";
+    let playing_title = format!("| {current_song} |", current_song = app.get_current_song());
 
     // Note Gauge is using background color for progress
     let playing = Gauge::default()

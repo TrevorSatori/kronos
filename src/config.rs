@@ -26,8 +26,14 @@ pub struct Config {
     highlight_background: Color,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Config {
-    pub fn new() -> Config {
+    pub fn new() -> Self {
         // may want to add more path options later
         let config_paths = [home::home_dir()
             .unwrap()
@@ -41,8 +47,8 @@ impl Config {
         for config in config_paths {
             let result: Result<String, std::io::Error> = fs::read_to_string(config);
 
-            if result.is_ok() {
-                content = result.unwrap();
+            if let Ok(file_content) = result {
+                content = file_content;
                 break;
             }
         }
@@ -50,12 +56,14 @@ impl Config {
         // convert toml file to serialized data
         let config_toml: ConfigTOML = toml::from_str(&content).unwrap_or_else(|_| {
             // if config file not found, set defaults
-            println!("FAILED TO CREATE CONFIG OBJECT FROM FILE");
+            eprintln!("FAILED TO CREATE CONFIG OBJECT FROM FILE");
             ConfigTOML { theme: None }
         });
 
         // match theme
-        let (foreground, background, hfg, hbg) = match config_toml.theme {
+        let (foreground, background, highlight_foreground, highlight_background) = match config_toml
+            .theme
+        {
             // 200, 100, 255
             Some(theme) => {
                 // item, if error
@@ -87,7 +95,7 @@ impl Config {
                             if colors.len() == 3 {
                                 Color::Rgb(colors[0], colors[1], colors[2])
                             } else {
-                                println!("Couldn't read RGB Values. Make sure each value is comma seperated");
+                                eprintln!("Couldn't read RGB Values. Make sure each value is comma seperated");
                                 Color::Black
                             }
                         }
@@ -110,16 +118,16 @@ impl Config {
             ),
         };
 
-        Config {
+        Self {
             // quit: quit, // gathered from above
             // play_pause: play_pause,
             // skip: skip,
             // queue_add: queue_add,
             // queue_remove: queue_remove,
-            foreground: foreground,
-            background: background,
-            highlight_foreground: hfg,
-            highlight_background: hbg,
+            foreground,
+            background,
+            highlight_foreground,
+            highlight_background,
         }
     }
 

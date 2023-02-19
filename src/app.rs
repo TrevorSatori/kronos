@@ -26,8 +26,8 @@ pub struct App<'a> {
 }
 
 impl<'a> App<'a> {
-    pub fn new() -> App<'a> {
-        App {
+    pub fn new() -> Self {
+        Self {
             browser_items: StatefulList::with_items(gen_funcs::scan_folder()),
             queue_items: Queue::with_items(),
             control_table: StatefulTable::new(),
@@ -43,7 +43,7 @@ impl<'a> App<'a> {
     }
 
     pub fn get_input_mode(&self) -> InputMode {
-        self.input_mode.clone()
+        self.input_mode
     }
 
     pub fn set_input_mode(&mut self, in_mode: InputMode) {
@@ -117,7 +117,7 @@ impl<'a> App<'a> {
     pub fn selected_item(&self) -> PathBuf {
         let current_dir = env::current_dir().unwrap();
         if self.browser_items.empty() {
-            return Path::new(&current_dir).into();
+            Path::new(&current_dir).into()
         } else {
             let join = Path::join(&current_dir, Path::new(&self.browser_items.get_item()));
             join

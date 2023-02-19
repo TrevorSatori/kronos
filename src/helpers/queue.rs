@@ -14,8 +14,8 @@ pub struct Queue {
 }
 
 impl Queue {
-    pub fn with_items() -> Queue {
-        Queue {
+    pub fn with_items() -> Self {
+        Self {
             state: ListState::default(),
             items: VecDeque::new(),
             curr: 0,
@@ -44,43 +44,42 @@ impl Queue {
             let hours = (self.total_time % 86400) / 3600;
             let minutes = (self.total_time % 3600) / 60;
 
-            return " Total Length: ".to_string()
-                + &days.to_string()
-                + " days "
-                + &hours.to_string()
-                + " hours "
-                + &minutes.to_string()
-                + " minutes |";
-
+            format!(
+                " Total Length: {days} days {hours} hours {minutes} minutes |",
+                days = days,
+                hours = hours,
+                minutes = minutes
+            )
         // hours
         } else if self.total_time / 3600 >= 1 {
             let hours = self.total_time / 3600;
             let minutes = (self.total_time % 3600) / 60;
             let seconds = self.total_time % 60;
 
-            return " Total Length: ".to_string()
-                + &hours.to_string()
-                + " hours "
-                + &minutes.to_string()
-                + " minutes "
-                + &seconds.to_string()
-                + " seconds |";
-
+            format!(
+                " Total Length: {hours} hours {minutes} minutes {seconds} seconds |",
+                hours = hours,
+                minutes = minutes,
+                seconds = seconds
+            )
         // minutes
         } else if self.total_time / 60 >= 1 {
             let minutes = self.total_time / 60;
             let seconds = self.total_time % 60;
 
-            return " Total Length: ".to_string()
-                + &minutes.to_string()
-                + " minutes "
-                + &seconds.to_string()
-                + " seconds |";
+            format!(
+                " Total Length: {minutes} minutes {seconds} seconds |",
+                minutes = minutes,
+                seconds = seconds
+            )
         // seconds
         } else if self.total_time > 0 {
-            return " Total Length: ".to_string() + &self.total_time.to_string() + " seconds |";
+            format!(
+                " Total Length: {total_time} seconds |",
+                total_time = self.total_time
+            )
         } else {
-            return "".to_string();
+            "".to_string()
         }
     }
 
@@ -178,23 +177,20 @@ impl Queue {
 
     // remove item from items vector
     pub fn remove(&mut self) {
-        // if list is empty ignore
-        if self.items.len() == 0 {
-            return;
         // top of queue
-        } else if self.items.len() == 1 {
+        if self.items.len() == 1 {
             self.decrement_total_time();
             self.items.remove(self.curr);
             self.unselect();
         // if at bottom of queue, remove item and select item above above
-        } else if (self.state.selected().unwrap()) >= (self.items.len() - 1) {
+        } else if self.state.selected().unwrap() >= (self.items.len() - 1) {
             self.decrement_total_time();
 
             self.items.remove(self.curr);
             self.curr -= 1;
             self.state.select(Some(self.curr));
         // else delete item
-        } else if !(self.items.is_empty()) {
+        } else if !self.items.is_empty() {
             self.decrement_total_time();
             self.items.remove(self.curr);
         };
