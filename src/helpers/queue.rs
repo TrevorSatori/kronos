@@ -7,6 +7,7 @@ use lofty::{AudioFile, Probe};
 use tui::widgets::ListState;
 
 use super::gen_funcs::bulk_add;
+use crate::constants::{SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
 
 pub struct Queue {
     state: ListState,
@@ -41,10 +42,10 @@ impl Queue {
 
     pub fn get_total_time(&self) -> String {
         // days
-        if self.total_time / 86400 >= 1 {
-            let days = self.total_time / 86400;
-            let hours = (self.total_time % 86400) / 3600;
-            let minutes = (self.total_time % 3600) / 60;
+        if self.total_time / SECONDS_PER_DAY >= 1 {
+            let days = self.total_time / SECONDS_PER_DAY;
+            let hours = (self.total_time % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
+            let minutes = (self.total_time % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
 
             format!(
                 " Total Length: {days} days {hours} hours {minutes} minutes |",
@@ -53,10 +54,10 @@ impl Queue {
                 minutes = minutes
             )
         // hours
-        } else if self.total_time / 3600 >= 1 {
-            let hours = self.total_time / 3600;
-            let minutes = (self.total_time % 3600) / 60;
-            let seconds = self.total_time % 60;
+        } else if self.total_time / SECONDS_PER_HOUR >= 1 {
+            let hours = self.total_time / SECONDS_PER_HOUR;
+            let minutes = (self.total_time % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
+            let seconds = self.total_time % SECONDS_PER_MINUTE;
 
             format!(
                 " Total Length: {hours} hours {minutes} minutes {seconds} seconds |",
@@ -65,9 +66,9 @@ impl Queue {
                 seconds = seconds
             )
         // minutes
-        } else if self.total_time / 60 >= 1 {
-            let minutes = self.total_time / 60;
-            let seconds = self.total_time % 60;
+        } else if self.total_time / SECONDS_PER_MINUTE >= 1 {
+            let minutes = self.total_time / SECONDS_PER_MINUTE;
+            let seconds = self.total_time % SECONDS_PER_MINUTE;
 
             format!(
                 " Total Length: {minutes} minutes {seconds} seconds |",
