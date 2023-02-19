@@ -3,7 +3,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use lib::gen_funcs;
+use kronos::gen_funcs;
 use std::time::{Duration, Instant};
 use std::{error::Error, io};
 use tui::{
@@ -14,8 +14,6 @@ use tui::{
     widgets::{Block, BorderType, Borders, Cell, Gauge, List, ListItem, Row, Table, Tabs},
     Frame, Terminal,
 };
-
-mod lib;
 
 mod app;
 use crate::app::*;

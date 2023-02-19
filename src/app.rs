@@ -4,8 +4,8 @@ use std::{
     time::Duration,
 };
 extern crate glob;
-use crate::lib::stateful_list::*;
-use crate::lib::{gen_funcs, music_handler::MusicHandle, queue::Queue, stateful_table::*};
+use kronos::stateful_list::*;
+use kronos::{gen_funcs, music_handler::MusicHandle, queue::Queue, stateful_table::*};
 use std::env;
 
 #[derive(Clone, Copy)]
