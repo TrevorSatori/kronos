@@ -21,7 +21,7 @@ use tui::{
     Frame, Terminal,
 };
 
-use app::{App, InputMode};
+use app::{App, AppTab, InputMode};
 use config::Config;
 use kronos::gen_funcs;
 
@@ -173,7 +173,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
     // Box Around Tab Items
     let tabs = Tabs::new(titles)
         .block(Block::default().borders(Borders::ALL).title("Tabs"))
-        .select(app.index)
+        .select(app.active_tab as usize)
         .style(Style::default().fg(cfg.get_foreground()))
         .highlight_style(
             Style::default()
@@ -182,10 +182,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
         );
     f.render_widget(tabs, chunks[0]);
 
-    match app.index {
-        0 => music_tab(f, app, chunks[1], cfg),
-        1 => instructions_tab(f, app, chunks[1], cfg),
-        _ => unreachable!(),
+    match app.active_tab {
+        AppTab::Music => music_tab(f, app, chunks[1], cfg),
+        AppTab::Controls => instructions_tab(f, app, chunks[1], cfg),
     };
 }
 

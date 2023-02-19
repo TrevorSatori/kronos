@@ -18,6 +18,24 @@ pub enum InputMode {
     Controls,
 }
 
+/// Represents the active tab state.
+#[derive(Debug, Clone, Copy)]
+pub enum AppTab {
+    Music = 0,
+    Controls,
+}
+
+impl AppTab {
+    /// Get the next tab in the list.
+    pub fn next(&self) -> Self {
+        match self {
+            Self::Music => Self::Controls,
+            // Wrap around to the first tab.
+            Self::Controls => Self::Music,
+        }
+    }
+}
+
 pub struct App<'a> {
     pub browser_items: StatefulList<String>,
     pub queue_items: Queue,
@@ -25,7 +43,7 @@ pub struct App<'a> {
     pub music_handle: MusicHandle,
     input_mode: InputMode,
     pub titles: Vec<&'a str>,
-    pub index: usize,
+    pub active_tab: AppTab,
 }
 
 impl<'a> App<'a> {
@@ -37,12 +55,12 @@ impl<'a> App<'a> {
             music_handle: MusicHandle::new(),
             input_mode: InputMode::Browser,
             titles: vec!["Music", "Controls"],
-            index: 0,
+            active_tab: AppTab::Music,
         }
     }
 
     pub fn next(&mut self) {
-        self.index = (self.index + 1) % self.titles.len();
+        self.active_tab = self.active_tab.next();
     }
 
     pub fn get_input_mode(&self) -> InputMode {
