@@ -13,7 +13,7 @@ struct Theme {
 
 // for tables
 #[derive(Serialize, Deserialize, Debug)]
-struct ConfigTOML {
+struct ConfigToml {
     theme: Option<Theme>,
 }
 
@@ -54,10 +54,10 @@ impl Config {
         }
 
         // convert toml file to serialized data
-        let config_toml: ConfigTOML = toml::from_str(&content).unwrap_or_else(|_| {
+        let config_toml: ConfigToml = toml::from_str(&content).unwrap_or_else(|_| {
             // if config file not found, set defaults
             eprintln!("FAILED TO CREATE CONFIG OBJECT FROM FILE");
-            ConfigTOML { theme: None }
+            ConfigToml { theme: None }
         });
 
         // match theme
