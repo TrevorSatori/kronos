@@ -145,7 +145,6 @@ impl Queue {
         if self.items.is_empty() {
             return;
         };
-
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
@@ -180,11 +179,8 @@ impl Queue {
 
     // remove item from items vector
     pub fn remove(&mut self) {
-
-
         if self.items.len() == 0{
             return
-        
         // top of queue
         } else if self.items.len() == 1 {
             self.decrement_total_time();
