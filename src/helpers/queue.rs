@@ -179,9 +179,8 @@ impl Queue {
 
     // remove item from items vector
     pub fn remove(&mut self) {
-        if self.items.len() == 0{
-            return
-        // top of queue
+        if self.items.is_empty() {
+            // top of queue
         } else if self.items.len() == 1 {
             self.decrement_total_time();
             self.items.remove(self.curr);
