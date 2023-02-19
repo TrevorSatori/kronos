@@ -1,6 +1,4 @@
-use tui::{
-    widgets::{ListState},
-};
+use tui::widgets::ListState;
 
 // TODO encapsulation
 pub struct StatefulList<T> {
@@ -10,7 +8,6 @@ pub struct StatefulList<T> {
 }
 
 impl<T> StatefulList<T> {
-
     pub fn with_items(items: Vec<T>) -> StatefulList<T> {
         StatefulList {
             state: ListState::default(),
@@ -38,9 +35,10 @@ impl<T> StatefulList<T> {
     }
 
     pub fn next(&mut self) {
-        
         // check if empty
-        if self.items.is_empty(){return};
+        if self.items.is_empty() {
+            return;
+        };
 
         let i = match self.state.selected() {
             Some(i) => {
@@ -58,7 +56,9 @@ impl<T> StatefulList<T> {
 
     pub fn previous(&mut self) {
         // check if empty
-        if self.items.is_empty(){return};
+        if self.items.is_empty() {
+            return;
+        };
 
         let i = match self.state.selected() {
             Some(i) => {
@@ -77,5 +77,4 @@ impl<T> StatefulList<T> {
     pub fn unselect(&mut self) {
         self.state.select(None);
     }
-
 }

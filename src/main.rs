@@ -1,17 +1,17 @@
-use std::{time::{Instant, Duration}};
 use crossterm::{
     event::{self, DisableMouseCapture, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use lib::{gen_funcs};
+use lib::gen_funcs;
+use std::time::{Duration, Instant};
 use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    text::{Text, Spans, Span},
-    widgets::{Block, BorderType, Borders, List, ListItem, Gauge, Tabs, Cell, Row, Table},
+    text::{Span, Spans, Text},
+    widgets::{Block, BorderType, Borders, Cell, Gauge, List, ListItem, Row, Table, Tabs},
     Frame, Terminal,
 };
 
@@ -20,7 +20,6 @@ mod lib;
 mod app;
 use crate::app::*;
 
-
 pub mod config;
 use config::Config;
 
@@ -28,7 +27,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, DisableMouseCapture)?; 
+    execute!(stdout, EnterAlternateScreen, DisableMouseCapture)?;
 
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
@@ -56,11 +55,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-
 fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     mut app: App,
-    cfg: Config, 
+    cfg: Config,
     tick_rate: Duration,
 ) -> io::Result<()> {
     let mut last_tick = Instant::now();
@@ -71,7 +69,6 @@ fn run_app<B: Backend>(
             .checked_sub(last_tick.elapsed())
             .unwrap_or_else(|| Duration::from_secs(0));
         if crossterm::event::poll(timeout)? {
-
             // different keys depending on which browser tab
             if let Event::Key(key) = event::read()? {
                 match app.get_input_mode() {
@@ -84,18 +81,18 @@ fn run_app<B: Backend>(
                         KeyCode::Backspace => app.backpedal(),
                         KeyCode::Down | KeyCode::Char('j') => app.browser_items.next(),
                         KeyCode::Up | KeyCode::Char('k') => app.browser_items.previous(),
-                        KeyCode::Right |  KeyCode::Char('l') => {
+                        KeyCode::Right | KeyCode::Char('l') => {
                             app.browser_items.unselect();
                             app.set_input_mode(InputMode::Queue);
                             app.queue_items.next();
-                        },
+                        }
                         KeyCode::Tab => {
                             app.next();
                             match app.get_input_mode() {
                                 InputMode::Controls => app.set_input_mode(InputMode::Browser),
                                 _ => app.set_input_mode(InputMode::Controls),
                             };
-                        }, 
+                        }
                         _ => {}
                     },
                     InputMode::Queue => match key.code {
@@ -110,14 +107,14 @@ fn run_app<B: Backend>(
                             app.queue_items.unselect();
                             app.set_input_mode(InputMode::Browser);
                             app.browser_items.next();
-                        }, 
+                        }
                         KeyCode::Tab => {
                             app.next();
                             match app.get_input_mode() {
                                 InputMode::Controls => app.set_input_mode(InputMode::Browser),
                                 _ => app.set_input_mode(InputMode::Controls),
                             };
-                        }, 
+                        }
                         _ => {}
                     },
                     InputMode::Controls => match key.code {
@@ -126,16 +123,16 @@ fn run_app<B: Backend>(
                         KeyCode::Char('g') => app.music_handle.skip(),
                         KeyCode::Down | KeyCode::Char('j') => app.control_table.next(),
                         KeyCode::Up | KeyCode::Char('k') => app.control_table.previous(),
-                        KeyCode::Tab =>  {
+                        KeyCode::Tab => {
                             app.next();
                             match app.get_input_mode() {
                                 InputMode::Controls => app.set_input_mode(InputMode::Browser),
                                 _ => app.set_input_mode(InputMode::Controls),
                             };
-                        }, 
+                        }
                         _ => {}
-                    }
-                }                   
+                    },
+                }
             }
         }
         if last_tick.elapsed() >= tick_rate {
@@ -144,23 +141,20 @@ fn run_app<B: Backend>(
     }
 }
 
-
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
-    
     // Total Size
     let size = f.size();
 
     // chunking from top to bottom, 3 gets tabs displayed, the rest goes to item layouts
     let chunks = Layout::default()
-    .direction(Direction::Vertical)
-    .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
-    .split(size);
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
+        .split(size);
 
-    // Main Background block, covers entire screen 
+    // Main Background block, covers entire screen
     let block = Block::default().style(Style::default().bg(cfg.get_background()));
     f.render_widget(block, size);
 
-    
     // Tab Title items collected
     let titles = app
         .titles
@@ -176,30 +170,29 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
 
     // Box Around Tab Items
     let tabs = Tabs::new(titles)
-    .block(Block::default().borders(Borders::ALL).title("Tabs"))
-    .select(app.index)
-    .style(Style::default().fg(cfg.get_foreground()))
-    .highlight_style(
-        Style::default()
-            .add_modifier(Modifier::BOLD)
-            .bg(cfg.get_background()),
-    );
+        .block(Block::default().borders(Borders::ALL).title("Tabs"))
+        .select(app.index)
+        .style(Style::default().fg(cfg.get_foreground()))
+        .highlight_style(
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .bg(cfg.get_background()),
+        );
     f.render_widget(tabs, chunks[0]);
 
     let _inner = match app.index {
-        0 => music_tab(f, app,chunks[1], cfg),
-        1 => instructions_tab(f, app,chunks[1], cfg),
+        0 => music_tab(f, app, chunks[1], cfg),
+        1 => instructions_tab(f, app, chunks[1], cfg),
         _ => unreachable!(),
-    };      
+    };
 }
 
-fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Config){
-    
+fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Config) {
     // split into left / right
     let browser_queue = Layout::default()
-    .direction(Direction::Horizontal)
-    .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
-    .split(chunks);
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
+        .split(chunks);
     // f.size()
 
     // queue and playing sections
@@ -208,21 +201,23 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Co
         .constraints([Constraint::Percentage(75), Constraint::Percentage(25)].as_ref())
         .split(browser_queue[1]);
 
-    
     // convert app items to text
-    let items: Vec<ListItem> = app.browser_items.get_items()
-    .iter()
-    .map(|i| {
-        ListItem::new(Text::from(i.to_owned()))
-    })
-    .collect();
+    let items: Vec<ListItem> = app
+        .browser_items
+        .get_items()
+        .iter()
+        .map(|i| ListItem::new(Text::from(i.to_owned())))
+        .collect();
 
     // Create a List from all list items and highlight the currently selected one // RENDER 1
     let items = List::new(items)
-        .block(Block::default().borders(Borders::ALL)
-        .title("Browser")
-        .title_alignment(Alignment::Left)
-        .border_type(BorderType::Rounded))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Browser")
+                .title_alignment(Alignment::Left)
+                .border_type(BorderType::Rounded),
+        )
         .style(Style::default().fg(cfg.get_foreground()))
         .highlight_style(
             Style::default()
@@ -233,25 +228,26 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Co
         .highlight_symbol(">> ");
     f.render_stateful_widget(items, browser_queue[0], &mut app.browser_items.get_state());
 
-
-    let queue_items: Vec<ListItem> = app.queue_items.get_items()
+    let queue_items: Vec<ListItem> = app
+        .queue_items
+        .get_items()
         .iter()
-        .map(|i| {
-            
-            ListItem::new(Text::from(gen_funcs::audio_display(&i)))
-        })
+        .map(|i| ListItem::new(Text::from(gen_funcs::audio_display(&i))))
         .collect();
-    
-    let queue_title = "| Queue: ".to_owned() 
-    + &app.queue_items.get_length().to_string() + " Songs |" + &app.queue_items.get_total_time();
-    
-    
+
+    let queue_title = "| Queue: ".to_owned()
+        + &app.queue_items.get_length().to_string()
+        + " Songs |"
+        + &app.queue_items.get_total_time();
+
     let queue_items = List::new(queue_items)
-        .block(Block::default()
-        .borders(Borders::ALL)
-        .title(queue_title)
-        .title_alignment(Alignment::Left)
-        .border_type(BorderType::Rounded))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(queue_title)
+                .title_alignment(Alignment::Left)
+                .border_type(BorderType::Rounded),
+        )
         .style(Style::default().fg(cfg.get_foreground()))
         .highlight_style(
             Style::default()
@@ -260,54 +256,53 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Co
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol(">> ");
-    f.render_stateful_widget(queue_items, queue_playing[0], &mut app.queue_items.get_state());
-
-    
+    f.render_stateful_widget(
+        queue_items,
+        queue_playing[0],
+        &mut app.queue_items.get_state(),
+    );
 
     let playing_title = "| ".to_owned() + &app.get_current_song() + " |";
-    
+
     // Note Gauge is using background color for progress
     let playing = Gauge::default()
-        .block(Block::default()
-        .title(playing_title)
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded)
-        .title_alignment(Alignment::Center))
+        .block(
+            Block::default()
+                .title(playing_title)
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .title_alignment(Alignment::Center),
+        )
         .style(Style::default().fg(cfg.get_foreground()))
-        .gauge_style(Style::default()
-        .fg(cfg.get_highlight_background()))
+        .gauge_style(Style::default().fg(cfg.get_highlight_background()))
         .percent(app.song_progress());
     f.render_widget(playing, queue_playing[1]);
 }
 
-
-fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Config){
-
+fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Config) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(2)
-        .constraints(
-            [
-                Constraint::Percentage(100),
-            ]
-            .as_ref(),
-        )
+        .constraints([Constraint::Percentage(100)].as_ref())
         .split(chunks);
 
     // map header to tui object
-    let header = app.control_table.header
-    .iter()
-    .map(|h| Cell::from(*h).style(Style::default().fg(cfg.get_highlight_foreground())));
-    
+    let header = app
+        .control_table
+        .header
+        .iter()
+        .map(|h| Cell::from(*h).style(Style::default().fg(cfg.get_highlight_foreground())));
+
     // Header and first row
     let header = Row::new(header)
-        .style(Style::default()
-        .bg(cfg.get_background())
-        .fg(cfg.get_foreground()))
+        .style(
+            Style::default()
+                .bg(cfg.get_background())
+                .fg(cfg.get_foreground()),
+        )
         .height(1)
         .bottom_margin(1);
 
-    
     // map items from table to Row items
     let rows = app.control_table.items.iter().map(|item| {
         let height = item
@@ -322,14 +317,17 @@ fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, c
 
     let t = Table::new(rows)
         .header(header)
-        .block(Block::default().borders(Borders::ALL)
-        .title("Controls"))
-        .style(Style::default().fg(cfg.get_foreground()).bg(cfg.get_background()))
+        .block(Block::default().borders(Borders::ALL).title("Controls"))
+        .style(
+            Style::default()
+                .fg(cfg.get_foreground())
+                .bg(cfg.get_background()),
+        )
         .highlight_style(
             Style::default()
                 .add_modifier(Modifier::BOLD)
                 .bg(cfg.get_highlight_background())
-                .fg(cfg.get_highlight_foreground())
+                .fg(cfg.get_highlight_foreground()),
         )
         // .highlight_symbol(">> ")
         .widths(&[
@@ -338,7 +336,4 @@ fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, c
             Constraint::Min(10),
         ]);
     f.render_stateful_widget(t, chunks[0], &mut app.control_table.state);
-    
 }
-
-

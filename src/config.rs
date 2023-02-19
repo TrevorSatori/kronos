@@ -1,47 +1,44 @@
-use std::{fs};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::fs;
 use toml;
 use tui::style::Color;
 
-
 #[derive(Serialize, Deserialize, Debug)]
-struct Theme{
+struct Theme {
     foreground: Option<String>,
-    background: Option<String>, 
+    background: Option<String>,
     highlight_foreground: Option<String>,
     highlight_background: Option<String>,
 }
 
-
 // for tables
 #[derive(Serialize, Deserialize, Debug)]
-struct ConfigTOML{
-    theme: Option<Theme>, 
+struct ConfigTOML {
+    theme: Option<Theme>,
 }
- 
+
 // everything
 #[derive(Debug)]
-pub struct Config{
+pub struct Config {
     foreground: Color,
     background: Color,
-    highlight_foreground: Color, 
+    highlight_foreground: Color,
     highlight_background: Color,
 }
 
-
-impl Config{
+impl Config {
     pub fn new() -> Config {
-
         // may want to add more path options later
-        let config_paths = [
-            home::home_dir().unwrap().as_path().join(".config/kronos/config.toml"),
-        ];
+        let config_paths = [home::home_dir()
+            .unwrap()
+            .as_path()
+            .join(".config/kronos/config.toml")];
 
         // placeholder to store config in
         let mut content: String = "".to_owned();
 
         // for filepaths in above array, check to see if there is a config
-        for config in config_paths{
+        for config in config_paths {
             let result: Result<String, std::io::Error> = fs::read_to_string(config);
 
             if result.is_ok() {
@@ -51,12 +48,10 @@ impl Config{
         }
 
         // convert toml file to serialized data
-        let config_toml: ConfigTOML = toml::from_str(&content).unwrap_or_else(|_|{
+        let config_toml: ConfigTOML = toml::from_str(&content).unwrap_or_else(|_| {
             // if config file not found, set defaults
             println!("FAILED TO CREATE CONFIG OBJECT FROM FILE");
-            ConfigTOML{
-                theme: None,
-            }
+            ConfigTOML { theme: None }
         });
 
         // match theme
@@ -67,7 +62,7 @@ impl Config{
                 let map = |i: Option<String>, s: String| {
                     let rgb = i.clone();
                     match i.unwrap_or(s).to_ascii_lowercase().as_ref() {
-                        "black" => Color::Black, 
+                        "black" => Color::Black,
                         "blue" => Color::Blue,
                         "green" => Color::Green,
                         "red" => Color::Red,
@@ -89,13 +84,13 @@ impl Config{
                             .map(|i| i.to_string().trim().parse().expect("Couldn't read RGB Values. Make sure each value is between 0 & 255"))
                             .collect();
 
-                            if colors.len() == 3{
+                            if colors.len() == 3 {
                                 Color::Rgb(colors[0], colors[1], colors[2])
                             } else {
                                 println!("Couldn't read RGB Values. Make sure each value is comma seperated");
                                 Color::Black
-                            }   
-                        },
+                            }
+                        }
                     }
                 };
 
@@ -105,28 +100,31 @@ impl Config{
                 let hbg = map(theme.highlight_background, "Light Cyan".to_string());
 
                 (foreground, background, hfg, hbg)
-            }, 
+            }
 
-            None => {
-                (Color::LightCyan, Color::Black, Color::Black, Color::LightCyan)
-            }, 
-        }; 
- 
-        Config {  
-            // quit: quit, // gathered from above 
+            None => (
+                Color::LightCyan,
+                Color::Black,
+                Color::Black,
+                Color::LightCyan,
+            ),
+        };
+
+        Config {
+            // quit: quit, // gathered from above
             // play_pause: play_pause,
             // skip: skip,
             // queue_add: queue_add,
             // queue_remove: queue_remove,
             foreground: foreground,
             background: background,
-            highlight_foreground: hfg, 
+            highlight_foreground: hfg,
             highlight_background: hbg,
         }
     }
 
     // pub fn get_quit(&self) -> KeyCode {
-        
+
     //     KeyCode::Char(self.quit)
     // }
 
@@ -161,5 +159,4 @@ impl Config{
     pub fn get_highlight_background(&self) -> Color {
         self.highlight_background
     }
-
 }
