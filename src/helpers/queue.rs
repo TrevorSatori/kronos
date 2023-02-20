@@ -26,9 +26,14 @@ impl Queue {
         }
     }
 
-    // return item at index
-    pub fn item(&self) -> &PathBuf {
-        &self.items[self.curr]
+     // return item at index
+     pub fn item(&self) -> Option<&PathBuf> {
+
+        if self.items.is_empty(){
+            None
+        } else {
+            Some(&self.items[self.curr])
+        }
     }
 
     // return all items contained in vector
