@@ -27,20 +27,20 @@ impl Queue {
     }
 
     // return item at index
-    pub fn get_item(&self) -> &PathBuf {
+    pub fn item(&self) -> &PathBuf {
         &self.items[self.curr]
     }
 
     // return all items contained in vector
-    pub fn get_items(&self) -> &VecDeque<PathBuf> {
+    pub fn items(&self) -> &VecDeque<PathBuf> {
         &self.items
     }
 
-    pub fn get_length(&self) -> usize {
+    pub fn length(&self) -> usize {
         self.items.len()
     }
 
-    pub fn get_total_time(&self) -> String {
+    pub fn total_time(&self) -> String {
         // days
         if self.total_time / SECONDS_PER_DAY >= 1 {
             let days = self.total_time / SECONDS_PER_DAY;
@@ -95,7 +95,7 @@ impl Queue {
         self.items.pop_front().unwrap()
     }
 
-    pub fn get_state(&self) -> ListState {
+    pub fn state(&self) -> ListState {
         self.state.clone()
     }
 
@@ -179,9 +179,8 @@ impl Queue {
 
     // remove item from items vector
     pub fn remove(&mut self) {
-        if self.items.len() == 0{
-            return
-        // top of queue
+        if self.items.is_empty() {
+            // top of queue
         } else if self.items.len() == 1 {
             self.decrement_total_time();
             self.items.remove(self.curr);

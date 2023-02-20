@@ -33,11 +33,11 @@ impl<'a> StatefulTable<'a> {
         }
     }
 
-    // pub fn get_header(&self) -> Vec<&'a str> {
+    // pub fn header(&self) -> Vec<&'a str> {
     //     self.header
     // }
 
-    // pub fn get_items(&self) -> Vec<Vec<&'a str>> {
+    // pub fn items(&self) -> Vec<Vec<&'a str>> {
     //     self.items
     // }
 

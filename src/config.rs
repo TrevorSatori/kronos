@@ -13,7 +13,7 @@ struct Theme {
 
 // for tables
 #[derive(Serialize, Deserialize, Debug)]
-struct ConfigTOML {
+struct ConfigToml {
     theme: Option<Theme>,
 }
 
@@ -54,10 +54,10 @@ impl Config {
         }
 
         // convert toml file to serialized data
-        let config_toml: ConfigTOML = toml::from_str(&content).unwrap_or_else(|_| {
+        let config_toml: ConfigToml = toml::from_str(&content).unwrap_or_else(|_| {
             // if config file not found, set defaults
             eprintln!("FAILED TO CREATE CONFIG OBJECT FROM FILE");
-            ConfigTOML { theme: None }
+            ConfigToml { theme: None }
         });
 
         // match theme
@@ -131,40 +131,40 @@ impl Config {
         }
     }
 
-    // pub fn get_quit(&self) -> KeyCode {
+    // pub fn quit_key(&self) -> KeyCode {
 
     //     KeyCode::Char(self.quit)
     // }
 
-    // pub fn get_play_pause(&self) -> char {
+    // pub fn play_pause_key(&self) -> char {
     //     self.play_pause
     // }
 
-    // pub fn get_skip(&self) -> char {
+    // pub fn skip_key(&self) -> char {
     //     self.skip
     // }
 
-    // pub fn get_queue_add(&self) -> char {
+    // pub fn queue_add_key(&self) -> char {
     //     self.queue_add
     // }
 
-    // pub fn get_queue_remove(&self) -> char {
+    // pub fn queue_remove_key(&self) -> char {
     //     self.queue_remove
     // }
 
-    pub fn get_foreground(&self) -> Color {
+    pub fn foreground(&self) -> Color {
         self.foreground
     }
 
-    pub fn get_background(&self) -> Color {
+    pub fn background(&self) -> Color {
         self.background
     }
 
-    pub fn get_highlight_foreground(&self) -> Color {
+    pub fn highlight_foreground(&self) -> Color {
         self.highlight_foreground
     }
 
-    pub fn get_highlight_background(&self) -> Color {
+    pub fn highlight_background(&self) -> Color {
         self.highlight_background
     }
 }

@@ -17,16 +17,16 @@ impl<T> StatefulList<T> {
     }
 
     // return all items contained in vector
-    pub fn get_items(&self) -> &Vec<T> {
+    pub fn items(&self) -> &Vec<T> {
         &self.items
     }
 
     // return item at index
-    pub fn get_item(&self) -> &T {
+    pub fn item(&self) -> &T {
         &self.items[self.curr]
     }
 
-    pub fn get_state(&self) -> ListState {
+    pub fn state(&self) -> ListState {
         self.state.clone()
     }
 

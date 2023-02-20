@@ -18,6 +18,24 @@ pub enum InputMode {
     Controls,
 }
 
+/// Represents the active tab state.
+#[derive(Debug, Clone, Copy)]
+pub enum AppTab {
+    Music = 0,
+    Controls,
+}
+
+impl AppTab {
+    /// Get the next tab in the list.
+    pub fn next(&self) -> Self {
+        match self {
+            Self::Music => Self::Controls,
+            // Wrap around to the first tab.
+            Self::Controls => Self::Music,
+        }
+    }
+}
+
 pub struct App<'a> {
     pub browser_items: StatefulList<String>,
     pub queue_items: Queue,
@@ -25,7 +43,7 @@ pub struct App<'a> {
     pub music_handle: MusicHandle,
     input_mode: InputMode,
     pub titles: Vec<&'a str>,
-    pub index: usize,
+    pub active_tab: AppTab,
 }
 
 impl<'a> App<'a> {
@@ -37,15 +55,15 @@ impl<'a> App<'a> {
             music_handle: MusicHandle::new(),
             input_mode: InputMode::Browser,
             titles: vec!["Music", "Controls"],
-            index: 0,
+            active_tab: AppTab::Music,
         }
     }
 
     pub fn next(&mut self) {
-        self.index = (self.index + 1) % self.titles.len();
+        self.active_tab = self.active_tab.next();
     }
 
-    pub fn get_input_mode(&self) -> InputMode {
+    pub fn input_mode(&self) -> InputMode {
         self.input_mode
     }
 
@@ -53,11 +71,11 @@ impl<'a> App<'a> {
         self.input_mode = in_mode
     }
 
-    pub fn get_current_song(&self) -> String {
+    pub fn current_song(&self) -> String {
         if self.music_handle.sink_empty() && self.queue_items.is_empty() {
             "CURRENT SONG".to_string()
         } else {
-            self.music_handle.get_currently_playing()
+            self.music_handle.currently_playing()
         }
     }
 
@@ -94,7 +112,7 @@ impl<'a> App<'a> {
     pub fn song_progress(&mut self) -> u16 {
         let progress = || {
             let percentage =
-                (self.music_handle.get_time_played() * 100) / self.music_handle.get_song_length();
+                (self.music_handle.time_played() * 100) / self.music_handle.song_length();
             if percentage >= 100 {
                 100
             } else {
@@ -122,7 +140,7 @@ impl<'a> App<'a> {
         if self.browser_items.empty() {
             Path::new(&current_dir).into()
         } else {
-            let join = Path::join(&current_dir, Path::new(&self.browser_items.get_item()));
+            let join = Path::join(&current_dir, Path::new(&self.browser_items.item()));
             join
         }
     }
