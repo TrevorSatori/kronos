@@ -93,6 +93,9 @@ foreground = "200, 100, 250"
 background = "black"
 highlight_foreground = "white"
 highlight_background = "255, 165, 0" 
+
+[layout]
+progress_bar = 20
 ```
                         
 ## Contribute
