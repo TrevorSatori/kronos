@@ -1,5 +1,5 @@
 [![Cargo Build](https://github.com/TrevorSatori/Kronos/actions/workflows/main.yml/badge.svg)](https://github.com/TrevorSatori/Kronos/actions/workflows/main.yml)
-# Kronos - A Lightweight Terminal Music Player For Offline Listening
+# Kronos - A Customizable Terminal Music Player For Offline Listening
 
 ![Music](assets/music_tab.png?raw=true)
 ![Controls](assets/controls_tab.png?raw=true)
@@ -100,7 +100,7 @@ progress_bar = 20
                         
 ## Contribute
 
-Currently this repo is being built by one full time college student. If you want to help besides leaving a star(Wink wink nudge nudge), make sure to open issues about all problems so they can be resolved immediately. For further ways to contribute visit the ![CONTRIBUTING.md](CONTRIBUTING.md)
+Currently this repo is being built by one full time college student. If you want to help besides leaving a star(Wink wink nudge nudge), make sure to open issues about all problems so they can be resolved immediately. For further ways to contribute visit the ![CONTRIBUTE PAGE](CONTRIBUTING.md)
 
 ## Calling All Ricers
 Actively looking for custom themes to integrate into Kronos, if you enjoy ricing leave a comment on the discussions page.
