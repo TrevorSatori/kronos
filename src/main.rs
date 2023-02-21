@@ -202,10 +202,10 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Co
         .split(chunks);
     // f.size()
 
-    // queue and playing sections
+    // queue and playing sections (sltdkh)
     let queue_playing = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(75), Constraint::Percentage(25)].as_ref())
+        .constraints([Constraint::Percentage(100 - cfg.progress_bar()), Constraint::Percentage(cfg.progress_bar())].as_ref())
         .split(browser_queue[1]);
 
     // convert app items to text
