@@ -100,7 +100,7 @@ progress_bar = 20
                         
 ## Contribute
 
-Currently this repo is being built by one full time college student. If you want to help besides leaving a star(Wink wink nudge nudge), make sure to open issues about all problems so they can be resolved immediately. Further, if anything could be added to make listening experience better feel free to fork the repo and send a pull request.
+Currently this repo is being built by one full time college student. If you want to help besides leaving a star(Wink wink nudge nudge), make sure to open issues about all problems so they can be resolved immediately. For further ways to contribute visit the ![CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Calling All Ricers
 Actively looking for custom themes to integrate into Kronos, if you enjoy ricing leave a comment on the discussions page.
