@@ -13,14 +13,14 @@ struct Theme {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Layout {
-    progress_bar: Option<u16>
+    progress_bar: Option<u16>,
 }
 
 // for tables
 #[derive(Serialize, Deserialize, Debug)]
 struct ConfigToml {
     theme: Option<Theme>,
-    layout: Option<Layout>
+    layout: Option<Layout>,
 }
 
 // everything
@@ -30,7 +30,7 @@ pub struct Config {
     background: Color,
     highlight_foreground: Color,
     highlight_background: Color,
-    progress_bar: u16
+    progress_bar: u16,
 }
 
 impl Default for Config {
@@ -64,9 +64,9 @@ impl Config {
         let config_toml: ConfigToml = toml::from_str(&content).unwrap_or_else(|_| {
             // if config file not found, set defaults
             eprintln!("FAILED TO CREATE CONFIG OBJECT FROM FILE");
-            ConfigToml { 
+            ConfigToml {
                 theme: None,
-                layout: None 
+                layout: None,
             }
         });
 
@@ -129,9 +129,7 @@ impl Config {
         };
 
         let progress_bar = match config_toml.layout {
-            Some(i) => {
-               i.progress_bar.unwrap_or(35)
-            }, 
+            Some(i) => i.progress_bar.unwrap_or(35),
             None => 35,
         };
 

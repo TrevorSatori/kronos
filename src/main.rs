@@ -102,11 +102,9 @@ fn run_app<B: Backend>(
                         KeyCode::Char('p') => app.music_handle.play_pause(),
                         KeyCode::Char('g') => app.music_handle.skip(),
                         KeyCode::Enter => {
-
-                            if let Some(i) = app.queue_items.item(){
+                            if let Some(i) = app.queue_items.item() {
                                 app.music_handle.play(i.clone());
                             };
-                            
                         }
                         KeyCode::Down | KeyCode::Char('j') => app.queue_items.next(),
                         KeyCode::Up | KeyCode::Char('k') => app.queue_items.previous(),
@@ -205,7 +203,13 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Co
     // queue and playing sections (sltdkh)
     let queue_playing = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(100 - cfg.progress_bar()), Constraint::Percentage(cfg.progress_bar())].as_ref())
+        .constraints(
+            [
+                Constraint::Percentage(100 - cfg.progress_bar()),
+                Constraint::Percentage(cfg.progress_bar()),
+            ]
+            .as_ref(),
+        )
         .split(browser_queue[1]);
 
     // convert app items to text
