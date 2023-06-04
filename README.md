@@ -53,7 +53,7 @@ wav |
 
 1. Enter the following in Terminal, or download zip from the code dropdown at top of the page.
 ``
-    git clone https://github.com/TrevorSatori/Kronos.git
+    git clone --depth=1 https://github.com/TrevorSatori/Kronos.git
 ``
 
 2. Change into directory
