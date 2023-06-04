@@ -1,0 +1,17 @@
+[package]
+name = "kronos"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+tui = { version = "0.19", features = ['serde'] }
+crossterm = "0.25"
+glob = "0.3.1"
+rodio = { version = "0.16.0", features = ["symphonia-all"]}
+lofty = "0.11.0"
+toml = "0.7.2"
+serde = {version = "1.0.152", features = ["derive"]}
+home = "0.5.4"
