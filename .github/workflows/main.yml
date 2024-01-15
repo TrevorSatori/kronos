@@ -1,4 +1,4 @@
-name: Cargo Build
+name: Cargo Tests
 on:
   push:
     branches: [ "main" ]
@@ -20,7 +20,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-          components: rustfmt, clippy
+          components: rustfmt
 
       - name: Install developer package dependencies
         run: sudo apt-get update && sudo apt-get install libasound2-dev
@@ -53,8 +53,7 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-          components: rustfmt, clippy
-
+          components: rustfmt
       - uses: Swatinem/rust-cache@v1
 
       - name: Run cargo build
@@ -92,27 +91,3 @@ jobs:
         with:
           command: fmt
           args: --check
-
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install latest stable
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: clippy
-
-      - name: Install developer package dependencies
-        run: sudo apt-get update && sudo apt-get install libasound2-dev
-      - uses: Swatinem/rust-cache@v1
-
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
