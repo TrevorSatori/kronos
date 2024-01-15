@@ -141,12 +141,8 @@ impl MusicHandle {
         self.song_length = duration.as_secs() as u16;
     }
 
-    pub fn set_volume(&mut self, volume:f32){
-        self.volume=volume;
-        self.sink.set_volume(self.volume)
-    }
     pub fn change_volume(&mut self, volume:f32){
-        self.volume=self.volume+volume;
+        self.volume+=volume;
         if self.volume<0. {
             self.volume=0.;
         }else if self.volume>1. {
