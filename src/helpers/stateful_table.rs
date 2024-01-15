@@ -29,6 +29,8 @@ impl<'a> StatefulTable<'a> {
                 vec!["Up", "Previous Item"],
                 vec!["Right / Left", "Enter Queue / Browser"],
                 vec!["Tab", "Change Tabs"],
+                vec!["+", "Volume Up"],
+                vec!["-", "Volume Down"],
             ],
         }
     }
