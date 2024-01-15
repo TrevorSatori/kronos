@@ -88,6 +88,8 @@ fn run_app<B: Backend>(
                             app.set_input_mode(InputMode::Queue);
                             app.queue_items.next();
                         }
+                        KeyCode::Char('-') => app.music_handle.change_volume(-0.05),
+                        KeyCode::Char('+') => app.music_handle.change_volume(0.05),
                         KeyCode::Tab => {
                             app.next();
                             match app.input_mode() {
