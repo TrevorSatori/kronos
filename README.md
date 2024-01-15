@@ -1,4 +1,4 @@
-[![Cargo Build](https://github.com/TrevorSatori/Kronos/actions/workflows/main.yml/badge.svg)](https://github.com/TrevorSatori/Kronos/actions/workflows/main.yml)
+[![Cargo Tests](https://github.com/TrevorSatori/Kronos/actions/workflows/main.yml/badge.svg)](https://github.com/TrevorSatori/Kronos/actions/workflows/main.yml)
 # Kronos - A Customizable Terminal Music Player For Offline Listening
 
 ![Music](assets/music_tab.png?raw=true)
