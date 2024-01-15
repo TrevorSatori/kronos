@@ -18,7 +18,7 @@ pub struct MusicHandle {
     song_length: u16,
     time_played: Arc<Mutex<u16>>,
     currently_playing: String,
-    volume: f32
+    volume: f32,
 }
 
 impl Default for MusicHandle {
@@ -35,7 +35,7 @@ impl MusicHandle {
             song_length: 0,
             time_played: Arc::new(Mutex::new(0)),
             currently_playing: "CURRENT SONG".to_string(),
-            volume: 1.
+            volume: 1.,
         }
     }
 
@@ -141,14 +141,13 @@ impl MusicHandle {
         self.song_length = duration.as_secs() as u16;
     }
 
-    pub fn change_volume(&mut self, volume:f32){
-        self.volume+=volume;
-        if self.volume<0. {
-            self.volume=0.;
-        }else if self.volume>1. {
-            self.volume=1.;
+    pub fn change_volume(&mut self, volume: f32) {
+        self.volume += volume;
+        if self.volume < 0. {
+            self.volume = 0.;
+        } else if self.volume > 1. {
+            self.volume = 1.;
         }
         self.sink.set_volume(self.volume)
     }
-
 }
