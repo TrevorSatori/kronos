@@ -45,49 +45,31 @@ impl Queue {
     }
 
     pub fn total_time(&self) -> String {
-        // days
-        if self.total_time / SECONDS_PER_DAY >= 1 {
-            let days = self.total_time / SECONDS_PER_DAY;
-            let hours = (self.total_time % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
-            let minutes = (self.total_time % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
+        
+        let days = self.total_time / SECONDS_PER_DAY;
+        let hours = (self.total_time % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
+        let minutes = (self.total_time % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
+        let seconds = self.total_time % SECONDS_PER_MINUTE;
 
-            format!(
-                " Total Length: {days} days {hours} hours {minutes} minutes |",
-                days = days,
-                hours = hours,
-                minutes = minutes
-            )
-        // hours
-        } else if self.total_time / SECONDS_PER_HOUR >= 1 {
-            let hours = self.total_time / SECONDS_PER_HOUR;
-            let minutes = (self.total_time % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
-            let seconds = self.total_time % SECONDS_PER_MINUTE;
+        let mut time_parts = vec![];
 
-            format!(
-                " Total Length: {hours} hours {minutes} minutes {seconds} seconds |",
-                hours = hours,
-                minutes = minutes,
-                seconds = seconds
-            )
-        // minutes
-        } else if self.total_time / SECONDS_PER_MINUTE >= 1 {
-            let minutes = self.total_time / SECONDS_PER_MINUTE;
-            let seconds = self.total_time % SECONDS_PER_MINUTE;
-
-            format!(
-                " Total Length: {minutes} minutes {seconds} seconds |",
-                minutes = minutes,
-                seconds = seconds
-            )
-        // seconds
-        } else if self.total_time > 0 {
-            format!(
-                " Total Length: {total_time} seconds |",
-                total_time = self.total_time
-            )
-        } else {
-            "".to_string()
+        if days > 0 {
+            time_parts.push(format!("{days} days"));
+        } 
+        
+        if hours > 0 || days > 0 {
+            time_parts.push(format!("{hours} hours"));
         }
+
+        if minutes > 0 || hours > 0 || days > 0 { // Include minutes if there are any hours or days
+            time_parts.push(format!("{minutes} minutes"));
+        }
+        if seconds > 0 || time_parts.is_empty() { // Always include seconds if there's no other component
+            time_parts.push(format!("{seconds} seconds"));
+        }
+    
+        format!(" Total Length: {} |", time_parts.join(" "))
+    
     }
 
     pub fn is_empty(&self) -> bool {
