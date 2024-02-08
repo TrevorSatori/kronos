@@ -45,7 +45,6 @@ impl Queue {
     }
 
     pub fn total_time(&self) -> String {
-        
         let days = self.total_time / SECONDS_PER_DAY;
         let hours = (self.total_time % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
         let minutes = (self.total_time % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
@@ -55,21 +54,22 @@ impl Queue {
 
         if days > 0 {
             time_parts.push(format!("{days} days"));
-        } 
-        
+        }
+
         if hours > 0 || days > 0 {
             time_parts.push(format!("{hours} hours"));
         }
 
-        if minutes > 0 || hours > 0 || days > 0 { // Include minutes if there are any hours or days
+        if minutes > 0 || hours > 0 || days > 0 {
+            // Include minutes if there are any hours or days
             time_parts.push(format!("{minutes} minutes"));
         }
-        if seconds > 0 || time_parts.is_empty() { // Always include seconds if there's no other component
+        if seconds > 0 || time_parts.is_empty() {
+            // Always include seconds if there's no other component
             time_parts.push(format!("{seconds} seconds"));
         }
-    
+
         format!(" Total Length: {} |", time_parts.join(" "))
-    
     }
 
     pub fn is_empty(&self) -> bool {
