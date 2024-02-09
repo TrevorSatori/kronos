@@ -1,10 +1,11 @@
 use std::{
+    collections::HashSet,
     env,
     ffi::OsStr,
     path::{Path, PathBuf},
 };
 
-use glob::{glob_with, MatchOptions};
+use glob::glob;
 use lofty::{Accessor, Probe, TaggedFileExt};
 
 // converts queue items to what's displayed for user
@@ -31,35 +32,29 @@ pub fn audio_display(path: &PathBuf) -> String {
     }
 }
 
-// scans folder for valid files, returns matches
-pub fn scan_folder() -> Vec<String> {
+pub fn scan_and_filter_directory() -> Vec<String> {
     let mut items = Vec::new();
-    let options = MatchOptions {
-        case_sensitive: false,
-        require_literal_separator: false,
-        require_literal_leading_dot: false,
-    };
+    let valid_extensions: HashSet<&str> = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac"]
+        .iter()
+        .cloned()
+        .collect();
 
-    for item in glob_with("./*", options)
-        .expect("Failed to read glob pattern")
-        .flatten()
-    {
-        let current_dir = env::current_dir().unwrap();
-        let join = Path::join(&current_dir, Path::new(&item));
-        let ext = Path::new(&item).extension().and_then(OsStr::to_str);
+    let current_dir = env::current_dir().expect("Failed to get current directory");
 
-        // if folder  (Hide Private) enter, else play song
-        if (join.is_dir() && !join.file_name().unwrap().to_str().unwrap().starts_with('.'))
-            || (ext.is_some()
-                && (item.extension().unwrap() == "mp3"
-                    || item.extension().unwrap() == "mp4"
-                    || item.extension().unwrap() == "m4a"
-                    || item.extension().unwrap() == "wav"
-                    || item.extension().unwrap() == "flac"
-                    || item.extension().unwrap() == "ogg"
-                    || item.extension().unwrap() == "aac"))
-        {
-            items.push(item.to_str().unwrap().to_owned());
+    // Use glob instead of glob_with, which uses default match options
+    for entry in glob("./*").expect("Failed to read glob pattern").flatten() {
+        let path = current_dir.join(&entry);
+
+        if path.is_dir() {
+            if let Some(file_name) = path.file_name() {
+                if !file_name.to_str().unwrap_or_default().starts_with('.') {
+                    items.push(entry.to_str().unwrap().to_owned());
+                }
+            }
+        } else if let Some(ext) = path.extension().and_then(OsStr::to_str) {
+            if valid_extensions.contains(ext) {
+                items.push(entry.to_str().unwrap().to_owned());
+            }
         }
     }
     items

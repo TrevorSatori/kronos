@@ -49,7 +49,7 @@ pub struct App<'a> {
 impl<'a> App<'a> {
     pub fn new() -> Self {
         Self {
-            browser_items: StatefulList::with_items(gen_funcs::scan_folder()),
+            browser_items: StatefulList::with_items(gen_funcs::scan_and_filter_directory()),
             queue_items: Queue::with_items(),
             control_table: StatefulTable::new(),
             music_handle: MusicHandle::new(),
@@ -85,7 +85,7 @@ impl<'a> App<'a> {
         // if folder enter, else play song
         if join.is_dir() {
             env::set_current_dir(join).unwrap();
-            self.browser_items = StatefulList::with_items(gen_funcs::scan_folder());
+            self.browser_items = StatefulList::with_items(gen_funcs::scan_and_filter_directory());
             self.browser_items.next();
         } else {
             self.music_handle.play(join);
@@ -95,7 +95,7 @@ impl<'a> App<'a> {
     // cd into selected directory
     pub fn backpedal(&mut self) {
         env::set_current_dir("../").unwrap();
-        self.browser_items = StatefulList::with_items(gen_funcs::scan_folder());
+        self.browser_items = StatefulList::with_items(gen_funcs::scan_and_filter_directory());
         self.browser_items.next();
     }
 
