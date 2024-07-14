@@ -44,6 +44,7 @@ pub struct App<'a> {
     input_mode: InputMode,
     pub titles: Vec<&'a str>,
     pub active_tab: AppTab,
+    pub path_buf: PathBuf,
 }
 
 impl<'a> App<'a> {
@@ -56,6 +57,7 @@ impl<'a> App<'a> {
             input_mode: InputMode::Browser,
             titles: vec!["Music", "Controls"],
             active_tab: AppTab::Music,
+            path_buf: env::current_dir().unwrap(),
         }
     }
 
@@ -84,6 +86,7 @@ impl<'a> App<'a> {
         let join = self.selected_item();
         // if folder enter, else play song
         if join.is_dir() {
+            self.path_buf = join.clone();
             env::set_current_dir(join).unwrap();
             self.browser_items = StatefulList::with_items(gen_funcs::scan_and_filter_directory());
             self.browser_items.next();
@@ -96,7 +99,7 @@ impl<'a> App<'a> {
     pub fn backpedal(&mut self) {
         env::set_current_dir("../").unwrap();
         self.browser_items = StatefulList::with_items(gen_funcs::scan_and_filter_directory());
-        self.browser_items.next();
+        self.browser_items.select_by_path(&self.path_buf);
     }
 
     // if queue has items and nothing playing, auto play
