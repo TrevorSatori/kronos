@@ -85,17 +85,19 @@ impl<T> StatefulList<T> {
 }
 
 impl<T: ToString> StatefulList<T> {
-    pub fn select_by_path(&mut self, s: &PathBuf) {
-        let items = self.items();
+    pub fn find_by_path(&self, s: &PathBuf) -> usize {
         let mut i = 0;
 
-        for n in 0 .. items.len() {
-            if (s.ends_with(items[n].to_string())) {
+        for n in 0 .. self.items.len() {
+            if (s.ends_with(self.items[n].to_string())) {
                 i = n;
                 break;
             }
         }
 
-        self.select(i);
+        i
+    }
+    pub fn select_by_path(&mut self, s: &PathBuf) {
+        self.select(self.find_by_path(s));
     }
 }
