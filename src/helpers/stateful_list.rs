@@ -89,7 +89,7 @@ impl<T: ToString> StatefulList<T> {
         let mut i = 0;
 
         for n in 0 .. self.items.len() {
-            if (s.ends_with(self.items[n].to_string())) {
+            if s.ends_with(self.items[n].to_string()) {
                 i = n;
                 break;
             }
