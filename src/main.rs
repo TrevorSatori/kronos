@@ -22,17 +22,10 @@ use app::{App, AppTab, InputMode};
 use config::Config;
 use kronos::gen_funcs;
 use state::load_state;
-use crate::state::save_state;
+use crate::state::{save_state, StateToml};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut state = load_state();
-
-    if let Some(path) = &state.last_visited_path {
-        env::set_current_dir(&path).unwrap_or_else(|err| {
-            eprintln!("last_visited_path error: {:?}", err);
-            eprintln!("last_visited_path was: {:?}", &path);
-        });
-    }
+    let state = load_state();
 
     // setup terminal
     enable_raw_mode()?;
@@ -44,7 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // create app and run it
     let tick_rate = Duration::from_secs(1);
-    let app = App::new();
+    let app = App::new(state.last_visited_path);
     let cfg = Config::new();
 
     let res = run_app(&mut terminal, app, cfg, tick_rate);
@@ -58,9 +51,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?;
     terminal.show_cursor()?;
 
-    if let Ok(currentPath) = env::current_dir() {
-        state.last_visited_path = currentPath.to_str().map(|s| s.to_string());
-        save_state(&state);
+    if let Ok(current_path) = env::current_dir() {
+        save_state(StateToml {
+            last_visited_path: current_path.to_str().map(|s| s.to_string()),
+        });
     }
 
     if let Err(err) = res {

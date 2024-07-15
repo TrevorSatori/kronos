@@ -48,7 +48,14 @@ pub struct App<'a> {
 }
 
 impl<'a> App<'a> {
-    pub fn new() -> Self {
+    pub fn new(initial_directory: Option<String>) -> Self {
+        if let Some(path) = initial_directory {
+            env::set_current_dir(&path).unwrap_or_else(|err| {
+                eprintln!("Could not set_current_dir to last_visited_path\n\tPath: {}\n\tError: {:?}", path, err);
+                eprintln!("last_visited_path was: {:?}", &path);
+            });
+        }
+
         Self {
             browser_items: StatefulList::with_items(gen_funcs::scan_and_filter_directory()),
             queue_items: Queue::with_items(),
