@@ -54,6 +54,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Ok(current_path) = env::current_dir() {
         save_state(StateToml {
             last_visited_path: current_path.to_str().map(|s| s.to_string()),
+        }).unwrap_or_else(|error| {
+            eprintln!("Error in save_state {}", error);
         });
     }
 

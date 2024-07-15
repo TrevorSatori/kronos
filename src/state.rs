@@ -33,15 +33,12 @@ pub fn load_state() -> StateToml {
 
     state_toml
 }
-pub fn save_state(state: StateToml) {
+pub fn save_state(state: StateToml) -> Result<(), String> {
     let state_file_path = home::home_dir()
         .unwrap()
         .as_path()
         .join(".config/kronos/state.toml");
 
-    if let Ok(serialized) = toml::to_string(&state) {
-        if let Err(error) = fs::write(state_file_path, serialized) {
-            eprintln!("Error {}", error);
-        };
-    }
+    toml::to_string(&state).map_err(|e| e.to_string())
+        .and_then(|serialized| fs::write(state_file_path, serialized).map_err(|e| e.to_string()))
 }
