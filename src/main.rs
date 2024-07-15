@@ -2,7 +2,7 @@ mod app;
 mod config;
 mod state;
 
-use std::{env, error::Error, io, time::{Duration, Instant}};
+use std::{error::Error, io, time::{Duration, Instant}};
 
 use crossterm::{
     event::{self, DisableMouseCapture, Event, KeyCode},
@@ -22,7 +22,6 @@ use app::{App, AppTab, InputMode};
 use config::Config;
 use kronos::gen_funcs;
 use state::load_state;
-use crate::state::{save_state, State};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let state = load_state();
