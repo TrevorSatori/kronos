@@ -22,11 +22,12 @@ use app::{App, AppTab, InputMode};
 use config::Config;
 use kronos::gen_funcs;
 use state::load_state;
+use crate::state::save_state;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let state = load_state();
+    let mut state = load_state();
 
-    if let Some(path) = state.last_visited_path {
+    if let Some(path) = &state.last_visited_path {
         env::set_current_dir(&path).unwrap_or_else(|err| {
             eprintln!("last_visited_path error: {:?}", err);
             eprintln!("last_visited_path was: {:?}", &path);
@@ -56,6 +57,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         DisableMouseCapture
     )?;
     terminal.show_cursor()?;
+
+    if let Ok(currentPath) = env::current_dir() {
+        state.last_visited_path = currentPath.to_str().map(|s| s.to_string());
+        save_state(&state);
+    }
 
     if let Err(err) = res {
         eprintln!("{:?}", err)
