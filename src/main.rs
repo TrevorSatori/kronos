@@ -1,11 +1,8 @@
 mod app;
 mod config;
+mod state;
 
-use std::{
-    error::Error,
-    io,
-    time::{Duration, Instant},
-};
+use std::{env, error::Error, io, time::{Duration, Instant}};
 
 use crossterm::{
     event::{self, DisableMouseCapture, Event, KeyCode},
@@ -24,8 +21,18 @@ use tui::{
 use app::{App, AppTab, InputMode};
 use config::Config;
 use kronos::gen_funcs;
+use state::load_state;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let state = load_state();
+
+    if let Some(path) = state.last_visited_path {
+        env::set_current_dir(&path).unwrap_or_else(|err| {
+            eprintln!("last_visited_path error: {:?}", err);
+            eprintln!("last_visited_path was: {:?}", &path);
+        });
+    }
+
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
