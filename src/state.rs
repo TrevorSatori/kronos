@@ -3,11 +3,11 @@ use std::fs;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct StateToml {
+pub struct State {
     pub last_visited_path: Option<String>,
 }
 
-pub fn load_state() -> StateToml {
+pub fn load_state() -> State {
     let state_file_paths = [home::home_dir()
         .unwrap()
         .as_path()
@@ -24,16 +24,16 @@ pub fn load_state() -> StateToml {
         }
     }
 
-    let state_toml: StateToml = toml::from_str(&content).unwrap_or_else(|_| {
+    let state_toml: State = toml::from_str(&content).unwrap_or_else(|_| {
         eprintln!("FAILED TO CREATE STATE OBJECT FROM FILE");
-        StateToml {
+        State {
             last_visited_path: None,
         }
     });
 
     state_toml
 }
-pub fn save_state(state: StateToml) -> Result<(), String> {
+pub fn save_state(state: State) -> Result<(), String> {
     let state_file_path = home::home_dir()
         .unwrap()
         .as_path()

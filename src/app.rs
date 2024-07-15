@@ -10,7 +10,7 @@ use kronos::music_handler::MusicHandle;
 use kronos::queue::Queue;
 use kronos::stateful_list::StatefulList;
 use kronos::stateful_table::StatefulTable;
-use crate::state::{save_state, StateToml};
+use crate::state::{save_state, State};
 
 #[derive(Clone, Copy)]
 pub enum InputMode {
@@ -70,7 +70,7 @@ impl<'a> App<'a> {
     }
 
     pub fn save_state(self) {
-        save_state(StateToml {
+        save_state(State {
             last_visited_path: self.last_visited_path.to_str().map(String::from),
         }).unwrap_or_else(|error| {
             eprintln!("Error in save_state {}", error);

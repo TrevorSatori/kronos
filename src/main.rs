@@ -22,7 +22,7 @@ use app::{App, AppTab, InputMode};
 use config::Config;
 use kronos::gen_funcs;
 use state::load_state;
-use crate::state::{save_state, StateToml};
+use crate::state::{save_state, State};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let state = load_state();
@@ -50,14 +50,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         DisableMouseCapture
     )?;
     terminal.show_cursor()?;
-
-    if let Ok(current_path) = env::current_dir() {
-        save_state(StateToml {
-            last_visited_path: current_path.to_str().map(|s| s.to_string()),
-        }).unwrap_or_else(|error| {
-            eprintln!("Error in save_state {}", error);
-        });
-    }
 
     if let Err(err) = res {
         eprintln!("{:?}", err)
