@@ -116,7 +116,7 @@ impl<'a> App<'a> {
             if percentage >= 100 {
                 100
             } else {
-                percentage
+                u16::try_from(percentage).unwrap_or(100)
             }
         };
 
