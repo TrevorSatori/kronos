@@ -4,7 +4,7 @@ use std::{
     thread,
     time::Duration,
 };
-
+use std::cmp::min;
 use kronos::gen_funcs;
 use kronos::music_handler::MusicHandle;
 use kronos::queue::Queue;
@@ -111,13 +111,8 @@ impl<'a> App<'a> {
     // if playing and
     pub fn song_progress(&mut self) -> u16 {
         let progress = || {
-            let percentage =
-                (self.music_handle.time_played() * 100) / self.music_handle.song_length();
-            if percentage >= 100 {
-                100
-            } else {
-                u16::try_from(percentage).unwrap_or(100)
-            }
+            let percentage: f32 = (self.music_handle.time_played() as f32 / self.music_handle.song_length() as f32) * 100.0;
+            min(percentage.round() as u16, 100)
         };
 
         // edge case if nothing queued or playing

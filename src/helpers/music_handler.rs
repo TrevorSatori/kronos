@@ -15,8 +15,8 @@ use super::gen_funcs;
 pub struct MusicHandle {
     music_output: Arc<(OutputStream, OutputStreamHandle)>,
     sink: Arc<Sink>,
-    song_length: u32,
-    time_played: Arc<Mutex<u32>>,
+    song_length: u16,
+    time_played: Arc<Mutex<u16>>,
     currently_playing: String,
     volume: f32,
 }
@@ -43,11 +43,11 @@ impl MusicHandle {
         self.currently_playing.clone()
     }
 
-    pub fn song_length(&self) -> u32 {
+    pub fn song_length(&self) -> u16 {
         self.song_length
     }
 
-    pub fn time_played(&self) -> u32 {
+    pub fn time_played(&self) -> u16 {
         *self.time_played.lock().unwrap()
     }
 
@@ -55,7 +55,7 @@ impl MusicHandle {
         self.sink.empty()
     }
 
-    pub fn set_time_played(&mut self, t: u32) {
+    pub fn set_time_played(&mut self, t: u16) {
         *self.time_played.lock().unwrap() = t;
     }
     // set currently playing song
@@ -138,7 +138,7 @@ impl MusicHandle {
         let duration = properties.duration();
 
         // update song length, currently playing
-        self.song_length = duration.as_secs() as u32;
+        self.song_length = duration.as_secs() as u16;
     }
 
     pub fn change_volume(&mut self, volume: f32) {
