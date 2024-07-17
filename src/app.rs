@@ -115,7 +115,7 @@ impl<'a> App<'a> {
 
         // if something playing, calculate progress
         } else if !self.music_handle.sink_empty() {
-            f64::clamp(self.music_handle.time_played() as f64 / self.music_handle.song_length() as f64, 0.0, 100.0)
+            f64::clamp(self.music_handle.time_played() as f64 / self.music_handle.song_length() as f64, 0.0, 1.0)
         // if nothing playing keep rolling
         } else {
             self.auto_play();
