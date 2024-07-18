@@ -285,7 +285,7 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Co
         )
         .style(Style::default().fg(cfg.foreground()))
         .gauge_style(Style::default().fg(cfg.highlight_background()))
-        .percent(app.song_progress());
+        .ratio(app.song_progress());
     f.render_widget(playing, queue_playing[1]);
 }
 
