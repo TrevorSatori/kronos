@@ -4,11 +4,13 @@ use std::{
     thread,
     time::Duration,
 };
+
 use kronos::gen_funcs;
 use kronos::music_handler::MusicHandle;
 use kronos::queue::Queue;
 use kronos::stateful_list::StatefulList;
 use kronos::stateful_table::StatefulTable;
+use crate::state::{save_state, State};
 
 #[derive(Clone, Copy)]
 pub enum InputMode {
@@ -47,7 +49,13 @@ pub struct App<'a> {
 }
 
 impl<'a> App<'a> {
-    pub fn new() -> Self {
+    pub fn new(initial_directory: Option<String>) -> Self {
+        if let Some(path) = initial_directory {
+            env::set_current_dir(&path).unwrap_or_else(|err| {
+                eprintln!("Could not set_current_dir to last_visited_path\n\tPath: {}\n\tError: {:?}", path, err);
+            });
+        }
+
         Self {
             browser_items: StatefulList::with_items(gen_funcs::scan_and_filter_directory()),
             queue_items: Queue::with_items(),
@@ -58,6 +66,14 @@ impl<'a> App<'a> {
             active_tab: AppTab::Music,
             last_visited_path: env::current_dir().unwrap(),
         }
+    }
+
+    pub fn save_state(self) {
+        save_state(State {
+            last_visited_path: self.last_visited_path.to_str().map(String::from),
+        }).unwrap_or_else(|error| {
+            eprintln!("Error in save_state {}", error);
+        });
     }
 
     pub fn next(&mut self) {

@@ -1,11 +1,8 @@
 mod app;
 mod config;
+mod state;
 
-use std::{
-    error::Error,
-    io,
-    time::{Duration, Instant},
-};
+use std::{error::Error, io, time::{Duration, Instant}};
 
 use crossterm::{
     event::{self, DisableMouseCapture, Event, KeyCode},
@@ -24,8 +21,11 @@ use tui::{
 use app::{App, AppTab, InputMode};
 use config::Config;
 use kronos::gen_funcs;
+use state::load_state;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let state = load_state();
+
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // create app and run it
     let tick_rate = Duration::from_secs(1);
-    let app = App::new();
+    let app = App::new(state.last_visited_path);
     let cfg = Config::new();
 
     let res = run_app(&mut terminal, app, cfg, tick_rate);
@@ -75,7 +75,7 @@ fn run_app<B: Backend>(
             if let Event::Key(key) = event::read()? {
                 match app.input_mode() {
                     InputMode::Browser => match key.code {
-                        KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Char('q') => break,
                         KeyCode::Char('p') | KeyCode::Char(' ') => app.music_handle.play_pause(),
                         KeyCode::Char('g') => app.music_handle.skip(),
                         KeyCode::Char('a') => app.queue_items.add(app.selected_item()),
@@ -100,7 +100,7 @@ fn run_app<B: Backend>(
                         _ => {}
                     },
                     InputMode::Queue => match key.code {
-                        KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Char('q') => break,
                         KeyCode::Char('p') => app.music_handle.play_pause(),
                         KeyCode::Char('g') => app.music_handle.skip(),
                         KeyCode::Enter => {
@@ -126,7 +126,7 @@ fn run_app<B: Backend>(
                         _ => {}
                     },
                     InputMode::Controls => match key.code {
-                        KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Char('q') => break,
                         KeyCode::Char('p') => app.music_handle.play_pause(),
                         KeyCode::Char('g') => app.music_handle.skip(),
                         KeyCode::Down | KeyCode::Char('j') => app.control_table.next(),
@@ -147,6 +147,10 @@ fn run_app<B: Backend>(
             last_tick = Instant::now();
         }
     }
+
+    app.save_state();
+
+    Ok(())
 }
 
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
