@@ -53,7 +53,6 @@ impl<'a> App<'a> {
         if let Some(path) = initial_directory {
             env::set_current_dir(&path).unwrap_or_else(|err| {
                 eprintln!("Could not set_current_dir to last_visited_path\n\tPath: {}\n\tError: {:?}", path, err);
-                eprintln!("last_visited_path was: {:?}", &path);
             });
         }
 
