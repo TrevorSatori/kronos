@@ -56,8 +56,11 @@ impl<'a> App<'a> {
             });
         }
 
+        let mut browser_items = StatefulList::with_items(gen_funcs::scan_and_filter_directory());
+        browser_items.select(0);
+
         Self {
-            browser_items: StatefulList::with_items(gen_funcs::scan_and_filter_directory()),
+            browser_items,
             queue_items: Queue::with_items(),
             control_table: StatefulTable::new(),
             music_handle: MusicHandle::new(),
