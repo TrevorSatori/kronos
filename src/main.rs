@@ -244,7 +244,7 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Co
                 .fg(cfg.highlight_foreground())
                 .add_modifier(Modifier::BOLD),
         )
-        .highlight_symbol(">> ");
+        .highlight_symbol("");
     f.render_stateful_widget(items, browser_queue[0], &mut app.browser_items.state());
 
     let queue_items: Vec<ListItem> = app
@@ -275,7 +275,7 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Co
                 .fg(cfg.highlight_foreground())
                 .add_modifier(Modifier::BOLD),
         )
-        .highlight_symbol(">> ");
+        .highlight_symbol("");
     f.render_stateful_widget(queue_items, queue_playing[0], &mut app.queue_items.state());
 
     let playing_title = format!("| {current_song} |", current_song = app.current_song());
