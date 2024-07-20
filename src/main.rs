@@ -205,15 +205,12 @@ fn ui(f: &mut Frame, app: &mut App, cfg: &Config) {
     };
 }
 
-fn music_tab(f: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
-    // split into left / right
+fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
     let browser_queue = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
         .split(chunks);
-    // f.size()
 
-    // queue and playing sections (sltdkh)
     let queue_playing = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
@@ -225,16 +222,14 @@ fn music_tab(f: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         )
         .split(browser_queue[1]);
 
-    // convert app items to text
-    let items: Vec<ListItem> = app
+    let browser_items: Vec<ListItem> = app
         .browser_items
         .items()
         .iter()
         .map(|i| ListItem::new(Text::from(i.to_owned())))
         .collect();
 
-    // Create a List from all list items and highlight the currently selected one // RENDER 1
-    let items = List::new(items)
+    let browser_list = List::new(browser_items)
         .block(
             Block::default()
                 .borders(Borders::ALL)
@@ -250,7 +245,8 @@ fn music_tab(f: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol("");
-    f.render_stateful_widget(items, browser_queue[0], &mut app.browser_items.state());
+
+    frame.render_stateful_widget(browser_list, browser_queue[0], &mut app.browser_items.state());
 
     let queue_items: Vec<ListItem> = app
         .queue_items
@@ -265,7 +261,7 @@ fn music_tab(f: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         total_time = app.queue_items.total_time(),
     );
 
-    let queue_items = List::new(queue_items)
+    let queue_list = List::new(queue_items)
         .block(
             Block::default()
                 .borders(Borders::ALL)
@@ -281,11 +277,10 @@ fn music_tab(f: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol("");
-    f.render_stateful_widget(queue_items, queue_playing[0], &mut app.queue_items.state());
+    frame.render_stateful_widget(queue_list, queue_playing[0], &mut app.queue_items.state());
 
     let playing_title = format!("| {current_song} |", current_song = app.current_song());
 
-    // Note Gauge is using background color for progress
     let playing = Gauge::default()
         .block(
             Block::default()
@@ -297,7 +292,7 @@ fn music_tab(f: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         .style(Style::default().fg(cfg.foreground()))
         .gauge_style(Style::default().fg(cfg.highlight_background()))
         .ratio(app.song_progress());
-    f.render_widget(playing, queue_playing[1]);
+    frame.render_widget(playing, queue_playing[1]);
 }
 
 fn instructions_tab(f: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
