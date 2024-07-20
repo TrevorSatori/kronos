@@ -36,7 +36,10 @@ impl<T> StatefulList<T> {
     }
 
     pub fn next(&mut self) {
-        // check if empty
+        self.next_by(1)
+    }
+
+    pub fn next_by(&mut self, amount: usize) {
         if self.items.is_empty() {
             return;
         };
@@ -46,7 +49,7 @@ impl<T> StatefulList<T> {
                 if i >= self.items.len() - 1 {
                     0
                 } else {
-                    i + 1
+                    i + amount
                 }
             }
             None => 0,
@@ -56,7 +59,10 @@ impl<T> StatefulList<T> {
     }
 
     pub fn previous(&mut self) {
-        // check if empty
+        self.previous_by(1)
+    }
+
+    pub fn previous_by(&mut self, amount: usize) {
         if self.items.is_empty() {
             return;
         };
@@ -66,7 +72,7 @@ impl<T> StatefulList<T> {
                 if i == 0 {
                     self.items.len() - 1
                 } else {
-                    i - 1
+                    i - amount
                 }
             }
             None => 0,

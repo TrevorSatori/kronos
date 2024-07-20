@@ -83,6 +83,8 @@ fn run_app<B: Backend>(
                         KeyCode::Backspace => app.backpedal(),
                         KeyCode::Down | KeyCode::Char('j') => app.browser_items.next(),
                         KeyCode::Up | KeyCode::Char('k') => app.browser_items.previous(),
+                        KeyCode::PageUp => app.browser_items.previous_by(5),
+                        KeyCode::PageDown => app.browser_items.next_by(5),
                         KeyCode::End => app.browser_items.select(app.browser_items.items().len() - 1),
                         KeyCode::Home => app.browser_items.select(0),
                         KeyCode::Right | KeyCode::Char('l') => {
