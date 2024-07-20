@@ -2,9 +2,8 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::{Text},
-    widgets::{Block, BorderType, Borders, Cell, Gauge, List, ListItem, Row, Table, Tabs},
+    widgets::{Block, BorderType, Borders, Cell, Gauge, List, ListItem, Row, Table},
     Frame,
-    prelude::*,
 };
 
 use crate::app::{App};
