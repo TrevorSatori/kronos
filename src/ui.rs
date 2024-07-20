@@ -1,1 +1,2 @@
-pub mod music_tab;
+pub mod ui;
+mod music_tab;

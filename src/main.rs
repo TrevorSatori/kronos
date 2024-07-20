@@ -22,7 +22,7 @@ use ratatui::{
 use app::{App, InputMode};
 use config::Config;
 use state::load_state;
-use crate::ui::music_tab::ui;
+use ui::ui::ui;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let state = load_state();

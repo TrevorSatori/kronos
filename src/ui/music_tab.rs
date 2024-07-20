@@ -1,62 +1,17 @@
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    text::{Span, Text},
+    text::{Text},
     widgets::{Block, BorderType, Borders, Cell, Gauge, List, ListItem, Row, Table, Tabs},
     Frame,
     prelude::*,
 };
 
-use crate::app::{App, AppTab};
+use crate::app::{App};
 use crate::config::Config;
 use crate::helpers::gen_funcs;
 
-pub fn ui(f: &mut Frame, app: &mut App, cfg: &Config) {
-    // Total Size
-    let size = f.size();
-
-    // chunking from top to bottom, 3 gets tabs displayed, the rest goes to item layouts
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
-        .split(size);
-
-    // Main Background block, covers entire screen
-    let block = Block::default().style(Style::default().bg(cfg.background()));
-    f.render_widget(block, size);
-
-    // Tab Title items collected
-    let titles: Vec<Line> = app
-        .titles
-        .iter()
-        .map(|t| {
-            let (first, rest) = t.split_at(1);
-            Line::from(vec![
-                Span::styled(first, Style::default().fg(cfg.highlight_background())), // CHANGE FOR CUSTOMIZATION
-                Span::styled(rest, Style::default().fg(cfg.highlight_background())), // These are tab highlights, first vs rest diff colors
-            ])
-        })
-        .collect();
-
-    // Box Around Tab Items
-    let tabs = Tabs::new(titles)
-        .block(Block::default().borders(Borders::ALL).title("Tabs"))
-        .select(app.active_tab as usize)
-        .style(Style::default().fg(cfg.foreground()))
-        .highlight_style(
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .bg(cfg.background()),
-        );
-    f.render_widget(tabs, chunks[0]);
-
-    match app.active_tab {
-        AppTab::Music => music_tab(f, app, chunks[1], cfg),
-        AppTab::Controls => instructions_tab(f, app, chunks[1], cfg),
-    };
-}
-
-fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
+pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
     let browser_queue = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
@@ -146,7 +101,7 @@ fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
     frame.render_widget(playing, queue_playing[1]);
 }
 
-fn instructions_tab(f: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
+pub fn instructions_tab(f: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(2)
