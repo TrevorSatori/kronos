@@ -22,7 +22,7 @@ use ratatui::{
 use app::{App, InputMode};
 use config::Config;
 use state::load_state;
-use ui::ui::ui;
+use ui::ui;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let state = load_state();
