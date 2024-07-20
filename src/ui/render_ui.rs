@@ -11,8 +11,7 @@ use crate::app::{App, AppTab};
 use crate::config::Config;
 use crate::ui::{music_tab, instructions_tab};
 
-pub fn ui(f: &mut Frame, app: &mut App, cfg: &Config) {
-    // Total Size
+pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
     let size = f.size();
 
     // chunking from top to bottom, 3 gets tabs displayed, the rest goes to item layouts

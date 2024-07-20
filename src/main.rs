@@ -22,7 +22,7 @@ use ratatui::{
 use app::{App, InputMode};
 use config::Config;
 use state::load_state;
-use ui::ui;
+use ui::render_ui;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let state = load_state();
@@ -66,7 +66,7 @@ fn run_app<B: Backend>(
 ) -> io::Result<()> {
     let mut last_tick = Instant::now();
     loop {
-        terminal.draw(|f| ui(f, &mut app, &cfg))?;
+        terminal.draw(|f| render_ui(f, &mut app, &cfg))?;
 
         let timeout = tick_rate.saturating_sub(last_tick.elapsed());
 
