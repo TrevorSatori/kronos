@@ -9,8 +9,7 @@ use ratatui::{
 
 use crate::app::{App, AppTab};
 use crate::config::Config;
-use crate::ui::music_tab::{music_tab};
-use crate::ui::instructions_tab::{instructions_tab};
+use crate::ui::{music_tab, instructions_tab};
 
 pub fn ui(f: &mut Frame, app: &mut App, cfg: &Config) {
     // Total Size
