@@ -4,18 +4,24 @@ mod state;
 
 use std::{error::Error, io, time::{Duration, Instant}};
 
-use crossterm::{
-    event::{self, DisableMouseCapture, Event, KeyCode},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
-use tui::{
+use ratatui::{
+    crossterm::{
+        event::{self, Event, KeyCode, EnableMouseCapture, DisableMouseCapture},
+        terminal::{
+            disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+        },
+        ExecutableCommand,
+        execute,
+    },
     backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    text::{Span, Spans, Text},
+    text::{Span, Text},
     widgets::{Block, BorderType, Borders, Cell, Gauge, List, ListItem, Row, Table, Tabs},
-    Frame, Terminal,
+    Frame,
+    Terminal,
+    prelude::*,
+    widgets::*,
 };
 
 use app::{App, AppTab, InputMode};
@@ -29,7 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, DisableMouseCapture)?;
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
@@ -67,10 +73,9 @@ fn run_app<B: Backend>(
     loop {
         terminal.draw(|f| ui(f, &mut app, &cfg))?;
 
-        let timeout = tick_rate
-            .checked_sub(last_tick.elapsed())
-            .unwrap_or_else(|| Duration::from_secs(0));
-        if crossterm::event::poll(timeout)? {
+        let timeout = tick_rate.saturating_sub(last_tick.elapsed());
+
+        if event::poll(timeout)? {
             // different keys depending on which browser tab
             if let Event::Key(key) = event::read()? {
                 match app.input_mode() {
@@ -155,7 +160,7 @@ fn run_app<B: Backend>(
     Ok(())
 }
 
-fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
+fn ui(f: &mut Frame, app: &mut App, cfg: &Config) {
     // Total Size
     let size = f.size();
 
@@ -170,12 +175,12 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
     f.render_widget(block, size);
 
     // Tab Title items collected
-    let titles = app
+    let titles: Vec<Line> = app
         .titles
         .iter()
         .map(|t| {
             let (first, rest) = t.split_at(1);
-            Spans::from(vec![
+            Line::from(vec![
                 Span::styled(first, Style::default().fg(cfg.highlight_background())), // CHANGE FOR CUSTOMIZATION
                 Span::styled(rest, Style::default().fg(cfg.highlight_background())), // These are tab highlights, first vs rest diff colors
             ])
@@ -200,7 +205,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App, cfg: &Config) {
     };
 }
 
-fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Config) {
+fn music_tab(f: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
     // split into left / right
     let browser_queue = Layout::default()
         .direction(Direction::Horizontal)
@@ -295,7 +300,7 @@ fn music_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Co
     f.render_widget(playing, queue_playing[1]);
 }
 
-fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, cfg: &Config) {
+fn instructions_tab(f: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(2)
@@ -326,8 +331,12 @@ fn instructions_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, chunks: Rect, c
         let cells = item.iter().map(|c| Cell::from(*c));
         Row::new(cells).height(height as u16).bottom_margin(1)
     });
+    let widths = [
+        Constraint::Length(5),
+        Constraint::Length(10),
+    ];
 
-    let t = Table::new(rows)
+    let t = Table::new(rows, widths)
         .header(header)
         .block(Block::default().borders(Borders::ALL).title("Controls"))
         .style(Style::default().fg(cfg.foreground()).bg(cfg.background()))

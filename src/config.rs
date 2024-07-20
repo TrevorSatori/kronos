@@ -1,7 +1,7 @@
 use std::fs;
 
 use serde::{Deserialize, Serialize};
-use tui::style::Color;
+use ratatui::style::Color;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Theme {

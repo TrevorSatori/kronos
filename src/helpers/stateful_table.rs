@@ -1,4 +1,4 @@
-use tui::widgets::TableState;
+use ratatui::widgets::TableState;
 
 pub struct StatefulTable<'a> {
     pub header: Vec<&'a str>,
