@@ -16,7 +16,6 @@ pub enum InputMode {
     Controls,
 }
 
-/// Represents the active tab state.
 #[derive(Debug, Clone, Copy)]
 pub enum AppTab {
     Music = 0,
@@ -24,7 +23,6 @@ pub enum AppTab {
 }
 
 impl AppTab {
-    /// Get the next tab in the list.
     pub fn next(&self) -> Self {
         match self {
             Self::Music => Self::Controls,
@@ -98,7 +96,6 @@ impl<'a> App<'a> {
         }
     }
 
-    // if item selected is folder, enter folder, else play record.
     pub fn evaluate(&mut self) {
         let join = self.selected_item();
         // if folder enter, else play song
@@ -112,7 +109,6 @@ impl<'a> App<'a> {
         }
     }
 
-    // cd into selected directory
     pub fn backpedal(&mut self) {
         env::set_current_dir("../").unwrap();
         self.browser_items = StatefulList::with_items(gen_funcs::scan_and_filter_directory());
@@ -120,7 +116,6 @@ impl<'a> App<'a> {
         self.last_visited_path = env::current_dir().unwrap();
     }
 
-    // if queue has items and nothing playing, auto play
     pub fn auto_play(&mut self) {
         thread::sleep(Duration::from_millis(250));
         if self.music_handle.sink_empty() && !self.queue_items.is_empty() {
@@ -129,23 +124,17 @@ impl<'a> App<'a> {
         }
     }
 
-    // if playing and
     pub fn song_progress(&mut self) -> f64 {
-        // edge case if nothing queued or playing
         if self.music_handle.sink_empty() && self.queue_items.is_empty() {
             0.0
-
-        // if something playing, calculate progress
         } else if !self.music_handle.sink_empty() {
             f64::clamp(self.music_handle.time_played() as f64 / self.music_handle.song_length() as f64, 0.0, 1.0)
-        // if nothing playing keep rolling
         } else {
             self.auto_play();
             0.0
         }
     }
 
-    // get file path
     pub fn selected_item(&self) -> PathBuf {
         let current_dir = env::current_dir().unwrap();
         if self.browser_items.empty() {
