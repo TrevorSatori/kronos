@@ -117,6 +117,7 @@ impl<'a> App<'a> {
         env::set_current_dir("../").unwrap();
         self.browser_items = StatefulList::with_items(gen_funcs::scan_and_filter_directory());
         self.browser_items.select_by_path(&self.last_visited_path);
+        self.last_visited_path = env::current_dir().unwrap();
     }
 
     // if queue has items and nothing playing, auto play
