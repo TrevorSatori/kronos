@@ -45,7 +45,7 @@ impl<T> StatefulList<T> {
     }
 
     fn padding_bottom(&self) -> usize {
-        usize::from(self.height - self.padding)
+        usize::from(self.height.saturating_sub(self.padding))
     }
 
     pub fn set_offset(&mut self, i: usize, padding: usize) {
