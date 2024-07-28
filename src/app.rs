@@ -144,6 +144,17 @@ impl<'a> App<'a> {
         }
     }
 
+    fn select_next_browser_by_match(&mut self) {
+        if let Some(s) = &self.browser_filter {
+            self.browser_items.select_next_by_match(s)
+        }
+    }
+    fn select_previous_browser_by_match(&mut self) {
+        if let Some(s) = &self.browser_filter {
+            self.browser_items.select_previous_by_match(s)
+        }
+    }
+
     pub fn handle_browser_filter_key_events(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Esc => {
@@ -156,24 +167,16 @@ impl<'a> App<'a> {
                 self.evaluate();
             },
             KeyCode::Down => {
-                if let Some(s) = &self.browser_filter {
-                    self.browser_items.select_next_by_match(s)
-                }
+                self.select_next_browser_by_match();
             },
             KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
-                if let Some(s) = &self.browser_filter {
-                    self.browser_items.select_next_by_match(s)
-                }
+                self.select_next_browser_by_match();
             },
             KeyCode::Up => {
-                if let Some(s) = &self.browser_filter {
-                    self.browser_items.select_previous_by_match(s)
-                }
+                self.select_previous_browser_by_match();
             },
             KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => {
-                if let Some(s) = &self.browser_filter {
-                    self.browser_items.select_previous_by_match(s)
-                }
+                self.select_previous_browser_by_match();
             },
             KeyCode::Backspace => {
                 self.browser_filter = match &self.browser_filter  {
