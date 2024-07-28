@@ -55,9 +55,7 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
     app.browser_items.height = block.inner(browser_queue[0]).height;
 
     let browser_list = List::new(browser_items)
-        .block(
-            block.clone()
-        )
+        .block(block)
         .style(Style::default().fg(cfg.foreground()))
         .highlight_style(
             Style::default()
