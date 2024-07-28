@@ -33,7 +33,7 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         .iter()
         .map(|i| {
             let fg = match app.browser_filter.as_ref()  {
-                Some(s) if (i.contains(s)) => Color::Red,
+                Some(s) if (i.to_lowercase().contains(&s.to_lowercase())) => Color::Red,
                 _ => Color::Reset,
             };
             ListItem::new(Text::from(i.to_owned())).style(Style::default().fg(fg))
