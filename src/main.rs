@@ -155,9 +155,17 @@ fn run_app<B: Backend>(
                             app.set_input_mode(InputMode::Browser);
                             app.browser_filter = None;
                         },
+                        KeyCode::Down => {
+                            let s = &app.browser_filter.clone().unwrap();
+                            app.browser_items.select_next_by_match(s)
+                        },
+                        KeyCode::Up => {
+                            let s = &app.browser_filter.clone().unwrap();
+                            app.browser_items.select_previous_by_match(s)
+                        },
                         KeyCode::Backspace => {
                             app.browser_filter = match app.browser_filter  {
-                                Some(s) if s.len() > 0 => Some(s[..s.len()-1].to_string()),
+                                Some(s) if s.len() > 0 => Some(s[..s.len()-1].to_string()), // TODO: s[..s.len()-1] can panic! use .substring crate
                                 _ => None,
                             };
                         }

@@ -103,7 +103,52 @@ impl<T: ToString> StatefulList<T> {
 
         i
     }
+
+    pub fn next_index_wrapped(&self, i: usize) -> usize {
+        if i >= self.items.len() - 1 {
+            0
+        } else {
+            i + 1
+        }
+    }
+
+    pub fn previous_index_wrapped(&self, i: usize) -> usize {
+        if i == 0 {
+            self.items.len() - 1
+        } else {
+            i - 1
+        }
+    }
+
+    pub fn find_next_by_match(&self, s: &str, direction_forward: bool) -> Option<usize> {
+        let mut i: usize = self.curr;
+
+        loop {
+            i = if direction_forward { self.next_index_wrapped(i) } else { self.previous_index_wrapped(i) };
+
+            if i == self.curr {
+                return None;
+            }
+
+            if self.items[i].to_string().contains(s) {
+                return Some(i);
+            }
+        }
+    }
+
     pub fn select_by_path(&mut self, s: &PathBuf) {
         self.select(self.find_by_path(s));
+    }
+
+    pub fn select_next_by_match(&mut self, s: &str) {
+        if let Some(i) = self.find_next_by_match(s, true) {
+            self.select(i);
+        }
+    }
+
+    pub fn select_previous_by_match(&mut self, s: &str) {
+        if let Some(i) = self.find_next_by_match(s, false) {
+            self.select(i);
+        }
     }
 }
