@@ -46,13 +46,17 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         _ => "Browser".to_string(),
     };
 
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title(title)
+        .title_alignment(Alignment::Left)
+        .border_type(BorderType::Rounded);
+
+    app.browser_items.height = block.inner(browser_queue[0]).height;
+
     let browser_list = List::new(browser_items)
         .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(title)
-                .title_alignment(Alignment::Left)
-                .border_type(BorderType::Rounded),
+            block.clone()
         )
         .style(Style::default().fg(cfg.foreground()))
         .highlight_style(
@@ -63,6 +67,7 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         )
         .scroll_padding(0)
         .highlight_symbol("");
+
 
     frame.render_stateful_widget(browser_list, browser_queue[0], &mut app.browser_items.state());
 

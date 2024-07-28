@@ -1,18 +1,14 @@
 use std::path::PathBuf;
 use ratatui::widgets::ListState;
 
-// TODO encapsulation
 pub struct StatefulList<T> {
     state: ListState,
     items: Vec<T>,
     curr: usize,
     pub offset: usize,
+    pub height: u16,
+    pub padding: u16,
 }
-
-const padding_desired: usize = 6;
-const screen_size: usize = 42;
-const padding_top: usize = padding_desired;
-const padding_bottom: usize = screen_size - padding_desired;
 
 impl<T> StatefulList<T> {
     pub fn with_items(items: Vec<T>) -> Self {
@@ -21,6 +17,8 @@ impl<T> StatefulList<T> {
             items,
             curr: 0,
             offset: 0,
+            height: 0,
+            padding: 6,
         }
     }
 
@@ -42,9 +40,17 @@ impl<T> StatefulList<T> {
         self.items.is_empty()
     }
 
+    fn padding_top(&self) -> usize {
+        6
+    }
+
+    fn padding_bottom(&self) -> usize {
+        usize::from(self.height - self.padding)
+    }
+
     pub fn set_offset(&mut self, i: usize, padding: usize) {
         self.offset = if i > padding {
-            (i - padding).min(self.items.len() - screen_size)
+            (i - padding).min(self.items.len() - usize::from(self.height))
         } else {
             0
         };
@@ -72,8 +78,8 @@ impl<T> StatefulList<T> {
         self.curr = i;
         self.state.select(Some(i));
 
-        if i > self.offset + padding_bottom {
-            self.set_offset(i, padding_bottom);
+        if i > self.offset + self.padding_bottom() {
+            self.set_offset(i, self.padding_bottom());
         }
     }
 
@@ -95,8 +101,8 @@ impl<T> StatefulList<T> {
         self.curr = i;
         self.state.select(Some(i));
 
-        if i < self.offset + padding_top {
-            self.set_offset(i, padding_top);
+        if i < self.offset + self.padding_top() {
+            self.set_offset(i, self.padding_top());
         }
     }
 
