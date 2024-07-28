@@ -10,7 +10,7 @@ use std::{error::Error, io, time::{Duration, Instant}};
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     crossterm::{
-        event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+        event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
         execute,
         terminal::{
             disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -27,7 +27,6 @@ use ui::render_ui;
 fn main() -> Result<(), Box<dyn Error>> {
     let state = load_state();
 
-    // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -35,20 +34,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    // create app and run it
     let tick_rate = Duration::from_secs(1);
     let app = App::new(state.last_visited_path);
     let cfg = Config::new();
 
     let res = run_app(&mut terminal, app, cfg, tick_rate);
 
-    // restore terminal
-    disable_raw_mode()?;
     execute!(
         terminal.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture
     )?;
+
+    disable_raw_mode()?;
     terminal.show_cursor()?;
 
     if let Err(err) = res {
@@ -71,7 +69,6 @@ fn run_app<B: Backend>(
         let timeout = tick_rate.saturating_sub(last_tick.elapsed());
 
         if event::poll(timeout)? {
-            // different keys depending on which browser tab
             if let Event::Key(key) = event::read()? {
                 match app.input_mode() {
                     InputMode::Browser => match key.code {
@@ -79,7 +76,7 @@ fn run_app<B: Backend>(
                         KeyCode::Char('p') | KeyCode::Char(' ') => app.music_handle.play_pause(),
                         KeyCode::Char('g') => app.music_handle.skip(),
                         KeyCode::Char('a') => {
-                            app.queue_items.add(app.selected_item());
+                            app.queue_items.add(app.get_selected_browser_item());
                             app.browser_items.next();
                         },
                         KeyCode::Enter => app.evaluate(),
@@ -104,9 +101,9 @@ fn run_app<B: Backend>(
                                 _ => app.set_input_mode(InputMode::Controls),
                             };
                         },
-                        KeyCode::Char('/') => {
+                        KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
                             app.set_input_mode(InputMode::BrowserFilter);
-                        }
+                        },
                         _ => {}
                     },
                     InputMode::Queue => match key.code {
@@ -161,12 +158,24 @@ fn run_app<B: Backend>(
                             app.evaluate();
                         },
                         KeyCode::Down => {
-                            let s = &app.browser_filter.clone().unwrap();
-                            app.browser_items.select_next_by_match(s)
+                            if let Some(s) = &app.browser_filter {
+                                app.browser_items.select_next_by_match(s)
+                            }
+                        },
+                        KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
+                            if let Some(s) = &app.browser_filter {
+                                app.browser_items.select_next_by_match(s)
+                            }
                         },
                         KeyCode::Up => {
-                            let s = &app.browser_filter.clone().unwrap();
-                            app.browser_items.select_previous_by_match(s)
+                            if let Some(s) = &app.browser_filter {
+                                app.browser_items.select_previous_by_match(s)
+                            }
+                        },
+                        KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => {
+                            if let Some(s) = &app.browser_filter {
+                                app.browser_items.select_previous_by_match(s)
+                            }
                         },
                         KeyCode::Backspace => {
                             app.browser_filter = match app.browser_filter  {

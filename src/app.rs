@@ -97,15 +97,15 @@ impl<'a> App<'a> {
     }
 
     pub fn evaluate(&mut self) {
-        let join = self.selected_item();
-        // if folder enter, else play song
-        if join.is_dir() {
-            self.last_visited_path = join.clone();
-            env::set_current_dir(join).unwrap();
+        let path = self.get_selected_browser_item();
+
+        if path.is_dir() {
+            self.last_visited_path = path.clone();
+            env::set_current_dir(path).unwrap();
             self.browser_items = StatefulList::with_items(gen_funcs::scan_and_filter_directory());
             self.browser_items.next();
         } else {
-            self.music_handle.play(join);
+            self.music_handle.play(path);
         }
     }
 
@@ -135,13 +135,12 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn selected_item(&self) -> PathBuf {
+    pub fn get_selected_browser_item(&self) -> PathBuf {
         let current_dir = env::current_dir().unwrap();
         if self.browser_items.empty() {
             Path::new(&current_dir).into()
         } else {
-            let join = Path::join(&current_dir, Path::new(&self.browser_items.item()));
-            join
+            Path::join(&current_dir, Path::new(&self.browser_items.item()))
         }
     }
 }
