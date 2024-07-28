@@ -43,7 +43,8 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         .collect();
 
     let title: String = match app.input_mode() {
-        InputMode::BrowserFilter => "Browser | ".to_owned() + app.browser_filter.clone().unwrap_or("".to_string()).as_str(),
+        InputMode::BrowserFilter =>
+            format!("Browser | {}", app.browser_filter.clone().unwrap_or("".to_string())),
         _ => "Browser".to_string(),
     };
 
