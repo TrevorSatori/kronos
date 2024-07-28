@@ -32,11 +32,11 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         .items()
         .iter()
         .map(|i| {
-            let style = match app.browser_filter.as_ref()  {
-                Some(s) if (i.contains(s)) => Style::default().fg(Color::Red),
-                _ => Style::default(),
+            let fg = match app.browser_filter.as_ref()  {
+                Some(s) if (i.contains(s)) => Color::Red,
+                _ => Color::Reset,
             };
-            ListItem::new(Text::from(i.to_owned())).style(style)
+            ListItem::new(Text::from(i.to_owned())).style(Style::default().fg(fg))
         })
         .collect();
 
