@@ -155,7 +155,11 @@ fn run_app<B: Backend>(
                             app.set_input_mode(InputMode::Browser);
                             app.browser_filter = None;
                         },
-                        KeyCode::Enter => app.evaluate(),
+                        KeyCode::Enter => {
+                            app.set_input_mode(InputMode::Browser);
+                            app.browser_filter = None;
+                            app.evaluate();
+                        },
                         KeyCode::Down => {
                             let s = &app.browser_filter.clone().unwrap();
                             app.browser_items.select_next_by_match(s)
