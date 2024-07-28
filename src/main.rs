@@ -155,6 +155,7 @@ fn run_app<B: Backend>(
                             app.set_input_mode(InputMode::Browser);
                             app.browser_filter = None;
                         },
+                        KeyCode::Enter => app.evaluate(),
                         KeyCode::Down => {
                             let s = &app.browser_filter.clone().unwrap();
                             app.browser_items.select_next_by_match(s)
@@ -174,6 +175,9 @@ fn run_app<B: Backend>(
                                 Some(s) => Some(s.to_owned() + char.to_string().as_str()),
                                 _ => Some(char.to_string()),
                             };
+                            if !app.browser_items.item().to_lowercase().contains(&app.browser_filter.clone().unwrap().to_lowercase()) {
+                                app.browser_items.select_next_by_match(&app.browser_filter.clone().unwrap());
+                            }
                         },
                         _ => {}
                     },
