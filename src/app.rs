@@ -4,7 +4,7 @@ use std::{
     thread,
     time::Duration,
 };
-
+use ratatui::crossterm::event::{Event, KeyCode, KeyModifiers, KeyEvent};
 use crate::helpers::{gen_funcs, music_handler::MusicHandle, queue::Queue, stateful_list::StatefulList, stateful_table::StatefulTable};
 use crate::state::{save_state, State};
 
@@ -141,6 +141,56 @@ impl<'a> App<'a> {
             Path::new(&current_dir).into()
         } else {
             Path::join(&current_dir, Path::new(&self.browser_items.item()))
+        }
+    }
+
+    pub fn handle_browser_filter_key_events(&mut self, key: KeyEvent) {
+        match key.code {
+            KeyCode::Esc => {
+                self.set_input_mode(InputMode::Browser);
+                self.browser_filter = None;
+            },
+            KeyCode::Enter => {
+                self.set_input_mode(InputMode::Browser);
+                self.browser_filter = None;
+                self.evaluate();
+            },
+            KeyCode::Down => {
+                if let Some(s) = &self.browser_filter {
+                    self.browser_items.select_next_by_match(s)
+                }
+            },
+            KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
+                if let Some(s) = &self.browser_filter {
+                    self.browser_items.select_next_by_match(s)
+                }
+            },
+            KeyCode::Up => {
+                if let Some(s) = &self.browser_filter {
+                    self.browser_items.select_previous_by_match(s)
+                }
+            },
+            KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => {
+                if let Some(s) = &self.browser_filter {
+                    self.browser_items.select_previous_by_match(s)
+                }
+            },
+            KeyCode::Backspace => {
+                self.browser_filter = match &self.browser_filter  {
+                    Some(s) if s.len() > 0 => Some(s[..s.len()-1].to_string()), // TODO: s[..s.len()-1] can panic! use .substring crate
+                    _ => None,
+                };
+            }
+            KeyCode::Char(char) => {
+                self.browser_filter = match &self.browser_filter  {
+                    Some(s) => Some(s.to_owned() + char.to_string().as_str()),
+                    _ => Some(char.to_string()),
+                };
+                if !self.browser_items.item().to_lowercase().contains(&self.browser_filter.clone().unwrap().to_lowercase()) {
+                    self.browser_items.select_next_by_match(&self.browser_filter.clone().unwrap());
+                }
+            },
+            _ => {}
         }
     }
 }

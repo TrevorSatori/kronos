@@ -147,53 +147,7 @@ fn run_app<B: Backend>(
                         }
                         _ => {}
                     },
-                    InputMode::BrowserFilter => match key.code {
-                        KeyCode::Esc => {
-                            app.set_input_mode(InputMode::Browser);
-                            app.browser_filter = None;
-                        },
-                        KeyCode::Enter => {
-                            app.set_input_mode(InputMode::Browser);
-                            app.browser_filter = None;
-                            app.evaluate();
-                        },
-                        KeyCode::Down => {
-                            if let Some(s) = &app.browser_filter {
-                                app.browser_items.select_next_by_match(s)
-                            }
-                        },
-                        KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
-                            if let Some(s) = &app.browser_filter {
-                                app.browser_items.select_next_by_match(s)
-                            }
-                        },
-                        KeyCode::Up => {
-                            if let Some(s) = &app.browser_filter {
-                                app.browser_items.select_previous_by_match(s)
-                            }
-                        },
-                        KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => {
-                            if let Some(s) = &app.browser_filter {
-                                app.browser_items.select_previous_by_match(s)
-                            }
-                        },
-                        KeyCode::Backspace => {
-                            app.browser_filter = match app.browser_filter  {
-                                Some(s) if s.len() > 0 => Some(s[..s.len()-1].to_string()), // TODO: s[..s.len()-1] can panic! use .substring crate
-                                _ => None,
-                            };
-                        }
-                        KeyCode::Char(char) => {
-                            app.browser_filter = match app.browser_filter  {
-                                Some(s) => Some(s.to_owned() + char.to_string().as_str()),
-                                _ => Some(char.to_string()),
-                            };
-                            if !app.browser_items.item().to_lowercase().contains(&app.browser_filter.clone().unwrap().to_lowercase()) {
-                                app.browser_items.select_next_by_match(&app.browser_filter.clone().unwrap());
-                            }
-                        },
-                        _ => {}
-                    },
+                    InputMode::BrowserFilter => app.handle_browser_filter_key_events(key),
                 }
             }
         }
