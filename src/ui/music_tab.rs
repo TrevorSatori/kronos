@@ -61,7 +61,7 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
                 .fg(cfg.highlight_foreground())
                 .add_modifier(Modifier::BOLD),
         )
-        .scroll_padding(8)
+        .scroll_padding(0)
         .highlight_symbol("");
 
     frame.render_stateful_widget(browser_list, browser_queue[0], &mut app.browser_items.state());

@@ -6,7 +6,13 @@ pub struct StatefulList<T> {
     state: ListState,
     items: Vec<T>,
     curr: usize,
+    pub offset: usize,
 }
+
+const padding_desired: usize = 6;
+const screen_size: usize = 42;
+const padding_top: usize = padding_desired;
+const padding_bottom: usize = screen_size - padding_desired;
 
 impl<T> StatefulList<T> {
     pub fn with_items(items: Vec<T>) -> Self {
@@ -14,6 +20,7 @@ impl<T> StatefulList<T> {
             state: ListState::default(),
             items,
             curr: 0,
+            offset: 0,
         }
     }
 
@@ -28,11 +35,19 @@ impl<T> StatefulList<T> {
     }
 
     pub fn state(&self) -> ListState {
-        self.state.clone()
+        self.state.clone().with_offset(self.offset)
     }
 
     pub fn empty(&self) -> bool {
         self.items.is_empty()
+    }
+
+    pub fn set_offset(&mut self, i: usize, padding: usize) {
+        self.offset = if i > padding {
+            (i - padding).min(self.items.len() - screen_size)
+        } else {
+            0
+        };
     }
 
     pub fn next(&mut self) {
@@ -47,7 +62,7 @@ impl<T> StatefulList<T> {
         let i = match self.state.selected() {
             Some(i) => {
                 if i >= self.items.len() - 1 {
-                    0
+                    self.items.len() - 1
                 } else {
                     i + amount
                 }
@@ -56,6 +71,10 @@ impl<T> StatefulList<T> {
         };
         self.curr = i;
         self.state.select(Some(i));
+
+        if i > self.offset + padding_bottom {
+            self.set_offset(i, padding_bottom);
+        }
     }
 
     pub fn previous(&mut self) {
@@ -68,17 +87,17 @@ impl<T> StatefulList<T> {
         };
 
         let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.items.len() - 1
-                } else {
-                    i - amount
-                }
+            Some(i) if i > amount => {
+                i - amount
             }
-            None => 0,
+            _ => 0,
         };
         self.curr = i;
         self.state.select(Some(i));
+
+        if i < self.offset + padding_top {
+            self.set_offset(i, padding_top);
+        }
     }
 
     pub fn unselect(&mut self) {
