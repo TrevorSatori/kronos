@@ -172,7 +172,7 @@ fn run_app<B: Backend>(
                         KeyCode::Char(char) => {
                             app.browser_filter = match app.browser_filter  {
                                 Some(s) => Some(s.to_owned() + char.to_string().as_str()),
-                                _ => Some("".to_string()),
+                                _ => Some(char.to_string()),
                             };
                         },
                         _ => {}
