@@ -11,6 +11,7 @@ use crate::state::{save_state, State};
 #[derive(Clone, Copy)]
 pub enum InputMode {
     Browser,
+    BrowserFilter,
     Queue,
     Controls,
 }
@@ -42,6 +43,7 @@ pub struct App<'a> {
     pub titles: Vec<&'a str>,
     pub active_tab: AppTab,
     pub last_visited_path: PathBuf,
+    pub browser_filter: Option<String>,
 }
 
 impl<'a> App<'a> {
@@ -64,6 +66,7 @@ impl<'a> App<'a> {
             titles: vec!["Music", "Controls"],
             active_tab: AppTab::Music,
             last_visited_path: env::current_dir().unwrap(),
+            browser_filter: None,
         }
     }
 

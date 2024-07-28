@@ -103,6 +103,9 @@ fn run_app<B: Backend>(
                                 InputMode::Controls => app.set_input_mode(InputMode::Browser),
                                 _ => app.set_input_mode(InputMode::Controls),
                             };
+                        },
+                        KeyCode::Char('/') => {
+                            app.set_input_mode(InputMode::BrowserFilter);
                         }
                         _ => {}
                     },
@@ -145,6 +148,25 @@ fn run_app<B: Backend>(
                                 _ => app.set_input_mode(InputMode::Controls),
                             };
                         }
+                        _ => {}
+                    },
+                    InputMode::BrowserFilter => match key.code {
+                        KeyCode::Esc => {
+                            app.set_input_mode(InputMode::Browser);
+                            app.browser_filter = None;
+                        },
+                        KeyCode::Backspace => {
+                            app.browser_filter = match app.browser_filter  {
+                                Some(s) if s.len() > 0 => Some(s[..s.len()-1].to_string()),
+                                _ => None,
+                            };
+                        }
+                        KeyCode::Char(char) => {
+                            app.browser_filter = match app.browser_filter  {
+                                Some(s) => Some(s.to_owned() + char.to_string().as_str()),
+                                _ => Some("".to_string()),
+                            };
+                        },
                         _ => {}
                     },
                 }

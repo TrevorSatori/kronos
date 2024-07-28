@@ -5,8 +5,8 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Gauge, List, ListItem},
     Frame,
 };
-
-use crate::app::{App};
+use ratatui::style::Color;
+use crate::app::{App, InputMode};
 use crate::config::Config;
 use crate::helpers::gen_funcs;
 
@@ -31,14 +31,27 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         .browser_items
         .items()
         .iter()
-        .map(|i| ListItem::new(Text::from(i.to_owned())))
+        .map(|i| {
+            let style = match app.browser_filter.clone()  {
+                Some(s) if (i.contains(&s)) => {
+                    Style::default().fg(Color::Red)
+                },
+                _ => Style::default(),
+            };
+            ListItem::new(Text::from(i.to_owned())).style(style)
+        })
         .collect();
+
+    let title: String = match app.input_mode() {
+        InputMode::BrowserFilter => "Browser | ".to_owned() + app.browser_filter.clone().unwrap_or("".to_string()).as_str(),
+        _ => "Browser".to_string(),
+    };
 
     let browser_list = List::new(browser_items)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("Browser")
+                .title(title)
                 .title_alignment(Alignment::Left)
                 .border_type(BorderType::Rounded),
         )
@@ -49,6 +62,7 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
                 .fg(cfg.highlight_foreground())
                 .add_modifier(Modifier::BOLD),
         )
+        .scroll_padding(8)
         .highlight_symbol("");
 
     frame.render_stateful_widget(browser_list, browser_queue[0], &mut app.browser_items.state());
