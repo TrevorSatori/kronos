@@ -86,9 +86,12 @@ impl Queue {
     }
 
     fn decrement_total_time(&mut self) {
+        // TODO:
+        //   1. store song length for playing file + all queue files in RAM
+        //   2. do "refresh queue length", deterministic, rather than "decrement_total_time"
         let item = self.items[self.curr].clone();
         let length = self.item_length(&item);
-        self.total_time -= length;
+        self.total_time = self.total_time.saturating_sub(length);
     }
 
     // get audio file length
