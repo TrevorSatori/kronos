@@ -12,7 +12,7 @@ use crate::constants::{SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
 pub struct Queue {
     state: ListState,
     items: VecDeque<PathBuf>,
-    curr: usize,
+    selected_item_index: usize,
     total_time: u32,
 }
 
@@ -22,7 +22,7 @@ impl Queue {
         Self {
             state: ListState::default(),
             items,
-            curr: 0,
+            selected_item_index: 0,
             total_time: 0,
         }
     }
@@ -32,7 +32,7 @@ impl Queue {
         if self.items.is_empty() {
             None
         } else {
-            Some(&self.items[self.curr])
+            Some(&self.items[self.selected_item_index])
         }
     }
 
@@ -90,7 +90,7 @@ impl Queue {
         // TODO:
         //   1. store song length for playing file + all queue files in RAM
         //   2. do "refresh queue length", deterministic, rather than "decrement_total_time"
-        let item = self.items[self.curr].clone();
+        let item = self.items[self.selected_item_index].clone();
         let length = self.item_length(&item);
         self.total_time = self.total_time.saturating_sub(length);
     }
@@ -126,7 +126,7 @@ impl Queue {
             }
             None => 0,
         };
-        self.curr = i;
+        self.selected_item_index = i;
         self.state.select(Some(i));
     }
 
@@ -145,7 +145,7 @@ impl Queue {
             }
             None => 0,
         };
-        self.curr = i;
+        self.selected_item_index = i;
         self.state.select(Some(i));
     }
 
@@ -173,18 +173,18 @@ impl Queue {
             // top of queue
         } else if self.items.len() == 1 {
             self.decrement_total_time();
-            self.items.remove(self.curr);
+            self.items.remove(self.selected_item_index);
             self.unselect();
         // if at bottom of queue, remove item and select item above above
         } else if self.state.selected().unwrap() >= (self.items.len() - 1) {
             self.decrement_total_time();
-            self.items.remove(self.curr);
-            self.curr -= 1;
-            self.state.select(Some(self.curr));
+            self.items.remove(self.selected_item_index);
+            self.selected_item_index -= 1;
+            self.state.select(Some(self.selected_item_index));
         // else delete item
         } else if !self.items.is_empty() {
             self.decrement_total_time();
-            self.items.remove(self.curr);
+            self.items.remove(self.selected_item_index);
         };
     }
 }
