@@ -57,7 +57,7 @@ impl<'a> App<'a> {
 
         Self {
             browser_items,
-            queue_items: Queue::with_items(queue),
+            queue_items: Queue::new(queue),
             control_table: StatefulTable::new(),
             music_handle: MusicHandle::new(),
             input_mode: InputMode::Browser,

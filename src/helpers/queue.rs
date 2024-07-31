@@ -17,7 +17,7 @@ pub struct Queue {
 }
 
 impl Queue {
-    pub fn with_items(queue: Vec<String>) -> Self {
+    pub fn new(queue: Vec<String>) -> Self {
         let items = queue.iter().map(|p| PathBuf::from(p)).collect();
         Self {
             state: ListState::default(),
