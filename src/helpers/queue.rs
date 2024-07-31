@@ -18,7 +18,7 @@ pub struct Queue {
 
 impl Queue {
     pub fn new(queue: Vec<String>) -> Self {
-        let items = queue.iter().map(|p| PathBuf::from(p)).collect();
+        let items = queue.iter().map(PathBuf::from).collect();
         Self {
             state: ListState::default(),
             items,
