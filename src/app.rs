@@ -126,10 +126,10 @@ impl<'a> App<'a> {
         self.last_visited_path = env::current_dir().unwrap();
     }
 
+    /// Automatically start playing next song if current one has ended.
     pub fn auto_play(&mut self) {
-        thread::sleep(Duration::from_millis(250)); // TODO: avoid sleeping the main thread
         if self.music_handle.sink_empty() && !self.queue_items.is_empty() {
-            self.music_handle.set_time_played(0);
+            // thread::sleep(Duration::from_millis(250)); // this introduces a pause between tracks. should be configurable, and there must be a better way.
             self.music_handle.play(self.queue_items.pop());
         }
     }
@@ -138,9 +138,8 @@ impl<'a> App<'a> {
         if self.music_handle.sink_empty() && self.queue_items.is_empty() {
             0.0
         } else if !self.music_handle.sink_empty() {
-            f64::clamp(self.music_handle.time_played() as f64 / self.music_handle.song_length() as f64, 0.0, 1.0)
+            f64::clamp(self.music_handle.time_played().as_secs_f64() / self.music_handle.song_length() as f64, 0.0, 1.0)
         } else {
-            self.auto_play(); // TODO: move elsewhere (keep this function side-effect-free!)
             0.0
         }
     }

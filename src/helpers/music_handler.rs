@@ -16,7 +16,6 @@ pub struct MusicHandle {
     music_output: Arc<(OutputStream, OutputStreamHandle)>,
     sink: Arc<Sink>,
     song_length: u32,
-    time_played: Arc<Mutex<u32>>,
     currently_playing: String,
     volume: f32,
 }
@@ -33,7 +32,6 @@ impl MusicHandle {
             music_output: Arc::new(OutputStream::try_default().unwrap()),
             sink: Arc::new(Sink::new_idle().0), // more efficient way, shouldnt have to do twice?
             song_length: 0,
-            time_played: Arc::new(Mutex::new(0)),
             currently_playing: "CURRENT SONG".to_string(),
             volume: 1.,
         }
@@ -47,29 +45,21 @@ impl MusicHandle {
         self.song_length
     }
 
-    pub fn time_played(&self) -> u32 {
-        *self.time_played.lock().unwrap()
+    pub fn time_played(&self) -> Duration {
+        self.sink.get_pos()
     }
 
     pub fn sink_empty(&self) -> bool {
         self.sink.empty()
     }
 
-    pub fn set_time_played(&mut self, t: u32) {
-        *self.time_played.lock().unwrap() = t;
-    }
-    // set currently playing song
     pub fn set_currently_playing(&mut self, path: &PathBuf) {
         self.currently_playing = gen_funcs::audio_display(path);
     }
 
-    // update current song and play
     pub fn play(&mut self, path: PathBuf) {
-        // if song already playing, need to be able to restart tho
         self.sink.stop();
-        *self.time_played.lock().unwrap() = 0;
 
-        // set currently playing
         self.currently_playing = path
             .clone()
             .file_name()
@@ -86,31 +76,15 @@ impl MusicHandle {
         // clone sink for thread
         let sclone = self.sink.clone();
 
-        let tpclone = self.time_played.clone();
-
         let _t1 = thread::spawn(move || {
-            // can send in through function
             let file = BufReader::new(File::open(path).unwrap());
             let source = Decoder::new(file).unwrap();
 
-            // Arc inside a thread inside a thread. BOOM, INCEPTION
-            let sink_clone_2 = sclone.clone();
-            let tpclone2 = tpclone.clone();
-
             sclone.append(source);
 
-            let _ = thread::spawn(move || {
-                // sleep for 1 second then increment count
-                while sink_clone_2.len() == 1 {
-                    thread::sleep(Duration::from_secs(1));
-
-                    if !sink_clone_2.is_paused() {
-                        *tpclone2.lock().unwrap() += 1;
-                    }
-                }
-            });
-            // if sink.stop, thread destroyed.
             sclone.sleep_until_end();
+            eprintln!("Song finished playing");
+            // TODO: notify something so we can auto_play here rather than randomly probing
         });
     }
 

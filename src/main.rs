@@ -66,6 +66,8 @@ fn run_app<B: Backend>(
     loop {
         terminal.draw(|f| render_ui(f, &mut app, &cfg))?;
 
+        app.auto_play(); // TODO: hook into Sink's sleep_until_end
+
         let timeout = tick_rate.saturating_sub(last_tick.elapsed());
 
         if event::poll(timeout)? {
