@@ -4,7 +4,7 @@ use std::{
     thread,
     time::Duration,
 };
-use ratatui::crossterm::event::{Event, KeyCode, KeyModifiers, KeyEvent};
+use ratatui::crossterm::event::{KeyCode, KeyModifiers, KeyEvent};
 use crate::helpers::{gen_funcs, music_handler::MusicHandle, queue::Queue, stateful_list::StatefulList, stateful_table::StatefulTable};
 use crate::state::{save_state, State};
 
@@ -45,7 +45,7 @@ pub struct App<'a> {
 }
 
 impl<'a> App<'a> {
-    pub fn new(initial_directory: Option<String>) -> Self {
+    pub fn new(initial_directory: Option<String>, queue: Vec<String>) -> Self {
         if let Some(path) = initial_directory {
             env::set_current_dir(&path).unwrap_or_else(|err| {
                 eprintln!("Could not set_current_dir to last_visited_path\n\tPath: {}\n\tError: {:?}", path, err);
@@ -57,7 +57,7 @@ impl<'a> App<'a> {
 
         Self {
             browser_items,
-            queue_items: Queue::with_items(),
+            queue_items: Queue::with_items(queue),
             control_table: StatefulTable::new(),
             music_handle: MusicHandle::new(),
             input_mode: InputMode::Browser,
@@ -69,8 +69,18 @@ impl<'a> App<'a> {
     }
 
     pub fn save_state(self) {
+        let queue_items = self
+            .queue_items
+            .items()
+            .iter()
+            .map(|i| i.to_str())
+            .filter(|i| i.is_some())
+            .map(|i| i.unwrap().to_string())
+            .collect();
+
         save_state(State {
             last_visited_path: self.last_visited_path.to_str().map(String::from),
+            queue_items: Some(queue_items),
         }).unwrap_or_else(|error| {
             eprintln!("Error in save_state {}", error);
         });
@@ -117,7 +127,7 @@ impl<'a> App<'a> {
     }
 
     pub fn auto_play(&mut self) {
-        thread::sleep(Duration::from_millis(250));
+        thread::sleep(Duration::from_millis(250)); // TODO: avoid sleeping the main thread
         if self.music_handle.sink_empty() && !self.queue_items.is_empty() {
             self.music_handle.set_time_played(0);
             self.music_handle.play(self.queue_items.pop());
@@ -130,7 +140,7 @@ impl<'a> App<'a> {
         } else if !self.music_handle.sink_empty() {
             f64::clamp(self.music_handle.time_played() as f64 / self.music_handle.song_length() as f64, 0.0, 1.0)
         } else {
-            self.auto_play();
+            self.auto_play(); // TODO: move elsewhere (keep this function side-effect-free!)
             0.0
         }
     }

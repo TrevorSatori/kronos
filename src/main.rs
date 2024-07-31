@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(backend)?;
 
     let tick_rate = Duration::from_secs(1);
-    let app = App::new(state.last_visited_path);
+    let app = App::new(state.last_visited_path, state.queue_items.unwrap_or(vec![]));
     let cfg = Config::new();
 
     let res = run_app(&mut terminal, app, cfg, tick_rate);

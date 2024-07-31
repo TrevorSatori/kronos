@@ -17,10 +17,11 @@ pub struct Queue {
 }
 
 impl Queue {
-    pub fn with_items() -> Self {
+    pub fn with_items(queue: Vec<String>) -> Self {
+        let items = queue.iter().map(|p| PathBuf::from(p)).collect();
         Self {
             state: ListState::default(),
-            items: VecDeque::new(),
+            items,
             curr: 0,
             total_time: 0,
         }
