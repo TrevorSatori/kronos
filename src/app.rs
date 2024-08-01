@@ -1,8 +1,6 @@
 use std::{
     env,
     path::{Path, PathBuf},
-    thread,
-    time::Duration,
 };
 use ratatui::crossterm::event::{KeyCode, KeyModifiers, KeyEvent};
 use crate::helpers::{gen_funcs, music_handler::MusicHandle, queue::Queue, stateful_list::StatefulList, stateful_table::StatefulTable};
@@ -61,7 +59,7 @@ impl<'a> App<'a> {
             control_table: StatefulTable::new(),
             music_handle: MusicHandle::new(),
             input_mode: InputMode::Browser,
-            titles: vec!["Music", "Controls"],
+            titles: vec!["Music", "Help"],
             active_tab: AppTab::Music,
             last_visited_path: env::current_dir().unwrap(),
             browser_filter: None,

@@ -1,31 +1,29 @@
-use ratatui::{
-    layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
-    text::{Text},
-    widgets::{Block, BorderType, Borders, Gauge, List, ListItem},
-    Frame,
-};
+use std::time::Duration;
+use ratatui::{layout::{Alignment, Constraint, Direction, Layout, Rect}, style::{Modifier, Style}, text::{Text}, widgets::{Block, BorderType, Borders, Gauge, List, ListItem}, Frame};
 use ratatui::style::Color;
+use ratatui::text::{Line, Span};
+use ratatui::widgets::block::Position;
+use ratatui::widgets::{Padding};
 use crate::app::{App, InputMode};
 use crate::config::Config;
 use crate::helpers::gen_funcs;
 
 pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
-    let browser_queue = Layout::default()
+    let main_layout = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
         .split(chunks);
 
-    let queue_playing = Layout::default()
+    let queue_playing_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
             [
-                Constraint::Percentage(100 - cfg.progress_bar()),
-                Constraint::Percentage(cfg.progress_bar()),
+                Constraint::Min(1),
+                Constraint::Length(2),
             ]
             .as_ref(),
         )
-        .split(browser_queue[1]);
+        .split(main_layout[1]);
 
     let browser_items: Vec<ListItem> = app
         .browser_items
@@ -40,22 +38,39 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         })
         .collect();
 
-    let title: String = match app.input_mode() {
+    let folder_name = app.last_visited_path.file_name().map(|s| s.to_str()).flatten().map(String::from).unwrap_or("".to_string());
+
+    let browser_title = match app.input_mode() {
         InputMode::BrowserFilter =>
-            format!("Browser | {}", app.browser_filter.clone().unwrap_or("".to_string())),
-        _ => "Browser".to_string(),
+            Line::from(vec![
+                Span::styled(
+                    "  search: ",
+                    Style::default()
+                ),
+                Span::styled(
+                        app.browser_filter.clone().unwrap_or("".to_string()),
+                        Style::default().fg(Color::Red)
+                ),
+            ]),
+        _ => Line::from(format!(" {}", folder_name)),
     };
 
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .title(title)
+    let browser_block = Block::default()
+        .borders(Borders::RIGHT)
+        .title(browser_title)
         .title_alignment(Alignment::Left)
-        .border_type(BorderType::Rounded);
+        .title_position(Position::Top)
+        .title_style(Style::new()
+            .bg(cfg.background())
+            .fg(cfg.foreground())
+            .add_modifier(Modifier::HIDDEN))
+        .border_type(BorderType::Double)
+        .padding(Padding::new(1, 1, 1, 2));
 
-    app.browser_items.height = block.inner(browser_queue[0]).height;
+    app.browser_items.height = browser_block.inner(main_layout[0]).height;
 
     let browser_list = List::new(browser_items)
-        .block(block)
+        .block(browser_block)
         .style(Style::default().fg(cfg.foreground()))
         .highlight_style(
             Style::default()
@@ -67,7 +82,7 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         .highlight_symbol("");
 
 
-    frame.render_stateful_widget(browser_list, browser_queue[0], &mut app.browser_items.state());
+    frame.render_stateful_widget(browser_list, main_layout[0], &mut app.browser_items.state());
 
     let queue_items: Vec<ListItem> = app
         .queue_items
@@ -77,7 +92,7 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         .collect();
 
     let queue_title = format!(
-        "| Queue: {queue_items} Songs |{total_time}",
+        "queue: {queue_items} songs, {total_time}",
         queue_items = app.queue_items.length(),
         total_time = app.queue_items.total_time(),
     );
@@ -85,10 +100,10 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
     let queue_list = List::new(queue_items)
         .block(
             Block::default()
-                .borders(Borders::ALL)
+                .borders(Borders::NONE)
                 .title(queue_title)
-                .title_alignment(Alignment::Left)
-                .border_type(BorderType::Rounded),
+                .title_alignment(Alignment::Center)
+                .padding(Padding::new(1, 1, 1, 1))
         )
         .style(Style::default().fg(cfg.foreground()))
         .highlight_style(
@@ -98,20 +113,34 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol("");
-    frame.render_stateful_widget(queue_list, queue_playing[0], &mut app.queue_items.state());
+    frame.render_stateful_widget(queue_list, queue_playing_layout[0], &mut app.queue_items.state());
 
-    let playing_title = format!("| {current_song} |", current_song = app.current_song());
+    fn duration_to_string(duration: Duration) -> String {
+        seconds_to_string(duration.as_secs())
+    }
 
-    let playing = Gauge::default()
+    fn seconds_to_string(duration: u64) -> String {
+        let seconds = duration % 60;
+        let minutes = duration.saturating_div(60);
+        format!("{:0>2}:{:0>2}", minutes, seconds)
+    }
+
+    let playing_gauge_label = format!(
+        "{time_played} / {current_song_length}",
+        time_played = duration_to_string(app.music_handle.time_played()),
+        current_song_length = seconds_to_string(app.music_handle.song_length() as u64),
+    );
+
+    let playing_gauge = Gauge::default()
         .block(
             Block::default()
-                .title(playing_title)
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
+                .title(app.current_song())
+                .borders(Borders::NONE)
                 .title_alignment(Alignment::Center),
         )
         .style(Style::default().fg(cfg.foreground()))
+        .label(playing_gauge_label)
         .gauge_style(Style::default().fg(cfg.highlight_background()))
         .ratio(app.song_progress());
-    frame.render_widget(playing, queue_playing[1]);
+    frame.render_widget(playing_gauge, queue_playing_layout[1]);
 }

@@ -70,7 +70,8 @@ impl Queue {
             time_parts.push(format!("{seconds} seconds"));
         }
 
-        format!(" Total Length: {} |", time_parts.join(" "))
+        // format!("{}", time_parts.join(" "))
+        time_parts.join(" ")
     }
 
     pub fn is_empty(&self) -> bool {
@@ -90,6 +91,7 @@ impl Queue {
         // TODO:
         //   1. store song length for playing file + all queue files in RAM
         //   2. do "refresh queue length", deterministic, rather than "decrement_total_time"
+        // eprintln!("decrement_total_time {:?} / {:?}", self.selected_item_index, self.items.len());
         let item = self.items[self.selected_item_index].clone();
         let length = self.item_length(&item);
         self.total_time = self.total_time.saturating_sub(length);
