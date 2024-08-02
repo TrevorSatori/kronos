@@ -80,17 +80,11 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         .map(|i| ListItem::new(Text::from(gen_funcs::audio_display(i))))
         .collect();
 
-    let queue_title = format!(
-        "queue: {queue_items} songs, {total_time}",
-        queue_items = app.queue_items.length(),
-        total_time = app.queue_items.total_time(),
-    );
-
     let queue_list = List::new(queue_items)
         .block(
             Block::default()
                 .borders(Borders::NONE)
-                .title(queue_title)
+                .title("")
                 .title_alignment(Alignment::Center)
                 .padding(Padding::new(1, 1, 1, 1))
         )
