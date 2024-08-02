@@ -17,7 +17,7 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
 
     let main_layouts = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(2)].as_ref())
+        .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(2), Constraint::Length(1)].as_ref())
         .split(size);
 
     let block = Block::default().style(Style::default().bg(cfg.background()));
@@ -70,6 +70,14 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
         format!("{:0>2}:{:0>2}", minutes, seconds)
     }
 
+    let playing_file = Block::default()
+        .style(Style::default().fg(cfg.foreground()))
+        .title(app.current_song())
+        .borders(Borders::NONE)
+        .title_alignment(Alignment::Center)
+        .title_position(ratatui::widgets::block::Position::Bottom);
+    f.render_widget(playing_file, main_layouts[2]);
+
     let playing_gauge_label = format!(
         "{time_played} / {current_song_length}",
         time_played = duration_to_string(app.music_handle.time_played()),
@@ -77,16 +85,10 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
     );
 
     let playing_gauge = Gauge::default()
-        .block(
-            Block::default()
-                .title(app.current_song())
-                .borders(Borders::NONE)
-                .title_alignment(Alignment::Center),
-        )
         .style(Style::default().fg(cfg.foreground()))
         .label(playing_gauge_label)
         .gauge_style(Style::default().fg(cfg.highlight_background()))
         .ratio(app.song_progress());
-    f.render_widget(playing_gauge, main_layouts[2]);
+    f.render_widget(playing_gauge, main_layouts[3]);
 
 }
