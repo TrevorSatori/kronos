@@ -122,4 +122,18 @@ impl MusicHandle {
         }
         self.sink.set_volume(self.volume)
     }
+
+    pub fn seek_forward(&mut self) {
+        let target = self.sink.get_pos().saturating_add(Duration::from_secs(5)).min(self.song_length);
+        self.sink.try_seek(target).unwrap_or_else(|e| {
+            eprintln!("could not seek {:?}", e);
+        });
+    }
+
+    pub fn seek_backward(&mut self) {
+        let target = self.sink.get_pos().saturating_sub(Duration::from_secs(5)).max(Duration::from_secs(0));
+        self.sink.try_seek(target).unwrap_or_else(|e| {
+            eprintln!("could not seek {:?}", e);
+        });
+    }
 }
