@@ -136,7 +136,7 @@ impl<'a> App<'a> {
         if self.music_handle.sink_empty() && self.queue_items.is_empty() {
             0.0
         } else if !self.music_handle.sink_empty() {
-            f64::clamp(self.music_handle.time_played().as_secs_f64() / self.music_handle.song_length() as f64, 0.0, 1.0)
+            f64::clamp(self.music_handle.time_played().as_secs_f64() / self.music_handle.song_length().as_secs_f64(), 0.0, 1.0)
         } else {
             0.0
         }

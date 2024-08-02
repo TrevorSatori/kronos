@@ -15,7 +15,7 @@ use super::gen_funcs;
 pub struct MusicHandle {
     music_output: Arc<(OutputStream, OutputStreamHandle)>,
     sink: Arc<Sink>,
-    song_length: u32,
+    song_length: Duration,
     currently_playing: String,
     volume: f32,
 }
@@ -30,9 +30,9 @@ impl MusicHandle {
     pub fn new() -> Self {
         Self {
             music_output: Arc::new(OutputStream::try_default().unwrap()),
-            sink: Arc::new(Sink::new_idle().0), // more efficient way, shouldnt have to do twice?
-            song_length: 0,
-            currently_playing: "CURRENT SONG".to_string(),
+            sink: Arc::new(Sink::new_idle().0), // more efficient way, shouldn't have to do twice?
+            song_length: Duration::new(0,0),
+            currently_playing: "".to_string(),
             volume: 1.,
         }
     }
@@ -41,7 +41,7 @@ impl MusicHandle {
         self.currently_playing.clone()
     }
 
-    pub fn song_length(&self) -> u32 {
+    pub fn song_length(&self) -> Duration {
         self.song_length
     }
 
@@ -109,10 +109,8 @@ impl MusicHandle {
             .expect("ERROR: Failed to read file!");
 
         let properties = &tagged_file.properties();
-        let duration = properties.duration();
 
-        // update song length, currently playing
-        self.song_length = duration.as_secs() as u32;
+        self.song_length = properties.duration();
     }
 
     pub fn change_volume(&mut self, volume: f32) {

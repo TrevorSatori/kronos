@@ -81,7 +81,7 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
     let playing_gauge_label = format!(
         "{time_played} / {current_song_length}",
         time_played = duration_to_string(app.music_handle.time_played()),
-        current_song_length = seconds_to_string(app.music_handle.song_length() as u64),
+        current_song_length = duration_to_string(app.music_handle.song_length()),
     );
 
     let playing_gauge = Gauge::default()
