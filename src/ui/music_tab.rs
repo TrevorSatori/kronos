@@ -14,17 +14,6 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
         .split(chunks);
 
-    let queue_playing_layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Min(1),
-                Constraint::Length(2),
-            ]
-            .as_ref(),
-        )
-        .split(main_layout[1]);
-
     let browser_items: Vec<ListItem> = app
         .browser_items
         .items()
@@ -113,34 +102,5 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol("");
-    frame.render_stateful_widget(queue_list, queue_playing_layout[0], &mut app.queue_items.state());
-
-    fn duration_to_string(duration: Duration) -> String {
-        seconds_to_string(duration.as_secs())
-    }
-
-    fn seconds_to_string(duration: u64) -> String {
-        let seconds = duration % 60;
-        let minutes = duration.saturating_div(60);
-        format!("{:0>2}:{:0>2}", minutes, seconds)
-    }
-
-    let playing_gauge_label = format!(
-        "{time_played} / {current_song_length}",
-        time_played = duration_to_string(app.music_handle.time_played()),
-        current_song_length = seconds_to_string(app.music_handle.song_length() as u64),
-    );
-
-    let playing_gauge = Gauge::default()
-        .block(
-            Block::default()
-                .title(app.current_song())
-                .borders(Borders::NONE)
-                .title_alignment(Alignment::Center),
-        )
-        .style(Style::default().fg(cfg.foreground()))
-        .label(playing_gauge_label)
-        .gauge_style(Style::default().fg(cfg.highlight_background()))
-        .ratio(app.song_progress());
-    frame.render_widget(playing_gauge, queue_playing_layout[1]);
+    frame.render_stateful_widget(queue_list, main_layout[1], &mut app.queue_items.state());
 }

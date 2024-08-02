@@ -1,3 +1,4 @@
+use std::time::Duration;
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Modifier, Style},
@@ -6,7 +7,7 @@ use ratatui::{
     Frame,
     prelude::*,
 };
-use ratatui::widgets::{BorderType, Padding};
+use ratatui::widgets::{BorderType, Gauge};
 use crate::app::{App, AppTab};
 use crate::config::Config;
 use crate::ui::{music_tab, instructions_tab};
@@ -16,7 +17,7 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
 
     let main_layouts = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
+        .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(2)].as_ref())
         .split(size);
 
     let block = Block::default().style(Style::default().bg(cfg.background()));
@@ -58,4 +59,34 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
         AppTab::Music => music_tab(f, app, main_layouts[1], cfg),
         AppTab::Controls => instructions_tab(f, app, main_layouts[1], cfg),
     };
+
+    fn duration_to_string(duration: Duration) -> String {
+        seconds_to_string(duration.as_secs())
+    }
+
+    fn seconds_to_string(duration: u64) -> String {
+        let seconds = duration % 60;
+        let minutes = duration.saturating_div(60);
+        format!("{:0>2}:{:0>2}", minutes, seconds)
+    }
+
+    let playing_gauge_label = format!(
+        "{time_played} / {current_song_length}",
+        time_played = duration_to_string(app.music_handle.time_played()),
+        current_song_length = seconds_to_string(app.music_handle.song_length() as u64),
+    );
+
+    let playing_gauge = Gauge::default()
+        .block(
+            Block::default()
+                .title(app.current_song())
+                .borders(Borders::NONE)
+                .title_alignment(Alignment::Center),
+        )
+        .style(Style::default().fg(cfg.foreground()))
+        .label(playing_gauge_label)
+        .gauge_style(Style::default().fg(cfg.highlight_background()))
+        .ratio(app.song_progress());
+    f.render_widget(playing_gauge, main_layouts[2]);
+
 }
