@@ -89,14 +89,14 @@ fn run_app<B: Backend>(
                         KeyCode::PageDown => app.browser_items.next_by(5),
                         KeyCode::End => app.browser_items.select(app.browser_items.items().len() - 1),
                         KeyCode::Home => app.browser_items.select(0),
-                        KeyCode::Right | KeyCode::Char('l') => {
+                        KeyCode::Tab => {
                             app.browser_items.unselect();
                             app.set_input_mode(InputMode::Queue);
                             app.queue_items.next();
                         }
                         KeyCode::Char('-') => app.music_handle.change_volume(-0.05),
                         KeyCode::Char('+') => app.music_handle.change_volume(0.05),
-                        KeyCode::Tab => {
+                        KeyCode::Char('2') => {
                             app.next();
                             match app.input_mode() {
                                 InputMode::Controls => app.set_input_mode(InputMode::Browser),
@@ -120,12 +120,12 @@ fn run_app<B: Backend>(
                         KeyCode::Down | KeyCode::Char('j') => app.queue_items.next(),
                         KeyCode::Up | KeyCode::Char('k') => app.queue_items.previous(),
                         KeyCode::Char('r') => app.queue_items.remove(),
-                        KeyCode::Left | KeyCode::Char('h') => {
+                        KeyCode::Tab => {
                             app.queue_items.unselect();
                             app.set_input_mode(InputMode::Browser);
                             app.browser_items.next();
                         }
-                        KeyCode::Tab => {
+                        KeyCode::Char('2') => {
                             app.next();
                             match app.input_mode() {
                                 InputMode::Controls => app.set_input_mode(InputMode::Browser),
@@ -140,7 +140,7 @@ fn run_app<B: Backend>(
                         KeyCode::Char('g') => app.music_handle.skip(),
                         KeyCode::Down | KeyCode::Char('j') => app.control_table.next(),
                         KeyCode::Up | KeyCode::Char('k') => app.control_table.previous(),
-                        KeyCode::Tab => {
+                        KeyCode::Char('1') => {
                             app.next();
                             match app.input_mode() {
                                 InputMode::Controls => app.set_input_mode(InputMode::Browser),
