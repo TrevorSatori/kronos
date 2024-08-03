@@ -17,7 +17,7 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
 
     let main_layouts = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(2), Constraint::Length(1)].as_ref())
+        .constraints([Constraint::Length(2), Constraint::Min(0), Constraint::Length(2), Constraint::Length(1)].as_ref())
         .split(size);
 
     let block = Block::default().style(Style::default().bg(cfg.background()));
@@ -27,19 +27,15 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
         .titles
         .iter()
         .map(|t| {
-            let (first, rest) = t.split_at(1);
-            Line::from(vec![
-                Span::styled(first, Style::default().fg(cfg.foreground())),
-                Span::styled(rest, Style::default().fg(cfg.foreground())),
-            ])
+            Line::from(Span::styled(t.to_string(), Style::default().fg(cfg.foreground())))
         })
         .collect();
 
     let tabs = Tabs::new(titles)
         .block(Block::default()
-            .borders(Borders::BOTTOM | Borders::TOP)
-            .border_type(BorderType::QuadrantInside)
-            .border_style(Style::default().fg(Color::from_hsl(29.0, 34.0, 20.0)).bg(cfg.background()))
+            .borders(Borders::BOTTOM)
+            .border_type(BorderType::Plain)
+            .border_style(Style::default().fg(cfg.background()).bg(cfg.background()))
         )
         .select(app.active_tab as usize)
         .style(
