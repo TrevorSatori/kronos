@@ -42,7 +42,7 @@ fn top_bar<'a>(app: &App, cfg: &Config) -> Block<'a> {
     top_bar
 }
 
-fn file_list<'a>(app: &mut App, cfg: &Config) -> List<'a> {
+fn file_list<'a>(app: &App, cfg: &Config) -> List<'a> {
     let browser_items: Vec<ListItem> = app
         .browser_items
         .items()
@@ -68,6 +68,28 @@ fn file_list<'a>(app: &mut App, cfg: &Config) -> List<'a> {
         .highlight_symbol("");
 
     browser_list
+}
+
+
+fn queue_list<'a>(app: &App, cfg: &Config) -> List<'a> {
+    let queue_items: Vec<ListItem> = app
+        .queue_items
+        .items()
+        .iter()
+        .map(|i| ListItem::new(Text::from(gen_funcs::audio_display(i))))
+        .collect();
+
+    let queue_list = List::new(queue_items)
+        .style(Style::default().fg(cfg.foreground()))
+        .highlight_style(
+            Style::default()
+                .bg(cfg.highlight_background())
+                .fg(cfg.highlight_foreground())
+                .add_modifier(Modifier::BOLD),
+        )
+        .highlight_symbol("");
+
+    queue_list
 }
 
 pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
@@ -103,22 +125,5 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         .border_type(BorderType::Double);
 
     frame.render_widget(vertical_separator, separator_middle);
-
-    let queue_items: Vec<ListItem> = app
-        .queue_items
-        .items()
-        .iter()
-        .map(|i| ListItem::new(Text::from(gen_funcs::audio_display(i))))
-        .collect();
-
-    let queue_list = List::new(queue_items)
-        .style(Style::default().fg(cfg.foreground()))
-        .highlight_style(
-            Style::default()
-                .bg(cfg.highlight_background())
-                .fg(cfg.highlight_foreground())
-                .add_modifier(Modifier::BOLD),
-        )
-        .highlight_symbol("");
-    frame.render_stateful_widget(queue_list, area_main_right, &mut app.queue_items.state());
+    frame.render_stateful_widget(queue_list(app, cfg), area_main_right, &mut app.queue_items.state());
 }
