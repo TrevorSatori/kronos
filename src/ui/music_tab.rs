@@ -53,9 +53,9 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
 
     frame.render_widget(top_bar(app, cfg), area_top);
 
-    let [area_main_left, area_main_right] = *Layout::default()
+    let [area_main_left, area_main_center, area_main_right] = *Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+        .constraints([Constraint::Percentage(50), Constraint::Length(5), Constraint::Percentage(50)].as_ref())
         .split(area_main) else {
         panic!("Layout.split() failed");
     };
@@ -73,9 +73,7 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         })
         .collect();
 
-    let browser_block = Block::default()
-        .borders(Borders::RIGHT)
-        .border_type(BorderType::Double);
+    let browser_block = Block::default().borders(Borders::NONE);
 
     app.browser_items.height = browser_block.inner(area_main_left).height;
 
@@ -94,6 +92,19 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
 
     frame.render_stateful_widget(browser_list, area_main_left, &mut app.browser_items.state());
 
+    let [separator_left, separator_middle, separator_right] = *Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Min(1), Constraint::Length(1), Constraint::Min(1)].as_ref())
+        .split(area_main_center) else {
+        panic!("Layout.split() failed");
+    };
+
+    let vertical_separator = Block::default()
+        .borders(Borders::RIGHT)
+        .border_type(BorderType::Double);
+
+    frame.render_widget(vertical_separator, separator_middle);
+
     let queue_items: Vec<ListItem> = app
         .queue_items
         .items()
@@ -102,11 +113,6 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         .collect();
 
     let queue_list = List::new(queue_items)
-        .block(
-            Block::default()
-                .borders(Borders::NONE)
-                .padding(Padding::left(1))
-        )
         .style(Style::default().fg(cfg.foreground()))
         .highlight_style(
             Style::default()
