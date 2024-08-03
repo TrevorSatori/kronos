@@ -2,12 +2,10 @@ use std::{
     collections::VecDeque,
     path::{Path, PathBuf},
 };
-
 use lofty::{AudioFile, Probe};
 use ratatui::widgets::ListState;
 
 use super::gen_funcs::bulk_add;
-use crate::constants::{SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
 
 pub struct Queue {
     state: ListState,
@@ -45,31 +43,7 @@ impl Queue {
         self.items.len()
     }
 
-    pub fn total_time(&self) -> String {
-        let days = self.total_time / SECONDS_PER_DAY;
-        let hours = (self.total_time % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
-        let minutes = (self.total_time % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
-        let seconds = self.total_time % SECONDS_PER_MINUTE;
-
-        let mut time_parts = vec![];
-
-        if hours > 0 || days > 0 {
-            time_parts.push(format!("{:0>2}", hours));
-        }
-
-        if minutes > 0 || hours > 0 || days > 0 {
-            time_parts.push(format!("{:0>2}", minutes));
-        }
-        if seconds > 0 || time_parts.is_empty() {
-            time_parts.push(format!("{:0>2}", seconds));
-        }
-
-        if days > 0 {
-            format!("{}d {}", days, time_parts.join(":"))
-        } else {
-            time_parts.join(":")
-        }
-    }
+    pub fn total_time(&self) -> u32 { self.total_time }
 
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()
