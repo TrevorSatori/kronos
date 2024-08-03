@@ -53,25 +53,22 @@ impl Queue {
 
         let mut time_parts = vec![];
 
-        if days > 0 {
-            time_parts.push(format!("{days} days"));
-        }
-
         if hours > 0 || days > 0 {
-            time_parts.push(format!("{hours} hours"));
+            time_parts.push(format!("{:0>2}", hours));
         }
 
         if minutes > 0 || hours > 0 || days > 0 {
-            // Include minutes if there are any hours or days
-            time_parts.push(format!("{minutes} minutes"));
+            time_parts.push(format!("{:0>2}", minutes));
         }
         if seconds > 0 || time_parts.is_empty() {
-            // Always include seconds if there's no other component
-            time_parts.push(format!("{seconds} seconds"));
+            time_parts.push(format!("{:0>2}", seconds));
         }
 
-        // format!("{}", time_parts.join(" "))
-        time_parts.join(" ")
+        if days > 0 {
+            format!("{}d {}", days, time_parts.join(":"))
+        } else {
+            time_parts.join(":")
+        }
     }
 
     pub fn is_empty(&self) -> bool {
