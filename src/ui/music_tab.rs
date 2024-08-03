@@ -2,7 +2,7 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style, Color},
     text::{Text, Line, Span},
-    widgets::{Block, BorderType, Borders, List, ListItem, Padding},
+    widgets::{Block, BorderType, Borders, List, ListItem},
     Frame,
 };
 use ratatui::widgets::block::Position;
@@ -42,24 +42,7 @@ fn top_bar<'a>(app: &App, cfg: &Config) -> Block<'a> {
     top_bar
 }
 
-pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
-    let [area_top, area_main] = *Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(2), Constraint::Min(1)].as_ref())
-        .horizontal_margin(2)
-        .split(chunks) else {
-        panic!("Layout.split() failed");
-    };
-
-    frame.render_widget(top_bar(app, cfg), area_top);
-
-    let [area_main_left, area_main_center, area_main_right] = *Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Length(5), Constraint::Percentage(50)].as_ref())
-        .split(area_main) else {
-        panic!("Layout.split() failed");
-    };
-
+fn file_list<'a>(app: &mut App, cfg: &Config) -> List<'a> {
     let browser_items: Vec<ListItem> = app
         .browser_items
         .items()
@@ -73,12 +56,7 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         })
         .collect();
 
-    let browser_block = Block::default().borders(Borders::NONE);
-
-    app.browser_items.height = browser_block.inner(area_main_left).height;
-
     let browser_list = List::new(browser_items)
-        .block(browser_block)
         .style(Style::default().fg(cfg.foreground()))
         .highlight_style(
             Style::default()
@@ -89,13 +67,35 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         .scroll_padding(0)
         .highlight_symbol("");
 
+    browser_list
+}
 
-    frame.render_stateful_widget(browser_list, area_main_left, &mut app.browser_items.state());
+pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
+    let [area_top, area_main] = *Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(2), Constraint::Min(1)].as_ref())
+        .horizontal_margin(2)
+        .split(chunks) else {
+        panic!("Layout.split() failed");
+    };
+
+    frame.render_widget(top_bar(app, cfg), area_top);
+
+    let [area_main_left, area_main_separator, area_main_right] = *Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Length(5), Constraint::Percentage(50)].as_ref())
+        .split(area_main) else {
+        panic!("Layout.split() failed");
+    };
+
+    app.browser_items.height = area_main_left.height;
+
+    frame.render_stateful_widget(file_list(app, cfg), area_main_left, &mut app.browser_items.state());
 
     let [separator_left, separator_middle, separator_right] = *Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Min(1), Constraint::Length(1), Constraint::Min(1)].as_ref())
-        .split(area_main_center) else {
+        .split(area_main_separator) else {
         panic!("Layout.split() failed");
     };
 
