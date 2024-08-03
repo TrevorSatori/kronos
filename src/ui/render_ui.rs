@@ -12,6 +12,13 @@ use crate::app::{App, AppTab};
 use crate::config::Config;
 use crate::ui::{music_tab, instructions_tab};
 
+fn duration_to_string(duration: Duration) -> String {
+    let total_seconds = duration.as_secs();
+    let seconds = total_seconds % 60;
+    let minutes = total_seconds.saturating_div(60);
+    format!("{:0>2}:{:0>2}", minutes, seconds)
+}
+
 pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
     let size = f.size();
 
@@ -55,16 +62,6 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
         AppTab::Music => music_tab(f, app, main_layouts[1], cfg),
         AppTab::Controls => instructions_tab(f, app, main_layouts[1], cfg),
     };
-
-    fn duration_to_string(duration: Duration) -> String {
-        seconds_to_string(duration.as_secs())
-    }
-
-    fn seconds_to_string(duration: u64) -> String {
-        let seconds = duration % 60;
-        let minutes = duration.saturating_div(60);
-        format!("{:0>2}:{:0>2}", minutes, seconds)
-    }
 
     if let Some(current_song) = app.current_song() {
         let playing_file = Block::default()
