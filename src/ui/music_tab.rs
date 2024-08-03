@@ -53,10 +53,12 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
 
     frame.render_widget(top_bar(app, cfg), area_top);
 
-    let horizontal_areas = Layout::default()
+    let [area_main_left, area_main_right] = *Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-        .split(area_main);
+        .split(area_main) else {
+        panic!("Layout.split() failed");
+    };
 
     let browser_items: Vec<ListItem> = app
         .browser_items
@@ -75,7 +77,7 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         .borders(Borders::RIGHT)
         .border_type(BorderType::Double);
 
-    app.browser_items.height = browser_block.inner(horizontal_areas[0]).height;
+    app.browser_items.height = browser_block.inner(area_main_left).height;
 
     let browser_list = List::new(browser_items)
         .block(browser_block)
@@ -90,7 +92,7 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         .highlight_symbol("");
 
 
-    frame.render_stateful_widget(browser_list, horizontal_areas[0], &mut app.browser_items.state());
+    frame.render_stateful_widget(browser_list, area_main_left, &mut app.browser_items.state());
 
     let queue_items: Vec<ListItem> = app
         .queue_items
@@ -113,5 +115,5 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol("");
-    frame.render_stateful_widget(queue_list, horizontal_areas[1], &mut app.queue_items.state());
+    frame.render_stateful_widget(queue_list, area_main_right, &mut app.queue_items.state());
 }
