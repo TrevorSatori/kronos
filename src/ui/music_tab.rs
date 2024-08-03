@@ -79,8 +79,6 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         panic!("Layout.split() failed");
     };
 
-    frame.render_widget(top_bar(app, cfg), area_top);
-
     let [area_main_left, area_main_separator, area_main_right] = *Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(50), Constraint::Length(5), Constraint::Percentage(50)].as_ref())
@@ -88,16 +86,17 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         panic!("Layout.split() failed");
     };
 
-    app.browser_items.height = area_main_left.height;
-
-    frame.render_stateful_widget(file_list(app, cfg), area_main_left, &mut app.browser_items.state());
-
     let [separator_left, separator_middle, separator_right] = *Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Min(1), Constraint::Length(1), Constraint::Min(1)].as_ref())
         .split(area_main_separator) else {
         panic!("Layout.split() failed");
     };
+
+    app.browser_items.height = area_main_left.height;
+
+    frame.render_widget(top_bar(app, cfg), area_top);
+    frame.render_stateful_widget(file_list(app, cfg), area_main_left, &mut app.browser_items.state());
 
     let vertical_separator = Block::default()
         .borders(Borders::RIGHT)
