@@ -43,18 +43,20 @@ fn top_bar<'a>(app: &App, cfg: &Config) -> Block<'a> {
 }
 
 pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
-    let vertical_areas = Layout::default()
+    let [area_top, area_main] = *Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(2), Constraint::Min(1)].as_ref())
         .horizontal_margin(2)
-        .split(chunks);
+        .split(chunks) else {
+        panic!("Layout.split() failed");
+    };
 
-    frame.render_widget(top_bar(app, cfg), vertical_areas[0]);
+    frame.render_widget(top_bar(app, cfg), area_top);
 
     let horizontal_areas = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-        .split(vertical_areas[1]);
+        .split(area_main);
 
     let browser_items: Vec<ListItem> = app
         .browser_items
