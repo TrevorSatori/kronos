@@ -11,7 +11,7 @@ use crate::app::{App, InputMode};
 use crate::config::Config;
 use crate::helpers::gen_funcs;
 
-fn top_bar<'a>(app: &mut App, cfg: &Config) -> Block<'a> {
+fn top_bar<'a>(app: &App, cfg: &Config) -> Block<'a> {
     let folder_name = app.last_visited_path.file_name().map(|s| s.to_str()).flatten().map(String::from).unwrap_or("".to_string());
 
     let browser_title = match app.input_mode() {
