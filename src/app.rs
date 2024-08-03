@@ -96,11 +96,11 @@ impl<'a> App<'a> {
         self.input_mode = in_mode
     }
 
-    pub fn current_song(&self) -> String {
+    pub fn current_song(&self) -> Option<String> {
         if self.music_handle.sink_empty() && self.queue_items.is_empty() {
-            "CURRENT SONG".to_string()
+            None
         } else {
-            self.music_handle.currently_playing()
+            Some(self.music_handle.currently_playing())
         }
     }
 

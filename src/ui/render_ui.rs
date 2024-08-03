@@ -66,13 +66,15 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
         format!("{:0>2}:{:0>2}", minutes, seconds)
     }
 
-    let playing_file = Block::default()
-        .style(Style::default().fg(cfg.foreground()))
-        .title(app.current_song())
-        .borders(Borders::NONE)
-        .title_alignment(Alignment::Center)
-        .title_position(ratatui::widgets::block::Position::Bottom);
-    f.render_widget(playing_file, main_layouts[2]);
+    if let Some(current_song) = app.current_song() {
+        let playing_file = Block::default()
+            .style(Style::default().fg(cfg.foreground()))
+            .title(current_song)
+            .borders(Borders::NONE)
+            .title_alignment(Alignment::Center)
+            .title_position(ratatui::widgets::block::Position::Bottom);
+        f.render_widget(playing_file, main_layouts[2]);
+    }
 
     let playing_gauge_label = format!(
         "{time_played} / {current_song_length} — {total_time}, {queue_items} songs",
