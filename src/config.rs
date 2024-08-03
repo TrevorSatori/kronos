@@ -97,7 +97,7 @@ impl Config {
         let config_toml = load_config_toml();
 
         let color1 = Color::from_hsl(29.0, 54.0, 61.0);
-        let color2 = Color::from_hsl(39.0, 67.0, 69.0);
+        // let color2 = Color::from_hsl(39.0, 67.0, 69.0);
 
         let theme = Theme {
             foreground: Color::from_str(&config_toml.theme.foreground).unwrap_or(color1),
