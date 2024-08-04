@@ -8,6 +8,17 @@ use ratatui::widgets::ListState;
 
 use super::gen_funcs::bulk_add;
 
+pub fn item_length(path: &PathBuf) -> Duration {
+    let path = Path::new(&path);
+    let tagged_file = Probe::open(path)
+        .expect("ERROR: Bad path provided!")
+        .read()
+        .expect("ERROR: Failed to read file!");
+
+    let properties = &tagged_file.properties();
+    properties.duration()
+}
+
 pub struct Queue {
     state: ListState,
     items: VecDeque<PathBuf>,
@@ -65,19 +76,8 @@ impl Queue {
         //   2. do "refresh queue length", deterministic, rather than "decrement_total_time"
         // eprintln!("decrement_total_time {:?} / {:?}", self.selected_item_index, self.items.len());
         let item = self.items[self.selected_item_index].clone();
-        let length = self.item_length(&item);
+        let length = item_length(&item);
         self.total_time = self.total_time.saturating_sub(length);
-    }
-
-    pub fn item_length(&self, path: &PathBuf) -> Duration {
-        let path = Path::new(&path);
-        let tagged_file = Probe::open(path)
-            .expect("ERROR: Bad path provided!")
-            .read()
-            .expect("ERROR: Failed to read file!");
-
-        let properties = &tagged_file.properties();
-        properties.duration()
     }
 
     pub fn next(&mut self) {
@@ -127,12 +127,12 @@ impl Queue {
         if item.is_dir() {
             let files = bulk_add(&item);
             for f in files {
-                let length = self.item_length(&f);
+                let length = item_length(&f);
                 self.total_time += length;
                 self.items.push_back(f);
             }
         } else {
-            self.total_time += self.item_length(&item);
+            self.total_time += item_length(&item);
             self.items.push_back(item);
         }
     }
