@@ -13,6 +13,8 @@ use crate::config::Config;
 use crate::constants::{SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
 use crate::ui::{music_tab, instructions_tab};
 
+static MAIN_SECTIONS: [&str; 2] = ["Music", "Help"];
+
 pub fn duration_to_string(total_time: Duration) -> String {
     let hours = total_time.as_secs() / SECONDS_PER_HOUR;
     let minutes = (total_time.as_secs() % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
@@ -42,15 +44,14 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
     let block = Block::default().style(Style::default().bg(cfg.background()));
     f.render_widget(block, size);
 
-    let titles: Vec<Line> = app
-        .titles
+    let tab_titles: Vec<Line> = MAIN_SECTIONS
         .iter()
         .map(|t| {
             Line::from(Span::styled(t.to_string(), Style::default().fg(cfg.foreground())))
         })
         .collect();
 
-    let tabs = Tabs::new(titles)
+    let tabs = Tabs::new(tab_titles)
         .block(Block::default()
             .borders(Borders::BOTTOM)
             .border_type(BorderType::Plain)
