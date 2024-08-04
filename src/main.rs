@@ -10,7 +10,7 @@ use std::{error::Error, io, time::{Duration, Instant}};
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     crossterm::{
-        event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
+        event::{self, DisableMouseCapture, EnableMouseCapture, Event},
         execute,
         terminal::{
             disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -19,7 +19,7 @@ use ratatui::{
     Terminal,
 };
 
-use app::{App, InputMode};
+use app::{App};
 use config::Config;
 use state::load_state;
 use ui::render_ui;

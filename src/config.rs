@@ -46,12 +46,6 @@ pub struct Config {
     theme: Theme,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 fn load_config_string() -> Option<(PathBuf, String)> {
     let config_paths = [home::home_dir()
         .unwrap()
