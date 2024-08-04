@@ -2,6 +2,7 @@ use std::{
     collections::VecDeque,
     path::{Path, PathBuf},
 };
+use std::time::Duration;
 use lofty::{AudioFile, Probe};
 use ratatui::widgets::ListState;
 
@@ -11,7 +12,7 @@ pub struct Queue {
     state: ListState,
     items: VecDeque<PathBuf>,
     selected_item_index: usize,
-    total_time: u32,
+    total_time: Duration,
 }
 
 impl Queue {
@@ -21,7 +22,7 @@ impl Queue {
             state: ListState::default(),
             items,
             selected_item_index: 0,
-            total_time: 0,
+            total_time: Duration::from_secs(0),
         }
     }
 
@@ -43,7 +44,7 @@ impl Queue {
         self.items.len()
     }
 
-    pub fn total_time(&self) -> u32 { self.total_time }
+    pub fn total_time(&self) -> Duration { self.total_time }
 
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()
@@ -68,8 +69,7 @@ impl Queue {
         self.total_time = self.total_time.saturating_sub(length);
     }
 
-    // get audio file length
-    pub fn item_length(&mut self, path: &PathBuf) -> u32 {
+    pub fn item_length(&self, path: &PathBuf) -> Duration {
         let path = Path::new(&path);
         let tagged_file = Probe::open(path)
             .expect("ERROR: Bad path provided!")
@@ -77,10 +77,7 @@ impl Queue {
             .expect("ERROR: Failed to read file!");
 
         let properties = &tagged_file.properties();
-        let duration = properties.duration();
-
-        // update song length, currently playing
-        duration.as_secs() as u32
+        properties.duration()
     }
 
     pub fn next(&mut self) {

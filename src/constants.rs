@@ -1,6 +1,3 @@
-/// 60 seconds.
-pub const SECONDS_PER_MINUTE: u32 = 60;
-/// 3,600 seconds.
-pub const SECONDS_PER_HOUR: u32 = SECONDS_PER_MINUTE * 60;
-/// 86,400 seconds.
-pub const SECONDS_PER_DAY: u32 = SECONDS_PER_HOUR * 24;
+pub static SECONDS_PER_MINUTE: u64 = 60;
+pub static SECONDS_PER_HOUR: u64 = SECONDS_PER_MINUTE * 60;
+pub static SECONDS_PER_DAY: u64 = SECONDS_PER_HOUR * 24;

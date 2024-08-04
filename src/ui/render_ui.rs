@@ -13,33 +13,22 @@ use crate::config::Config;
 use crate::constants::{SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
 use crate::ui::{music_tab, instructions_tab};
 
-fn duration_to_string(duration: Duration) -> String {
-    let total_seconds = duration.as_secs();
-    let seconds = total_seconds % 60;
-    let minutes = total_seconds.saturating_div(60);
-    format!("{:0>2}:{:0>2}", minutes, seconds)
-}
-
-pub fn seconds_to_string(total_time: u32) -> String {
-    let hours = total_time / SECONDS_PER_HOUR;
-    let minutes = (total_time % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
-    let seconds = total_time % SECONDS_PER_MINUTE;
+pub fn duration_to_string(total_time: Duration) -> String {
+    let hours = total_time.as_secs() / SECONDS_PER_HOUR;
+    let minutes = (total_time.as_secs() % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
+    let seconds = total_time.as_secs() % SECONDS_PER_MINUTE;
 
     let mut time_parts = vec![];
 
     if hours > 0 {
-        time_parts.push(format!("{:0>2}", hours));
+        time_parts.push(hours);
     }
 
-    if minutes > 0 || hours > 0 {
-        time_parts.push(format!("{:0>2}", minutes));
-    }
+    time_parts.push(minutes);
+    time_parts.push(seconds);
 
-    if seconds > 0 || time_parts.is_empty() {
-        time_parts.push(format!("{:0>2}", seconds));
-    }
-
-    time_parts.join(":")
+    let strings: Vec<String> = time_parts.iter().map(|s| format!("{:0>2}", s)).collect();
+    strings.join(":")
 }
 
 pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
@@ -100,7 +89,7 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
         "{time_played} / {current_song_length} — {total_time}, {queue_items} songs",
         time_played = duration_to_string(app.music_handle.time_played()),
         current_song_length = duration_to_string(app.music_handle.song_length()),
-        total_time = seconds_to_string(app.queue_items.total_time()),
+        total_time = duration_to_string(app.queue_items.total_time()),
         queue_items = app.queue_items.length(),
     );
 
