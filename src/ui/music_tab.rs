@@ -108,7 +108,7 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         panic!("Layout.split() failed");
     };
 
-    let [separator_left, separator_middle, separator_right] = *Layout::default()
+    let [_separator_left, separator_middle, _separator_right] = *Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Min(1), Constraint::Length(1), Constraint::Min(1)].as_ref())
         .split(area_main_separator) else {

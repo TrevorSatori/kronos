@@ -22,11 +22,6 @@ impl<T> StatefulList<T> {
         }
     }
 
-    pub fn selected_index(&self) -> usize {
-        self.curr
-    }
-
-    // return all items contained in vector
     pub fn items(&self) -> &Vec<T> {
         &self.items
     }
