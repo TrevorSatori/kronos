@@ -72,12 +72,7 @@ fn run_app<B: Backend>(
 
         if event::poll(timeout)? {
             if let Event::Key(key) = event::read()? {
-                match app.input_mode() {
-                    InputMode::Browser => app.handle_browser_key_events(key),
-                    InputMode::Queue => app.handle_queue_key_events(key),
-                    InputMode::Controls => app.handle_help_key_events(key),
-                    InputMode::BrowserFilter => app.handle_browser_filter_key_events(key),
-                }
+                app.handle_key_event(key);
             }
         }
 

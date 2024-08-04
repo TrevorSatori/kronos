@@ -160,7 +160,16 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn handle_browser_key_events(&mut self, key: KeyEvent) {
+    pub fn handle_key_event(&mut self, key: KeyEvent) {
+        match self.input_mode() {
+            InputMode::Browser => self.handle_browser_key_events(key),
+            InputMode::Queue => self.handle_queue_key_events(key),
+            InputMode::Controls => self.handle_help_key_events(key),
+            InputMode::BrowserFilter => self.handle_browser_filter_key_events(key),
+        }
+    }
+
+    fn handle_browser_key_events(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Char('q') => {
                 self.must_quit = true;
@@ -202,7 +211,7 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn handle_browser_filter_key_events(&mut self, key: KeyEvent) {
+    fn handle_browser_filter_key_events(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Esc => {
                 self.set_input_mode(InputMode::Browser);
@@ -244,7 +253,7 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn handle_queue_key_events(&mut self, key: KeyEvent) {
+    fn handle_queue_key_events(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Char('q') => self.must_quit = true,
             KeyCode::Char('p') => self.music_handle.play_pause(),
@@ -275,7 +284,7 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn handle_help_key_events(&mut self, key: KeyEvent) {
+    fn handle_help_key_events(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Char('q') => self.must_quit = true,
             KeyCode::Char('p') => self.music_handle.play_pause(),
