@@ -73,90 +73,18 @@ fn run_app<B: Backend>(
         if event::poll(timeout)? {
             if let Event::Key(key) = event::read()? {
                 match app.input_mode() {
-                    InputMode::Browser => match key.code {
-                        KeyCode::Char('q') => break,
-                        KeyCode::Char('p') | KeyCode::Char(' ') => app.music_handle.play_pause(),
-                        KeyCode::Char('g') => app.music_handle.skip(),
-                        KeyCode::Char('a') => {
-                            app.queue_items.add(app.get_selected_browser_item());
-                            app.browser_items.next();
-                        },
-                        KeyCode::Enter => app.evaluate(),
-                        KeyCode::Backspace => app.backpedal(),
-                        KeyCode::Down | KeyCode::Char('j') => app.browser_items.next(),
-                        KeyCode::Up | KeyCode::Char('k') => app.browser_items.previous(),
-                        KeyCode::PageUp => app.browser_items.previous_by(5),
-                        KeyCode::PageDown => app.browser_items.next_by(5),
-                        KeyCode::End => app.browser_items.select(app.browser_items.items().len() - 1),
-                        KeyCode::Home => app.browser_items.select(0),
-                        KeyCode::Tab => {
-                            app.browser_items.unselect();
-                            app.set_input_mode(InputMode::Queue);
-                            app.queue_items.next();
-                        }
-                        KeyCode::Right => app.music_handle.seek_forward(),
-                        KeyCode::Left => app.music_handle.seek_backward(),
-                        KeyCode::Char('-') => app.music_handle.change_volume(-0.05),
-                        KeyCode::Char('+') => app.music_handle.change_volume(0.05),
-                        KeyCode::Char('2') => {
-                            app.next();
-                            match app.input_mode() {
-                                InputMode::Controls => app.set_input_mode(InputMode::Browser),
-                                _ => app.set_input_mode(InputMode::Controls),
-                            };
-                        },
-                        KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
-                            app.set_input_mode(InputMode::BrowserFilter);
-                        },
-                        _ => {}
-                    },
-                    InputMode::Queue => match key.code {
-                        KeyCode::Char('q') => break,
-                        KeyCode::Char('p') => app.music_handle.play_pause(),
-                        KeyCode::Char('g') => app.music_handle.skip(),
-                        KeyCode::Enter => {
-                            if let Some(i) = app.queue_items.item() {
-                                app.music_handle.play(i.clone());
-                            };
-                        }
-                        KeyCode::Down | KeyCode::Char('j') => app.queue_items.next(),
-                        KeyCode::Up | KeyCode::Char('k') => app.queue_items.previous(),
-                        KeyCode::Char('r') => app.queue_items.remove(),
-                        KeyCode::Right => app.music_handle.seek_forward(),
-                        KeyCode::Left => app.music_handle.seek_backward(),
-                        KeyCode::Tab => {
-                            app.queue_items.unselect();
-                            app.set_input_mode(InputMode::Browser);
-                            app.browser_items.next();
-                        }
-                        KeyCode::Char('2') => {
-                            app.next();
-                            match app.input_mode() {
-                                InputMode::Controls => app.set_input_mode(InputMode::Browser),
-                                _ => app.set_input_mode(InputMode::Controls),
-                            };
-                        }
-                        _ => {}
-                    },
-                    InputMode::Controls => match key.code {
-                        KeyCode::Char('q') => break,
-                        KeyCode::Char('p') => app.music_handle.play_pause(),
-                        KeyCode::Char('g') => app.music_handle.skip(),
-                        KeyCode::Down | KeyCode::Char('j') => app.control_table.next(),
-                        KeyCode::Up | KeyCode::Char('k') => app.control_table.previous(),
-                        KeyCode::Char('1') => {
-                            app.next();
-                            match app.input_mode() {
-                                InputMode::Controls => app.set_input_mode(InputMode::Browser),
-                                _ => app.set_input_mode(InputMode::Controls),
-                            };
-                        }
-                        _ => {}
-                    },
+                    InputMode::Browser => app.handle_browser_key_events(key),
+                    InputMode::Queue => app.handle_queue_key_events(key),
+                    InputMode::Controls => app.handle_help_key_events(key),
                     InputMode::BrowserFilter => app.handle_browser_filter_key_events(key),
                 }
             }
         }
+
+        if app.must_quit {
+            break;
+        }
+
         if last_tick.elapsed() >= tick_rate {
             last_tick = Instant::now();
         }

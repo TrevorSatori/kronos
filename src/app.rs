@@ -39,6 +39,7 @@ pub struct App<'a> {
     pub active_tab: AppTab,
     pub last_visited_path: PathBuf,
     pub browser_filter: Option<String>,
+    pub must_quit: bool,
 }
 
 impl<'a> App<'a> {
@@ -53,6 +54,7 @@ impl<'a> App<'a> {
         browser_items.select(0);
 
         Self {
+            must_quit: false,
             browser_items,
             queue_items: Queue::new(queue),
             control_table: StatefulTable::new(),
@@ -158,6 +160,48 @@ impl<'a> App<'a> {
         }
     }
 
+    pub fn handle_browser_key_events(&mut self, key: KeyEvent) {
+        match key.code {
+            KeyCode::Char('q') => {
+                self.must_quit = true;
+            },
+            KeyCode::Char('p') | KeyCode::Char(' ') => self.music_handle.play_pause(),
+            KeyCode::Char('g') => self.music_handle.skip(),
+            KeyCode::Char('a') => {
+                self.queue_items.add(self.get_selected_browser_item());
+                self.browser_items.next();
+            },
+            KeyCode::Enter => self.evaluate(),
+            KeyCode::Backspace => self.backpedal(),
+            KeyCode::Down | KeyCode::Char('j') => self.browser_items.next(),
+            KeyCode::Up | KeyCode::Char('k') => self.browser_items.previous(),
+            KeyCode::PageUp => self.browser_items.previous_by(5),
+            KeyCode::PageDown => self.browser_items.next_by(5),
+            KeyCode::End => self.browser_items.select(self.browser_items.items().len() - 1),
+            KeyCode::Home => self.browser_items.select(0),
+            KeyCode::Tab => {
+                self.browser_items.unselect();
+                self.set_input_mode(InputMode::Queue);
+                self.queue_items.next();
+            }
+            KeyCode::Right => self.music_handle.seek_forward(),
+            KeyCode::Left => self.music_handle.seek_backward(),
+            KeyCode::Char('-') => self.music_handle.change_volume(-0.05),
+            KeyCode::Char('+') => self.music_handle.change_volume(0.05),
+            KeyCode::Char('2') => {
+                self.next();
+                match self.input_mode() {
+                    InputMode::Controls => self.set_input_mode(InputMode::Browser),
+                    _ => self.set_input_mode(InputMode::Controls),
+                };
+            },
+            KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
+                self.set_input_mode(InputMode::BrowserFilter);
+            },
+            _ => {}
+        }
+    }
+
     pub fn handle_browser_filter_key_events(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Esc => {
@@ -199,4 +243,54 @@ impl<'a> App<'a> {
             _ => {}
         }
     }
+
+    pub fn handle_queue_key_events(&mut self, key: KeyEvent) {
+        match key.code {
+            KeyCode::Char('q') => self.must_quit = true,
+            KeyCode::Char('p') => self.music_handle.play_pause(),
+            KeyCode::Char('g') => self.music_handle.skip(),
+            KeyCode::Enter => {
+                if let Some(i) = self.queue_items.item() {
+                    self.music_handle.play(i.clone());
+                };
+            }
+            KeyCode::Down | KeyCode::Char('j') => self.queue_items.next(),
+            KeyCode::Up | KeyCode::Char('k') => self.queue_items.previous(),
+            KeyCode::Char('r') => self.queue_items.remove(),
+            KeyCode::Right => self.music_handle.seek_forward(),
+            KeyCode::Left => self.music_handle.seek_backward(),
+            KeyCode::Tab => {
+                self.queue_items.unselect();
+                self.set_input_mode(InputMode::Browser);
+                self.browser_items.next();
+            }
+            KeyCode::Char('2') => {
+                self.next();
+                match self.input_mode() {
+                    InputMode::Controls => self.set_input_mode(InputMode::Browser),
+                    _ => self.set_input_mode(InputMode::Controls),
+                };
+            }
+            _ => {}
+        }
+    }
+
+    pub fn handle_help_key_events(&mut self, key: KeyEvent) {
+        match key.code {
+            KeyCode::Char('q') => self.must_quit = true,
+            KeyCode::Char('p') => self.music_handle.play_pause(),
+            KeyCode::Char('g') => self.music_handle.skip(),
+            KeyCode::Down | KeyCode::Char('j') => self.control_table.next(),
+            KeyCode::Up | KeyCode::Char('k') => self.control_table.previous(),
+            KeyCode::Char('1') => {
+                self.next();
+                match self.input_mode() {
+                    InputMode::Controls => self.set_input_mode(InputMode::Browser),
+                    _ => self.set_input_mode(InputMode::Controls),
+                };
+            }
+            _ => {}
+        }
+    }
+
 }
