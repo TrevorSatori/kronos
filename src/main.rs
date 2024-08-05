@@ -46,13 +46,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let state = load_state();
 
-    enable_raw_mode()?;
-    let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-
+    let mut terminal = set_terminal()?;
     let mut app = App::new(state.last_visited_path, state.queue_items.unwrap_or(vec![]));
     let res = app.start(&mut terminal);
 
@@ -65,6 +59,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     terminal.show_cursor()?;
 
     Ok(())
+}
+
+fn set_terminal() -> Result<Terminal<CrosstermBackend<std::io::Stdout>>, impl Error> {
+    enable_raw_mode()?;
+    let mut stdout = stdout();
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+
+    let backend = CrosstermBackend::new(stdout);
+    Terminal::new(backend)
 }
 
 fn reset_terminal(writer: &mut impl std::io::Write) {
