@@ -56,13 +56,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut app = App::new(state.last_visited_path, state.queue_items.unwrap_or(vec![]));
     let res = app.start(&mut terminal);
 
-    reset_terminal(terminal.backend_mut());
-
-    terminal.show_cursor()?;
-
     if let Err(err) = res {
         eprintln!("{:?}", err)
     }
+
+    reset_terminal(terminal.backend_mut());
+
+    terminal.show_cursor()?;
 
     Ok(())
 }
