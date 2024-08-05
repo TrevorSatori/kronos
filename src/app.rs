@@ -3,7 +3,7 @@ use crate::helpers::{
     gen_funcs, music_handler::MusicHandle, queue::Queue, stateful_list::StatefulList,
     stateful_table::StatefulTable,
 };
-use crate::state::{save_state, State};
+use crate::state::State;
 use ratatui::backend::Backend;
 use ratatui::crossterm::event;
 use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
