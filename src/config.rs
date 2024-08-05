@@ -79,8 +79,6 @@ fn load_config_toml() -> ConfigToml {
         None => None,
     };
 
-    eprintln!("hola mundo {:?}", config_toml_option);
-
     config_toml_option.unwrap_or(ConfigToml {
         theme: ThemeToml::default(),
     })
