@@ -9,6 +9,15 @@ pub struct State {
     pub queue_items: Vec<String>,
 }
 
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            last_visited_path: None,
+            queue_items: vec![],
+        }
+    }
+}
+
 pub fn load_state() -> State {
     let state_file_paths = [home::home_dir()
         .unwrap()
@@ -28,10 +37,7 @@ pub fn load_state() -> State {
 
     let state_toml: State = toml::from_str(&content).unwrap_or_else(|e| {
         eprintln!("load_state toml error: {:?}", e);
-        State {
-            last_visited_path: None,
-            queue_items: vec![],
-        }
+        State::default()
     });
 
     state_toml
