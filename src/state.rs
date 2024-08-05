@@ -24,23 +24,23 @@ pub fn load_state() -> State {
         .as_path()
         .join(".config/kronos/state.toml")];
 
-    let mut content: String = "".to_owned();
+    let content: String = {
+        let mut content: String = "".to_owned();
+        for state_file_path in state_file_paths {
+            let result: Result<String, std::io::Error> = fs::read_to_string(state_file_path);
 
-    for state_file_path in state_file_paths {
-        let result: Result<String, std::io::Error> = fs::read_to_string(state_file_path);
-
-        if let Ok(file_content) = result {
-            content = file_content;
-            break;
+            if let Ok(file_content) = result {
+                content = file_content;
+                break;
+            }
         }
-    }
+        content
+    };
 
-    let state_toml: State = toml::from_str(&content).unwrap_or_else(|e| {
+    toml::from_str(&content).unwrap_or_else(|e| {
         eprintln!("load_state toml error: {:?}", e);
         State::default()
-    });
-
-    state_toml
+    })
 }
 pub fn save_state(state: State) -> Result<(), String> {
     let state_file_path = home::home_dir()
