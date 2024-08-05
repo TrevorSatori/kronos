@@ -68,7 +68,7 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn save_state(&self) {
+    fn to_state(&self) -> State {
         let queue_items = self
             .queue_items
             .items()
@@ -78,15 +78,13 @@ impl<'a> App<'a> {
             .map(|i| i.unwrap().to_string())
             .collect();
 
-        save_state(State {
+        State {
             last_visited_path: self.last_visited_path.to_str().map(String::from),
             queue_items: Some(queue_items),
-        }).unwrap_or_else(|error| {
-            eprintln!("Error in save_state {}", error);
-        });
+        }
     }
 
-    pub fn start<B: Backend>(&mut self, terminal: &mut Terminal<B>)-> io::Result<()> {
+    pub fn start<B: Backend>(&mut self, terminal: &mut Terminal<B>)-> io::Result<State> {
         let cfg = Config::new();
         let tick_rate = Duration::from_secs(1);
         let mut last_tick = std::time::Instant::now();
@@ -113,10 +111,7 @@ impl<'a> App<'a> {
             }
         }
 
-        self.save_state();
-
-        Ok(())
-
+        Ok(self.to_state())
     }
 
     pub fn next(&mut self) {

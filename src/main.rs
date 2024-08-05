@@ -21,7 +21,7 @@ use ratatui::{
 };
 
 use app::{App};
-use state::load_state;
+use crate::state::{load_state, save_state};
 
 fn main() -> Result<(), Box<dyn Error>> {
     std::panic::set_hook(Box::new(on_panic));
@@ -32,12 +32,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut app = App::new(state.last_visited_path, state.queue_items.unwrap_or(vec![]));
     let res = app.start(&mut terminal);
 
-    if let Err(err) = res {
-        eprintln!("{:?}", err)
+    match res {
+        Ok(state) => {
+            save_state(state).unwrap_or_else(|error| {
+                eprintln!("Error in save_state {}", error);
+            });
+        }
+        Err(error) => {
+            eprintln!("{:?}", error)
+        }
     }
 
     reset_terminal(terminal.backend_mut());
-
     terminal.show_cursor()?;
 
     Ok(())
