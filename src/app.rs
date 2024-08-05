@@ -1,8 +1,10 @@
-use std::{
-    env,
-    path::{Path, PathBuf},
-};
-use ratatui::crossterm::event::{KeyCode, KeyModifiers, KeyEvent};
+use std::{env, io, path::{Path, PathBuf}};
+use std::time::Duration;
+use ratatui::backend::Backend;
+use ratatui::crossterm::event;
+use ratatui::crossterm::event::{KeyCode, KeyModifiers, KeyEvent, Event};
+use ratatui::Terminal;
+use crate::config::Config;
 use crate::helpers::{gen_funcs, music_handler::MusicHandle, queue::Queue, stateful_list::StatefulList, stateful_table::StatefulTable};
 use crate::state::{save_state, State};
 
@@ -66,7 +68,7 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn save_state(self) {
+    pub fn save_state(&self) {
         let queue_items = self
             .queue_items
             .items()
@@ -82,6 +84,39 @@ impl<'a> App<'a> {
         }).unwrap_or_else(|error| {
             eprintln!("Error in save_state {}", error);
         });
+    }
+
+    pub fn start<B: Backend>(&mut self, terminal: &mut Terminal<B>)-> io::Result<()> {
+        let cfg = Config::new();
+        let tick_rate = Duration::from_secs(1);
+        let mut last_tick = std::time::Instant::now();
+
+        loop {
+            terminal.draw(|f| crate::ui::render_ui(f, self, &cfg))?;
+
+            self.auto_play(); // Up to `tick_rate` lag. A thread may be a better alternative.
+
+            let timeout = tick_rate.saturating_sub(last_tick.elapsed());
+
+            if event::poll(timeout)? {
+                if let Event::Key(key) = event::read()? {
+                    self.handle_key_event(key);
+                }
+            }
+
+            if self.must_quit {
+                break;
+            }
+
+            if last_tick.elapsed() >= tick_rate {
+                last_tick = std::time::Instant::now();
+            }
+        }
+
+        self.save_state();
+
+        Ok(())
+
     }
 
     pub fn next(&mut self) {
@@ -154,6 +189,7 @@ impl<'a> App<'a> {
             self.browser_items.select_next_by_match(s)
         }
     }
+
     fn select_previous_browser_by_match(&mut self) {
         if let Some(s) = &self.browser_filter {
             self.browser_items.select_previous_by_match(s)

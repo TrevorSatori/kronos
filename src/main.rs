@@ -5,7 +5,7 @@ mod ui;
 mod helpers;
 pub mod constants;
 
-use std::{error::Error, io, time::{Duration, Instant}};
+use std::{error::Error, io};
 
 use ratatui::{
     backend::{Backend, CrosstermBackend},
@@ -20,12 +20,34 @@ use ratatui::{
 };
 
 use app::{App};
-use config::Config;
 use state::load_state;
-use ui::render_ui;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    std::panic::set_hook(Box::new(|info| {
+        // If our app panics after entering raw mode and before leaving it,
+        // the terminal that was running our app will be left in raw mode.
+        // Raw mode seems to be a concept of the standard C library and not terminal emulators themselves.
+        // Crossterm calls `cfmakeraw`, which does a bunch of things.
+        //
+        // This hook should take care of reverting it the terminal back to how it was if the app panics,
+        // but if we're still left with a somewhat unusable terminal for whatever reason,
+        // `stty isig icanon iexten opost ixon icrnl ` should fix it.
+        //
+        // See https://linux.die.net/man/3/cfmakeraw, https://man7.org/linux/man-pages/man1/stty.1.html
+        eprintln!("panic at the disco {info}");
+
+        // We don't have access to our instances of `stdout` and `backend` here,
+        // but referencing `io::stdout()` every time seems to work.
+        // I guess that could only fail if the stdout of the process changes while
+        // the process is running... but that is an edge case bug I can live with.
+        reset_terminal();
+    }));
+
+
     let state = load_state();
+
+    // let a: Option<u32> = None;
+    // a.unwrap();
 
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -34,19 +56,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let tick_rate = Duration::from_secs(1);
-    let app = App::new(state.last_visited_path, state.queue_items.unwrap_or(vec![]));
-    let cfg = Config::new();
+    let mut app = App::new(state.last_visited_path, state.queue_items.unwrap_or(vec![]));
+    let res = app.start(&mut terminal);
 
-    let res = run_app(&mut terminal, app, cfg, tick_rate);
+    reset_terminal(); // We'd normally use terminal.backend_mut(), but whatever.
 
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-
-    disable_raw_mode()?;
     terminal.show_cursor()?;
 
     if let Err(err) = res {
@@ -56,36 +70,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn run_app<B: Backend>(
-    terminal: &mut Terminal<B>,
-    mut app: App,
-    cfg: Config,
-    tick_rate: Duration,
-) -> io::Result<()> {
-    let mut last_tick = Instant::now();
-    loop {
-        terminal.draw(|f| render_ui(f, &mut app, &cfg))?;
+fn reset_terminal() {
+    execute!(
+        io::stdout(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    ).unwrap_or_else(|e| {
+        eprintln!("tried to execute(...) but couldn't :( {e}");
+    });
 
-        app.auto_play(); // TODO: hook into Sink's sleep_until_end
-
-        let timeout = tick_rate.saturating_sub(last_tick.elapsed());
-
-        if event::poll(timeout)? {
-            if let Event::Key(key) = event::read()? {
-                app.handle_key_event(key);
-            }
-        }
-
-        if app.must_quit {
-            break;
-        }
-
-        if last_tick.elapsed() >= tick_rate {
-            last_tick = Instant::now();
-        }
-    }
-
-    app.save_state();
-
-    Ok(())
+    disable_raw_mode().unwrap_or_else(|e| {
+        eprintln!("tried to disable_raw_mode but couldn't :( {e}");
+    });
 }
