@@ -80,7 +80,7 @@ impl<'a> App<'a> {
 
         State {
             last_visited_path: self.last_visited_path.to_str().map(String::from),
-            queue_items: Some(queue_items),
+            queue_items,
         }
     }
 

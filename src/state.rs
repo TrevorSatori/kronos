@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct State {
     pub last_visited_path: Option<String>,
-    pub queue_items: Option<Vec<String>>,
+    #[serde(default)]
+    pub queue_items: Vec<String>,
 }
 
 pub fn load_state() -> State {
@@ -29,7 +30,7 @@ pub fn load_state() -> State {
         eprintln!("load_state toml error: {:?}", e);
         State {
             last_visited_path: None,
-            queue_items: None,
+            queue_items: vec![],
         }
     });
 

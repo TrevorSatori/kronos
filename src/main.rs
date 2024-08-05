@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let state = load_state();
 
     let mut terminal = set_terminal()?;
-    let mut app = App::new(state.last_visited_path, state.queue_items.unwrap_or(vec![]));
+    let mut app = App::new(state.last_visited_path, state.queue_items);
     let state = app.start(&mut terminal)?;
 
     save_state(state)?;
