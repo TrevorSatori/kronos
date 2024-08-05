@@ -1,10 +1,10 @@
+use lofty::{AudioFile, Probe};
+use ratatui::widgets::ListState;
+use std::time::Duration;
 use std::{
     collections::VecDeque,
     path::{Path, PathBuf},
 };
-use std::time::Duration;
-use lofty::{AudioFile, Probe};
-use ratatui::widgets::ListState;
 
 use super::gen_funcs::bulk_add;
 
@@ -55,7 +55,9 @@ impl Queue {
         self.items.len()
     }
 
-    pub fn total_time(&self) -> Duration { self.total_time }
+    pub fn total_time(&self) -> Duration {
+        self.total_time
+    }
 
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()

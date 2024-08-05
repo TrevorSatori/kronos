@@ -1,12 +1,18 @@
-use std::{env, io, path::{Path, PathBuf}};
-use std::time::Duration;
+use crate::config::Config;
+use crate::helpers::{
+    gen_funcs, music_handler::MusicHandle, queue::Queue, stateful_list::StatefulList,
+    stateful_table::StatefulTable,
+};
+use crate::state::{save_state, State};
 use ratatui::backend::Backend;
 use ratatui::crossterm::event;
-use ratatui::crossterm::event::{KeyCode, KeyModifiers, KeyEvent, Event};
+use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::Terminal;
-use crate::config::Config;
-use crate::helpers::{gen_funcs, music_handler::MusicHandle, queue::Queue, stateful_list::StatefulList, stateful_table::StatefulTable};
-use crate::state::{save_state, State};
+use std::time::Duration;
+use std::{
+    env, io,
+    path::{Path, PathBuf},
+};
 
 #[derive(Clone, Copy)]
 pub enum InputMode {
@@ -48,7 +54,10 @@ impl<'a> App<'a> {
     pub fn new(initial_directory: Option<String>, queue: Vec<String>) -> Self {
         if let Some(path) = initial_directory {
             env::set_current_dir(&path).unwrap_or_else(|err| {
-                eprintln!("Could not set_current_dir to last_visited_path\n\tPath: {}\n\tError: {:?}", path, err);
+                eprintln!(
+                    "Could not set_current_dir to last_visited_path\n\tPath: {}\n\tError: {:?}",
+                    path, err
+                );
             });
         }
 
@@ -84,7 +93,7 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn start<B: Backend>(&mut self, terminal: &mut Terminal<B>)-> io::Result<State> {
+    pub fn start<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> io::Result<State> {
         let cfg = Config::new();
         let tick_rate = Duration::from_secs(1);
         let mut last_tick = std::time::Instant::now();
@@ -164,7 +173,12 @@ impl<'a> App<'a> {
 
     pub fn song_progress(&mut self) -> f64 {
         if !self.music_handle.sink_empty() {
-            f64::clamp(self.music_handle.time_played().as_secs_f64() / self.music_handle.song_length().as_secs_f64(), 0.0, 1.0)
+            f64::clamp(
+                self.music_handle.time_played().as_secs_f64()
+                    / self.music_handle.song_length().as_secs_f64(),
+                0.0,
+                1.0,
+            )
         } else {
             0.0
         }
@@ -204,20 +218,22 @@ impl<'a> App<'a> {
         match key.code {
             KeyCode::Char('q') => {
                 self.must_quit = true;
-            },
+            }
             KeyCode::Char('p') | KeyCode::Char(' ') => self.music_handle.play_pause(),
             KeyCode::Char('g') => self.music_handle.skip(),
             KeyCode::Char('a') => {
                 self.queue_items.add(self.get_selected_browser_item());
                 self.browser_items.next();
-            },
+            }
             KeyCode::Enter => self.evaluate(),
             KeyCode::Backspace => self.backpedal(),
             KeyCode::Down | KeyCode::Char('j') => self.browser_items.next(),
             KeyCode::Up | KeyCode::Char('k') => self.browser_items.previous(),
             KeyCode::PageUp => self.browser_items.previous_by(5),
             KeyCode::PageDown => self.browser_items.next_by(5),
-            KeyCode::End => self.browser_items.select(self.browser_items.items().len() - 1),
+            KeyCode::End => self
+                .browser_items
+                .select(self.browser_items.items().len() - 1),
             KeyCode::Home => self.browser_items.select(0),
             KeyCode::Tab => {
                 self.browser_items.unselect();
@@ -234,10 +250,10 @@ impl<'a> App<'a> {
                     InputMode::Controls => self.set_input_mode(InputMode::Browser),
                     _ => self.set_input_mode(InputMode::Controls),
                 };
-            },
+            }
             KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
                 self.set_input_mode(InputMode::BrowserFilter);
-            },
+            }
             _ => {}
         }
     }
@@ -247,39 +263,45 @@ impl<'a> App<'a> {
             KeyCode::Esc => {
                 self.set_input_mode(InputMode::Browser);
                 self.browser_filter = None;
-            },
+            }
             KeyCode::Enter => {
                 self.set_input_mode(InputMode::Browser);
                 self.browser_filter = None;
                 self.evaluate();
-            },
+            }
             KeyCode::Down => {
                 self.select_next_browser_by_match();
-            },
+            }
             KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
                 self.select_next_browser_by_match();
-            },
+            }
             KeyCode::Up => {
                 self.select_previous_browser_by_match();
-            },
+            }
             KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => {
                 self.select_previous_browser_by_match();
-            },
+            }
             KeyCode::Backspace => {
-                self.browser_filter = match &self.browser_filter  {
-                    Some(s) if s.len() > 0 => Some(s[..s.len()-1].to_string()), // TODO: s[..s.len()-1] can panic! use .substring crate
+                self.browser_filter = match &self.browser_filter {
+                    Some(s) if s.len() > 0 => Some(s[..s.len() - 1].to_string()), // TODO: s[..s.len()-1] can panic! use .substring crate
                     _ => None,
                 };
             }
             KeyCode::Char(char) => {
-                self.browser_filter = match &self.browser_filter  {
+                self.browser_filter = match &self.browser_filter {
                     Some(s) => Some(s.to_owned() + char.to_string().as_str()),
                     _ => Some(char.to_string()),
                 };
-                if !self.browser_items.item().to_lowercase().contains(&self.browser_filter.clone().unwrap().to_lowercase()) {
-                    self.browser_items.select_next_by_match(&self.browser_filter.clone().unwrap());
+                if !self
+                    .browser_items
+                    .item()
+                    .to_lowercase()
+                    .contains(&self.browser_filter.clone().unwrap().to_lowercase())
+                {
+                    self.browser_items
+                        .select_next_by_match(&self.browser_filter.clone().unwrap());
                 }
-            },
+            }
             _ => {}
         }
     }
@@ -332,5 +354,4 @@ impl<'a> App<'a> {
             _ => {}
         }
     }
-
 }

@@ -1,27 +1,25 @@
 mod app;
 mod config;
+pub mod constants;
+mod helpers;
 mod state;
 mod ui;
-mod helpers;
-pub mod constants;
 
-use std::{error::Error};
-use std::io::stdout;
-use std::panic::PanicInfo;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     crossterm::{
         event::{self, DisableMouseCapture, EnableMouseCapture, Event},
         execute,
-        terminal::{
-            disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
-        },
+        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     },
     Terminal,
 };
+use std::error::Error;
+use std::io::stdout;
+use std::panic::PanicInfo;
 
-use app::{App};
 use crate::state::{load_state, save_state};
+use app::App;
 
 fn main() -> Result<(), Box<dyn Error>> {
     std::panic::set_hook(Box::new(on_panic));
@@ -50,11 +48,7 @@ fn set_terminal() -> Result<Terminal<CrosstermBackend<std::io::Stdout>>, impl Er
 }
 
 fn reset_terminal(writer: &mut impl std::io::Write) {
-    execute!(
-        writer,
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    ).unwrap_or_else(|e| {
+    execute!(writer, LeaveAlternateScreen, DisableMouseCapture).unwrap_or_else(|e| {
         eprintln!("tried to execute(...) but couldn't :( {e}");
     });
 

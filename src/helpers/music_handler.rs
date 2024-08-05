@@ -2,7 +2,7 @@ use std::{
     fs::File,
     io::BufReader,
     path::{Path, PathBuf},
-    sync::{Arc},
+    sync::Arc,
     thread,
     time::Duration,
 };
@@ -31,7 +31,7 @@ impl MusicHandle {
         Self {
             music_output: Arc::new(OutputStream::try_default().unwrap()),
             sink: Arc::new(Sink::new_idle().0), // more efficient way, shouldn't have to do twice?
-            song_length: Duration::new(0,0),
+            song_length: Duration::new(0, 0),
             currently_playing: "".to_string(),
             volume: 1.,
         }
@@ -123,14 +123,22 @@ impl MusicHandle {
     }
 
     pub fn seek_forward(&mut self) {
-        let target = self.sink.get_pos().saturating_add(Duration::from_secs(5)).min(self.song_length);
+        let target = self
+            .sink
+            .get_pos()
+            .saturating_add(Duration::from_secs(5))
+            .min(self.song_length);
         self.sink.try_seek(target).unwrap_or_else(|e| {
             eprintln!("could not seek {:?}", e);
         });
     }
 
     pub fn seek_backward(&mut self) {
-        let target = self.sink.get_pos().saturating_sub(Duration::from_secs(5)).max(Duration::from_secs(0));
+        let target = self
+            .sink
+            .get_pos()
+            .saturating_sub(Duration::from_secs(5))
+            .max(Duration::from_secs(0));
         self.sink.try_seek(target).unwrap_or_else(|e| {
             eprintln!("could not seek {:?}", e);
         });

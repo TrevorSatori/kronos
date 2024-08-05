@@ -48,6 +48,7 @@ pub fn save_state(state: State) -> Result<(), String> {
         .as_path()
         .join(".config/kronos/state.toml");
 
-    toml::to_string(&state).map_err(|e| e.to_string())
+    toml::to_string(&state)
+        .map_err(|e| e.to_string())
         .and_then(|serialized| fs::write(state_file_path, serialized).map_err(|e| e.to_string()))
 }

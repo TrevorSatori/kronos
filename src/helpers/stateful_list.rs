@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use ratatui::widgets::ListState;
+use std::path::PathBuf;
 
 pub struct StatefulList<T> {
     state: ListState,
@@ -92,9 +92,7 @@ impl<T> StatefulList<T> {
         };
 
         let i = match self.state.selected() {
-            Some(i) if i > amount => {
-                i - amount
-            }
+            Some(i) if i > amount => i - amount,
             _ => 0,
         };
         self.curr = i;
@@ -118,7 +116,7 @@ impl<T: ToString> StatefulList<T> {
     pub fn find_by_path(&self, s: &PathBuf) -> usize {
         let mut i = 0;
 
-        for n in 0 .. self.items.len() {
+        for n in 0..self.items.len() {
             if s.ends_with(self.items[n].to_string()) {
                 i = n;
                 break;
@@ -148,13 +146,21 @@ impl<T: ToString> StatefulList<T> {
         let mut i: usize = self.curr;
 
         loop {
-            i = if direction_forward { self.next_index_wrapped(i) } else { self.previous_index_wrapped(i) };
+            i = if direction_forward {
+                self.next_index_wrapped(i)
+            } else {
+                self.previous_index_wrapped(i)
+            };
 
             if i == self.curr {
                 return None;
             }
 
-            if self.items[i].to_string().to_lowercase().contains(&s.to_lowercase()) {
+            if self.items[i]
+                .to_string()
+                .to_lowercase()
+                .contains(&s.to_lowercase())
+            {
                 return Some(i);
             }
         }

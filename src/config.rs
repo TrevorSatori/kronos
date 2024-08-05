@@ -1,8 +1,8 @@
+use ratatui::style::Color;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
-use serde::{Deserialize, Serialize};
-use ratatui::style::Color;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ThemeToml {
@@ -67,13 +67,14 @@ fn load_config_toml() -> ConfigToml {
     let config_string = load_config_string();
 
     let config_toml_option = match config_string {
-        Some((path, content)) => {
-            match toml::from_str(&content) {
-                Ok(toml) => Some(toml),
-                Err(err) => {
-                    eprintln!("Could not parse {:?} as toml. Will use default values. Error was: \n{:?}", path, err);
-                    None
-                }
+        Some((path, content)) => match toml::from_str(&content) {
+            Ok(toml) => Some(toml),
+            Err(err) => {
+                eprintln!(
+                    "Could not parse {:?} as toml. Will use default values. Error was: \n{:?}",
+                    path, err
+                );
+                None
             }
         },
         None => None,
@@ -94,13 +95,13 @@ impl Config {
         let theme = Theme {
             foreground: Color::from_str(&config_toml.theme.foreground).unwrap_or(color1),
             background: Color::from_str(&config_toml.theme.background).unwrap_or(Color::Black),
-            highlight_foreground: Color::from_str(&config_toml.theme.highlight_foreground).unwrap_or(Color::Black),
-            highlight_background: Color::from_str(&config_toml.theme.highlight_background).unwrap_or(color1),
+            highlight_foreground: Color::from_str(&config_toml.theme.highlight_foreground)
+                .unwrap_or(Color::Black),
+            highlight_background: Color::from_str(&config_toml.theme.highlight_background)
+                .unwrap_or(color1),
         };
 
-        Self {
-            theme,
-        }
+        Self { theme }
     }
 
     pub fn foreground(&self) -> Color {

@@ -1,11 +1,11 @@
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect, Alignment},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    widgets::{Block, Borders, Cell, Row, Table, BorderType},
+    widgets::{Block, BorderType, Borders, Cell, Row, Table},
     Frame,
 };
 
-use crate::app::{App};
+use crate::app::App;
 use crate::config::Config;
 
 pub fn instructions_tab(f: &mut Frame, app: &mut App, area: Rect, cfg: &Config) {
@@ -37,14 +37,17 @@ pub fn instructions_tab(f: &mut Frame, app: &mut App, area: Rect, cfg: &Config) 
         Row::new(cells).height(height as u16).bottom_margin(0)
     });
 
-    let widths = [
-        Constraint::Length(5),
-        Constraint::Length(10),
-    ];
+    let widths = [Constraint::Length(5), Constraint::Length(10)];
 
     let table = Table::new(rows, widths)
         .header(header)
-        .block(Block::default().borders(Borders::TOP).title(" Controls ").title_alignment(Alignment::Center).border_type(BorderType::Plain))
+        .block(
+            Block::default()
+                .borders(Borders::TOP)
+                .title(" Controls ")
+                .title_alignment(Alignment::Center)
+                .border_type(BorderType::Plain),
+        )
         .style(Style::default().fg(cfg.foreground()).bg(cfg.background()))
         .highlight_style(
             Style::default()
