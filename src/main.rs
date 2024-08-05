@@ -5,8 +5,8 @@ mod ui;
 mod helpers;
 pub mod constants;
 
-use std::{error::Error, io};
-
+use std::{error::Error};
+use std::io::stdout;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     crossterm::{
@@ -36,21 +36,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         // See https://linux.die.net/man/3/cfmakeraw, https://man7.org/linux/man-pages/man1/stty.1.html
         eprintln!("panic at the disco {info}");
 
-        // We don't have access to our instances of `stdout` and `backend` here,
+        // We don't have access to our instances of `stdout` and/or `backend` here,
         // but referencing `io::stdout()` every time seems to work.
         // I guess that could only fail if the stdout of the process changes while
         // the process is running... but that is an edge case bug I can live with.
-        reset_terminal();
+        reset_terminal(&mut stdout());
     }));
 
 
     let state = load_state();
 
-    // let a: Option<u32> = None;
-    // a.unwrap();
-
     enable_raw_mode()?;
-    let mut stdout = io::stdout();
+    let mut stdout = stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
     let backend = CrosstermBackend::new(stdout);
@@ -59,7 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut app = App::new(state.last_visited_path, state.queue_items.unwrap_or(vec![]));
     let res = app.start(&mut terminal);
 
-    reset_terminal(); // We'd normally use terminal.backend_mut(), but whatever.
+    reset_terminal(terminal.backend_mut());
 
     terminal.show_cursor()?;
 
@@ -70,9 +67,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn reset_terminal() {
+fn reset_terminal(writer: &mut impl std::io::Write) {
     execute!(
-        io::stdout(),
+        writer,
         LeaveAlternateScreen,
         DisableMouseCapture
     ).unwrap_or_else(|e| {
