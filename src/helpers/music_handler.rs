@@ -83,7 +83,6 @@ impl MusicHandle {
             sclone.append(source);
 
             sclone.sleep_until_end();
-            eprintln!("Song finished playing");
             // TODO: notify something so we can auto_play here rather than randomly probing
         });
     }
