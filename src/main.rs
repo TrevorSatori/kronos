@@ -30,18 +30,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut terminal = set_terminal()?;
     let mut app = App::new(state.last_visited_path, state.queue_items.unwrap_or(vec![]));
-    let res = app.start(&mut terminal);
+    let state = app.start(&mut terminal)?;
 
-    match res {
-        Ok(state) => {
-            save_state(state).unwrap_or_else(|error| {
-                eprintln!("Error in save_state {}", error);
-            });
-        }
-        Err(error) => {
-            eprintln!("{:?}", error)
-        }
-    }
+    save_state(state)?;
 
     reset_terminal(terminal.backend_mut());
     terminal.show_cursor()?;
@@ -83,11 +74,11 @@ fn reset_terminal(writer: &mut impl std::io::Write) {
 ///
 /// See `man cfmakeraw` and `man stty`.
 fn on_panic(info: &PanicInfo) {
-    eprintln!("panic at the disco {info}");
-
     // We don't have access to our instances of `stdout` and/or `backend` here,
     // but referencing `io::stdout()` every time seems to work.
     // I guess that could only fail if the stdout of the process changes while
     // the process is running... but that is an edge case bug I can live with.
     reset_terminal(&mut stdout());
+
+    eprintln!("{info}");
 }
