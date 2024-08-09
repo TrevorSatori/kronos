@@ -19,10 +19,14 @@ pub struct Queue {
     total_time: Duration,
 }
 
+fn song_list_to_duration(items: &VecDeque<Song>) -> Duration {
+    items.iter().map(|s| s.length).sum()
+}
+
 impl Queue {
     pub fn new(queue: Vec<String>) -> Self {
         let items: VecDeque<Song> = queue.iter().map(PathBuf::from).map(path_to_song).collect();
-        let total_time: Duration = items.iter().map(|s| s.length).sum();
+        let total_time = song_list_to_duration(&items);
         Self {
             state: ListState::default(),
             items,
@@ -51,22 +55,22 @@ impl Queue {
         self.total_time
     }
 
+    fn refresh_total_time(&mut self) {
+        self.total_time = song_list_to_duration(&self.items);
+    }
+
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
 
     pub fn pop(&mut self) -> PathBuf {
-        self.decrement_total_time();
-        self.items.pop_front().unwrap().path
+        let l = self.items.pop_front().unwrap().path;
+        self.refresh_total_time();
+        l
     }
 
     pub fn state(&self) -> ListState {
         self.state.clone()
-    }
-
-    fn decrement_total_time(&mut self) {
-        let length = self.items[self.selected_item_index].length;
-        self.total_time = self.total_time.saturating_sub(length);
     }
 
     pub fn next(&mut self) {
@@ -115,33 +119,29 @@ impl Queue {
             let files = bulk_add(&item);
             for f in files {
                 let song = path_to_song(f);
-                self.total_time += song.length;
                 self.items.push_back(song);
             }
         } else {
             let song = path_to_song(item);
-            self.total_time += song.length;
             self.items.push_back(song);
         }
+        self.refresh_total_time();
     }
 
     pub fn remove(&mut self) {
         if self.items.is_empty() {
-            // top of queue
-        } else if self.items.len() == 1 {
-            self.decrement_total_time();
-            self.items.remove(self.selected_item_index);
+            return;
+        }
+
+        self.items.remove(self.selected_item_index);
+
+        if self.items.is_empty() {
             self.unselect();
-        // if at bottom of queue, remove item and select item above above
-        } else if self.state.selected().unwrap() >= (self.items.len() - 1) {
-            self.decrement_total_time();
-            self.items.remove(self.selected_item_index);
-            self.selected_item_index -= 1;
+        } else {
+            self.selected_item_index = self.selected_item_index.min(self.items.len() - 1);
             self.state.select(Some(self.selected_item_index));
-        // else delete item
-        } else if !self.items.is_empty() {
-            self.decrement_total_time();
-            self.items.remove(self.selected_item_index);
-        };
+        }
+
+        self.refresh_total_time();
     }
 }
