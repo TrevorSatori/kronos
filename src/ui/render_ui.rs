@@ -12,6 +12,7 @@ use ratatui::{
     Frame,
 };
 use std::time::Duration;
+use crate::helpers::gen_funcs::song_to_string;
 
 static MAIN_SECTIONS: [&str; 2] = ["Music", "Help"];
 
@@ -90,7 +91,7 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
     if let Some(current_song) = app.current_song() {
         let playing_file = Block::default()
             .style(Style::default().fg(cfg.foreground()))
-            .title(current_song)
+            .title(song_to_string(&current_song))
             .borders(Borders::NONE)
             .title_alignment(Alignment::Center)
             .title_position(ratatui::widgets::block::Position::Bottom);

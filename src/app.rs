@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::helpers::gen_funcs::path_to_song;
+use crate::helpers::gen_funcs::{path_to_song, Song};
 use crate::helpers::{
     gen_funcs, music_handler::MusicHandle, queue::Queue, stateful_list::StatefulList,
     stateful_table::StatefulTable,
@@ -136,11 +136,11 @@ impl<'a> App<'a> {
         self.input_mode = in_mode
     }
 
-    pub fn current_song(&self) -> Option<String> {
+    pub fn current_song(&self) -> Option<Song> {
         if self.music_handle.sink_empty() && self.queue_items.is_empty() {
             None
         } else {
-            Some(self.music_handle.currently_playing())
+            self.music_handle.currently_playing()
         }
     }
 
@@ -153,7 +153,7 @@ impl<'a> App<'a> {
             self.browser_items = StatefulList::with_items(gen_funcs::scan_and_filter_directory());
             self.browser_items.next();
         } else {
-            self.music_handle.play(&path_to_song(path));
+            self.music_handle.play(path_to_song(path));
         }
     }
 
@@ -168,7 +168,7 @@ impl<'a> App<'a> {
     pub fn auto_play(&mut self) {
         if self.music_handle.sink_empty() && !self.queue_items.is_empty() {
             // thread::sleep(Duration::from_millis(250)); // this introduces a pause between tracks. should be configurable, and there must be a better way.
-            self.music_handle.play(&self.queue_items.pop());
+            self.music_handle.play(self.queue_items.pop());
         }
     }
 
@@ -314,7 +314,7 @@ impl<'a> App<'a> {
             KeyCode::Char('g') => self.music_handle.skip(),
             KeyCode::Enter => {
                 if let Some(song) = self.queue_items.selected_song() {
-                    self.music_handle.play(&song);
+                    self.music_handle.play(song);
                 };
             }
             KeyCode::Down | KeyCode::Char('j') => self.queue_items.select_next(),
