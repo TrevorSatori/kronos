@@ -1,4 +1,8 @@
+use crate::app::{App, InputMode};
+use crate::config::Config;
+use crate::helpers::gen_funcs;
 use ratatui::widgets::block::Position;
+use ratatui::widgets::ListState;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -6,10 +10,6 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, List, ListItem},
     Frame,
 };
-
-use crate::app::{App, InputMode};
-use crate::config::Config;
-use crate::helpers::gen_funcs;
 
 fn top_bar<'a>(app: &App, cfg: &Config) -> Block<'a> {
     let folder_name = app
@@ -147,6 +147,6 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
     frame.render_stateful_widget(
         queue_list(app, cfg),
         area_main_right,
-        &mut app.queue_items.state(),
+        &mut ListState::default().with_selected(app.queue_items.selected_song_index()),
     );
 }

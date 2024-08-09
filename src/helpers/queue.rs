@@ -1,10 +1,5 @@
-use lofty::{TaggedFileExt};
-use ratatui::widgets::ListState;
 use std::time::Duration;
-use std::{
-    collections::VecDeque,
-    path::{PathBuf},
-};
+use std::{collections::VecDeque, path::PathBuf};
 
 use super::gen_funcs::{bulk_add, path_to_song, Song};
 
@@ -29,10 +24,6 @@ impl Queue {
         }
     }
 
-    pub fn state(&self) -> ListState {
-        ListState::default().with_selected(self.selected_item_index)
-    }
-
     pub fn length(&self) -> usize {
         self.items.len()
     }
@@ -49,16 +40,16 @@ impl Queue {
         self.total_time
     }
 
-    pub fn selected_song(&self) -> Option<Song> {
+    pub fn selected_song_index(&self) -> Option<usize> {
         if self.items.is_empty() {
             None
         } else {
-            self.selected_item_index.map(|i| self.items[i].clone())
+            self.selected_item_index
         }
     }
 
-    pub fn selected_item_path(&self) -> Option<PathBuf> {
-        self.selected_song().map(|i| i.path)
+    pub fn selected_song(&self) -> Option<Song> {
+        self.selected_song_index().map(|i| self.items[i].clone())
     }
 
     fn refresh_total_time(&mut self) {
@@ -124,7 +115,5 @@ impl Queue {
 
             self.refresh_total_time();
         }
-
-
     }
 }
