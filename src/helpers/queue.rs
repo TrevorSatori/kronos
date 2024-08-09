@@ -1,7 +1,7 @@
 use std::time::Duration;
 use std::{collections::VecDeque, path::PathBuf};
 
-use super::gen_funcs::{bulk_add, path_to_song, Song};
+use super::gen_funcs::{path_to_song_list, path_to_song, Song};
 
 pub struct Queue {
     items: VecDeque<Song>,
@@ -88,7 +88,7 @@ impl Queue {
 
     pub fn add(&mut self, item: PathBuf) {
         if item.is_dir() {
-            let files = bulk_add(&item);
+            let files = path_to_song_list(&item);
             for f in files {
                 let song = path_to_song(f);
                 self.items.push_back(song);

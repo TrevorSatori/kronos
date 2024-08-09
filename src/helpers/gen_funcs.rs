@@ -4,7 +4,7 @@ use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
 };
-
+use std::fs::DirEntry;
 use glob::glob;
 use lofty::{Accessor, AudioFile, Probe, TaggedFileExt};
 
@@ -85,29 +85,29 @@ pub fn scan_and_filter_directory() -> Vec<String> {
     items
 }
 
-pub fn bulk_add(selected: &PathBuf) -> Vec<PathBuf> {
-    let mut items = Vec::new();
-    env::set_current_dir(selected).unwrap();
+const extensions: [&str; 7] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac"];
 
-    for item in glob::glob("./*")
-        .expect("Failed to read glob pattern")
-        .flatten()
-    {
-        let current_dir = env::current_dir().unwrap();
-        let join = Path::join(&current_dir, Path::new(&item));
-        let ext = Path::new(&item).extension().and_then(OsStr::to_str);
-        if ext.is_some()
-            && (item.extension().unwrap() == "mp3"
-                || item.extension().unwrap() == "mp4"
-                || item.extension().unwrap() == "m4a"
-                || item.extension().unwrap() == "wav"
-                || item.extension().unwrap() == "flac"
-                || item.extension().unwrap() == "ogg"
-                || item.extension().unwrap() == "aac")
-        {
-            items.push(join);
-        }
-    }
-    env::set_current_dir("../").unwrap();
-    items
+fn dir_entry_is_file(dir_entry: &DirEntry) -> bool {
+    dir_entry.file_type().is_ok_and(|ft| ft.is_file())
+}
+
+fn dir_entry_has_song_extension(dir_entry: &DirEntry) -> bool {
+    dir_entry.path().extension().is_some_and(|e| extensions.contains(&e.to_str().unwrap()))
+}
+
+fn dir_entry_is_song(dir_entry: &DirEntry) -> bool {
+    dir_entry_is_file(dir_entry) && dir_entry_has_song_extension(dir_entry)
+}
+
+pub fn path_to_song_list(path: &PathBuf) -> Vec<PathBuf> {
+    let mut entries = match path.read_dir() {
+        Ok(files) => files
+            .filter_map(|file| file.ok())
+            .filter(dir_entry_is_song)
+            .map(|dir_entry| dir_entry.path())
+            .collect(),
+        _ => vec![],
+    };
+    entries.sort_unstable();
+    entries
 }
