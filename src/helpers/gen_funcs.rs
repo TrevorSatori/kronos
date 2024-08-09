@@ -8,6 +8,7 @@ use std::{
 use glob::glob;
 use lofty::{Accessor, AudioFile, Probe, TaggedFileExt};
 
+#[derive(Clone)]
 pub struct Song {
     pub path: PathBuf,
     pub length: std::time::Duration,

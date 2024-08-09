@@ -9,9 +9,8 @@ use std::{
 use super::gen_funcs::{bulk_add, path_to_song, Song};
 
 pub struct Queue {
-    state: ListState,
     items: VecDeque<Song>,
-    selected_item_index: usize,
+    selected_item_index: Option<usize>,
     total_time: Duration,
 }
 
@@ -24,15 +23,14 @@ impl Queue {
         let items: VecDeque<Song> = queue.iter().map(PathBuf::from).map(path_to_song).collect();
         let total_time = song_list_to_duration(&items);
         Self {
-            state: ListState::default(),
             items,
-            selected_item_index: 0,
+            selected_item_index: None,
             total_time,
         }
     }
 
     pub fn state(&self) -> ListState {
-        self.state.clone()
+        ListState::default().with_selected(self.selected_item_index)
     }
 
     pub fn length(&self) -> usize {
@@ -51,12 +49,16 @@ impl Queue {
         self.total_time
     }
 
-    pub fn selected_item_path(&self) -> Option<&PathBuf> {
+    pub fn selected_song(&self) -> Option<Song> {
         if self.items.is_empty() {
             None
         } else {
-            Some(&self.items[self.selected_item_index].path)
+            self.selected_item_index.map(|i| self.items[i].clone())
         }
+    }
+
+    pub fn selected_item_path(&self) -> Option<PathBuf> {
+        self.selected_song().map(|i| i.path)
     }
 
     fn refresh_total_time(&mut self) {
@@ -73,41 +75,24 @@ impl Queue {
         if self.items.is_empty() {
             return;
         };
-
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.items.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.selected_item_index = i;
-        self.state.select(Some(i));
+        self.selected_item_index = match self.selected_item_index {
+            Some(i) => Some(std::cmp::min(i + 1, self.items.len() - 1)),
+            None => Some(0),
+        }
     }
 
     pub fn previous(&mut self) {
         if self.items.is_empty() {
             return;
         };
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.items.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.selected_item_index = i;
-        self.state.select(Some(i));
+        self.selected_item_index = match self.selected_item_index {
+            Some(i) => Some(if i > 0 { i - 1 } else { 0 }),
+            None => Some(0),
+        }
     }
 
     pub fn unselect(&mut self) {
-        self.state.select(None);
+        self.selected_item_index = None;
     }
 
     pub fn add(&mut self, item: PathBuf) {
@@ -128,16 +113,18 @@ impl Queue {
         if self.items.is_empty() {
             return;
         }
+        if let Some(selected_item_index) = self.selected_item_index {
+            self.items.remove(selected_item_index);
 
-        self.items.remove(self.selected_item_index);
+            if self.items.is_empty() {
+                self.selected_item_index = None;
+            } else {
+                self.selected_item_index = Some(selected_item_index.min(self.items.len() - 1));
+            }
 
-        if self.items.is_empty() {
-            self.unselect();
-        } else {
-            self.selected_item_index = self.selected_item_index.min(self.items.len() - 1);
-            self.state.select(Some(self.selected_item_index));
+            self.refresh_total_time();
         }
 
-        self.refresh_total_time();
+
     }
 }

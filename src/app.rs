@@ -312,8 +312,8 @@ impl<'a> App<'a> {
             KeyCode::Char('p') => self.music_handle.play_pause(),
             KeyCode::Char('g') => self.music_handle.skip(),
             KeyCode::Enter => {
-                if let Some(i) = self.queue_items.selected_item_path() {
-                    self.music_handle.play(i.clone());
+                if let Some(song) = self.queue_items.selected_song() {
+                    self.music_handle.play(song.path);
                 };
             }
             KeyCode::Down | KeyCode::Char('j') => self.queue_items.next(),
