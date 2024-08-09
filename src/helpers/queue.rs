@@ -1,54 +1,46 @@
-use lofty::{AudioFile, Probe};
+use lofty::{TaggedFileExt};
 use ratatui::widgets::ListState;
 use std::time::Duration;
 use std::{
     collections::VecDeque,
-    path::{Path, PathBuf},
+    path::{PathBuf},
 };
 
-use super::gen_funcs::bulk_add;
+use super::gen_funcs::{bulk_add, path_to_song, Song};
 
-pub fn item_length(path: &PathBuf) -> Duration {
-    let path = Path::new(&path);
-    let tagged_file = Probe::open(path)
-        .expect("ERROR: Bad path provided!")
-        .read()
-        .expect("ERROR: Failed to read file!");
-
-    let properties = &tagged_file.properties();
-    properties.duration()
+pub fn read_song_length(path: PathBuf) -> Duration {
+    path_to_song(path).length
 }
 
 pub struct Queue {
     state: ListState,
-    items: VecDeque<PathBuf>,
+    items: VecDeque<Song>,
     selected_item_index: usize,
     total_time: Duration,
 }
 
 impl Queue {
     pub fn new(queue: Vec<String>) -> Self {
-        let items = queue.iter().map(PathBuf::from).collect();
+        let items: VecDeque<Song> = queue.iter().map(PathBuf::from).map(path_to_song).collect();
+        let total_time: Duration = items.iter().map(|s| s.length).sum();
         Self {
             state: ListState::default(),
             items,
             selected_item_index: 0,
-            total_time: Duration::from_secs(0),
+            total_time,
         }
     }
 
-    // return item at index
     pub fn item(&self) -> Option<&PathBuf> {
         if self.items.is_empty() {
             None
         } else {
-            Some(&self.items[self.selected_item_index])
+            Some(&self.items[self.selected_item_index].path)
         }
     }
 
-    // return all items contained in vector
-    pub fn items(&self) -> &VecDeque<PathBuf> {
-        &self.items
+    pub fn paths(&self) -> VecDeque<PathBuf> {
+        self.items.iter().map(|i| i.path.clone()).collect()
     }
 
     pub fn length(&self) -> usize {
@@ -65,7 +57,7 @@ impl Queue {
 
     pub fn pop(&mut self) -> PathBuf {
         self.decrement_total_time();
-        self.items.pop_front().unwrap()
+        self.items.pop_front().unwrap().path
     }
 
     pub fn state(&self) -> ListState {
@@ -73,17 +65,11 @@ impl Queue {
     }
 
     fn decrement_total_time(&mut self) {
-        // TODO:
-        //   1. store song length for playing file + all queue files in RAM
-        //   2. do "refresh queue length", deterministic, rather than "decrement_total_time"
-        // eprintln!("decrement_total_time {:?} / {:?}", self.selected_item_index, self.items.len());
-        let item = self.items[self.selected_item_index].clone();
-        let length = item_length(&item);
+        let length = self.items[self.selected_item_index].length;
         self.total_time = self.total_time.saturating_sub(length);
     }
 
     pub fn next(&mut self) {
-        // check if empty
         if self.items.is_empty() {
             return;
         };
@@ -103,7 +89,6 @@ impl Queue {
     }
 
     pub fn previous(&mut self) {
-        // check if empty
         if self.items.is_empty() {
             return;
         };
@@ -129,17 +114,17 @@ impl Queue {
         if item.is_dir() {
             let files = bulk_add(&item);
             for f in files {
-                let length = item_length(&f);
-                self.total_time += length;
-                self.items.push_back(f);
+                let song = path_to_song(f);
+                self.total_time += song.length;
+                self.items.push_back(song);
             }
         } else {
-            self.total_time += item_length(&item);
-            self.items.push_back(item);
+            let song = path_to_song(item);
+            self.total_time += song.length;
+            self.items.push_back(song);
         }
     }
 
-    // remove item from items vector
     pub fn remove(&mut self) {
         if self.items.is_empty() {
             // top of queue

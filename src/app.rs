@@ -80,7 +80,7 @@ impl<'a> App<'a> {
     fn to_state(&self) -> State {
         let queue_items = self
             .queue_items
-            .items()
+            .paths()
             .iter()
             .map(|i| i.to_str())
             .filter(|i| i.is_some())

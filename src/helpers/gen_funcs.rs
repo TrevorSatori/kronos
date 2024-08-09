@@ -6,7 +6,31 @@ use std::{
 };
 
 use glob::glob;
-use lofty::{Accessor, Probe, TaggedFileExt};
+use lofty::{Accessor, AudioFile, Probe, TaggedFileExt};
+
+pub struct Song {
+    pub path: PathBuf,
+    pub length: std::time::Duration,
+    pub artist: Option<String>,
+}
+
+pub fn path_to_song(path: PathBuf) -> Song {
+    let path = Path::new(&path);
+    let tagged_file = Probe::open(path)
+        .expect("ERROR: Bad path provided!")
+        .read()
+        .expect("ERROR: Failed to read file!");
+
+    let properties = &tagged_file.properties();
+    let primary_tag = tagged_file.primary_tag().unwrap();
+    let artist = primary_tag.artist();
+
+    Song {
+        path: PathBuf::from(path),
+        length: properties.duration(),
+        artist: artist.map(|s| s.to_string()),
+    }
+}
 
 // converts queue items to what's displayed for user
 pub fn audio_display(path: &PathBuf) -> String {
@@ -60,8 +84,6 @@ pub fn scan_and_filter_directory() -> Vec<String> {
     items
 }
 
-// scans folder for valid files, returns matches
-// need to set current dir
 pub fn bulk_add(selected: &PathBuf) -> Vec<PathBuf> {
     let mut items = Vec::new();
     env::set_current_dir(selected).unwrap();
