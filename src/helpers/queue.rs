@@ -8,10 +8,6 @@ use std::{
 
 use super::gen_funcs::{bulk_add, path_to_song, Song};
 
-pub fn read_song_length(path: PathBuf) -> Duration {
-    path_to_song(path).length
-}
-
 pub struct Queue {
     state: ListState,
     items: VecDeque<Song>,
@@ -35,7 +31,27 @@ impl Queue {
         }
     }
 
-    pub fn item(&self) -> Option<&PathBuf> {
+    pub fn state(&self) -> ListState {
+        self.state.clone()
+    }
+
+    pub fn length(&self) -> usize {
+        self.items.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
+    pub fn paths(&self) -> VecDeque<PathBuf> {
+        self.items.iter().map(|i| i.path.clone()).collect()
+    }
+
+    pub fn total_time(&self) -> Duration {
+        self.total_time
+    }
+
+    pub fn selected_item_path(&self) -> Option<&PathBuf> {
         if self.items.is_empty() {
             None
         } else {
@@ -43,34 +59,14 @@ impl Queue {
         }
     }
 
-    pub fn paths(&self) -> VecDeque<PathBuf> {
-        self.items.iter().map(|i| i.path.clone()).collect()
-    }
-
-    pub fn length(&self) -> usize {
-        self.items.len()
-    }
-
-    pub fn total_time(&self) -> Duration {
-        self.total_time
-    }
-
     fn refresh_total_time(&mut self) {
         self.total_time = song_list_to_duration(&self.items);
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.items.is_empty()
     }
 
     pub fn pop(&mut self) -> PathBuf {
         let l = self.items.pop_front().unwrap().path;
         self.refresh_total_time();
         l
-    }
-
-    pub fn state(&self) -> ListState {
-        self.state.clone()
     }
 
     pub fn next(&mut self) {
