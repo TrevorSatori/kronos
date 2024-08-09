@@ -13,6 +13,7 @@ use std::{
     env, io,
     path::{Path, PathBuf},
 };
+use crate::helpers::gen_funcs::path_to_song;
 
 #[derive(Clone, Copy)]
 pub enum InputMode {
@@ -152,7 +153,7 @@ impl<'a> App<'a> {
             self.browser_items = StatefulList::with_items(gen_funcs::scan_and_filter_directory());
             self.browser_items.next();
         } else {
-            self.music_handle.play(path);
+            self.music_handle.play(&path_to_song(path));
         }
     }
 
@@ -167,7 +168,7 @@ impl<'a> App<'a> {
     pub fn auto_play(&mut self) {
         if self.music_handle.sink_empty() && !self.queue_items.is_empty() {
             // thread::sleep(Duration::from_millis(250)); // this introduces a pause between tracks. should be configurable, and there must be a better way.
-            self.music_handle.play(self.queue_items.pop());
+            self.music_handle.play(&self.queue_items.pop());
         }
     }
 
@@ -313,7 +314,7 @@ impl<'a> App<'a> {
             KeyCode::Char('g') => self.music_handle.skip(),
             KeyCode::Enter => {
                 if let Some(song) = self.queue_items.selected_song() {
-                    self.music_handle.play(song.path);
+                    self.music_handle.play(&song);
                 };
             }
             KeyCode::Down | KeyCode::Char('j') => self.queue_items.select_next(),

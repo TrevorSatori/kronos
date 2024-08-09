@@ -13,6 +13,7 @@ pub struct Song {
     pub path: PathBuf,
     pub length: std::time::Duration,
     pub artist: Option<String>,
+    pub title: Option<String>,
 }
 
 pub fn path_to_song(path: PathBuf) -> Song {
@@ -24,36 +25,26 @@ pub fn path_to_song(path: PathBuf) -> Song {
 
     let properties = &tagged_file.properties();
     let primary_tag = tagged_file.primary_tag().unwrap();
-    let artist = primary_tag.artist();
+    let artist = primary_tag.artist().map(String::from);
+    let title = primary_tag.title().map(String::from);
 
     Song {
         path: PathBuf::from(path),
         length: properties.duration(),
-        artist: artist.map(|s| s.to_string()),
+        artist,
+        title,
     }
 }
 
-// converts queue items to what's displayed for user
-pub fn audio_display(path: &PathBuf) -> String {
-    let path = Path::new(&path);
-    let tagged_file = Probe::open(path)
-        .expect("ERROR: Bad path provided!")
-        .read()
-        .expect("ERROR: Failed to read file!");
-
-    let ptag = tagged_file.primary_tag().unwrap();
-    let artist = ptag.artist();
-
-    // if filename
-    if let Some(i) = tagged_file.primary_tag().unwrap().title() {
-        // if artist data
-        if let Some(j) = artist {
-            format!("{artist} - {title}", artist = j, title = i)
+pub fn audio_display(song: &Song) -> String {
+    if let Some(title) = &song.title {
+        if let Some(artist) = &song.artist {
+            format!("{artist} - {title}")
         } else {
-            i.into()
+            title.into()
         }
     } else {
-        path.file_name().unwrap().to_str().unwrap().to_string()
+        song.path.file_name().unwrap().to_str().unwrap().to_string()
     }
 }
 

@@ -24,6 +24,10 @@ impl Queue {
         }
     }
 
+    pub fn songs(&self) -> &VecDeque<Song> {
+        &self.items
+    }
+
     pub fn length(&self) -> usize {
         self.items.len()
     }
@@ -56,8 +60,8 @@ impl Queue {
         self.total_time = song_list_to_duration(&self.items);
     }
 
-    pub fn pop(&mut self) -> PathBuf {
-        let l = self.items.pop_front().unwrap().path;
+    pub fn pop(&mut self) -> Song {
+        let l = self.items.pop_front().unwrap();
         self.refresh_total_time();
         l
     }

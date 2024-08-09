@@ -9,7 +9,7 @@ use std::{
 
 use lofty::{AudioFile, Probe};
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
-
+use crate::helpers::gen_funcs::Song;
 use super::gen_funcs;
 
 pub struct MusicHandle {
@@ -53,28 +53,18 @@ impl MusicHandle {
         self.sink.empty()
     }
 
-    pub fn set_currently_playing(&mut self, path: &PathBuf) {
-        self.currently_playing = gen_funcs::audio_display(path);
-    }
-
-    pub fn play(&mut self, path: PathBuf) {
+    pub fn play(&mut self, song: &Song) {
         self.sink.stop();
 
-        self.currently_playing = path
-            .clone()
-            .file_name()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_string();
-        self.set_currently_playing(&path);
-        self.update_song_length(&path);
+        self.currently_playing = gen_funcs::audio_display(&song);
+        self.song_length = song.length;
 
         // reinitialize due to rodio crate
         self.sink = Arc::new(Sink::try_new(&self.music_output.1).unwrap());
 
         // clone sink for thread
         let sclone = self.sink.clone();
+        let path = song.path.clone();
 
         let _t1 = thread::spawn(move || {
             let file = BufReader::new(File::open(path).unwrap());
