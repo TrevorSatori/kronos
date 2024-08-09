@@ -70,12 +70,11 @@ fn file_list<'a>(app: &App, cfg: &Config) -> List<'a> {
 }
 
 fn queue_list<'a>(app: &App, cfg: &Config) -> List<'a> {
-    let queue_items: Vec<ListItem> = app
+    let queue_items: Vec<String> = app
         .queue_items
         .songs()
         .iter()
         .map(gen_funcs::song_to_string)
-        .map(|song_display| ListItem::new(Text::from(song_display)))
         .collect();
 
     let queue_list = List::new(queue_items)
