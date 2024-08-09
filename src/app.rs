@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::helpers::gen_funcs::path_to_song;
 use crate::helpers::{
     gen_funcs, music_handler::MusicHandle, queue::Queue, stateful_list::StatefulList,
     stateful_table::StatefulTable,
@@ -13,7 +14,6 @@ use std::{
     env, io,
     path::{Path, PathBuf},
 };
-use crate::helpers::gen_funcs::path_to_song;
 
 #[derive(Clone, Copy)]
 pub enum InputMode {

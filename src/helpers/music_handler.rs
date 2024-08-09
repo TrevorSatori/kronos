@@ -7,10 +7,10 @@ use std::{
     time::Duration,
 };
 
+use super::gen_funcs;
+use crate::helpers::gen_funcs::Song;
 use lofty::{AudioFile, Probe};
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
-use crate::helpers::gen_funcs::Song;
-use super::gen_funcs;
 
 pub struct MusicHandle {
     music_output: Arc<(OutputStream, OutputStreamHandle)>,
@@ -56,23 +56,21 @@ impl MusicHandle {
     pub fn play(&mut self, song: &Song) {
         self.sink.stop();
 
-        self.currently_playing = gen_funcs::audio_display(&song);
+        self.currently_playing = gen_funcs::song_to_string(&song);
         self.song_length = song.length;
 
         // reinitialize due to rodio crate
         self.sink = Arc::new(Sink::try_new(&self.music_output.1).unwrap());
 
-        // clone sink for thread
-        let sclone = self.sink.clone();
+        let sink = self.sink.clone();
         let path = song.path.clone();
 
         let _t1 = thread::spawn(move || {
             let file = BufReader::new(File::open(path).unwrap());
             let source = Decoder::new(file).unwrap();
 
-            sclone.append(source);
-
-            sclone.sleep_until_end();
+            sink.append(source);
+            sink.sleep_until_end();
             // TODO: notify something so we can auto_play here rather than randomly probing
         });
     }

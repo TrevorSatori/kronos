@@ -1,12 +1,12 @@
+use glob::glob;
+use lofty::{Accessor, AudioFile, Probe, TaggedFileExt};
+use std::fs::DirEntry;
 use std::{
     collections::HashSet,
     env,
     ffi::OsStr,
     path::{Path, PathBuf},
 };
-use std::fs::DirEntry;
-use glob::glob;
-use lofty::{Accessor, AudioFile, Probe, TaggedFileExt};
 
 #[derive(Clone)]
 pub struct Song {
@@ -36,7 +36,7 @@ pub fn path_to_song(path: PathBuf) -> Song {
     }
 }
 
-pub fn audio_display(song: &Song) -> String {
+pub fn song_to_string(song: &Song) -> String {
     if let Some(title) = &song.title {
         if let Some(artist) = &song.artist {
             format!("{artist} - {title}")
@@ -83,7 +83,10 @@ fn dir_entry_is_file(dir_entry: &DirEntry) -> bool {
 }
 
 fn dir_entry_has_song_extension(dir_entry: &DirEntry) -> bool {
-    dir_entry.path().extension().is_some_and(|e| extensions.contains(&e.to_str().unwrap()))
+    dir_entry
+        .path()
+        .extension()
+        .is_some_and(|e| extensions.contains(&e.to_str().unwrap()))
 }
 
 fn dir_entry_is_song(dir_entry: &DirEntry) -> bool {

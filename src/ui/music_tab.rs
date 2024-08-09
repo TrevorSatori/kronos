@@ -74,7 +74,7 @@ fn queue_list<'a>(app: &App, cfg: &Config) -> List<'a> {
         .queue_items
         .songs()
         .iter()
-        .map(gen_funcs::audio_display)
+        .map(gen_funcs::song_to_string)
         .map(|song_display| ListItem::new(Text::from(song_display)))
         .collect();
 
