@@ -99,15 +99,16 @@ fn dir_entry_is_song(dir_entry: &DirEntry) -> bool {
     dir_entry_is_file(dir_entry) && dir_entry_has_song_extension(dir_entry)
 }
 
-pub fn path_to_song_list(path: &PathBuf) -> Vec<PathBuf> {
+pub fn path_to_song_list(path: &PathBuf) -> Vec<Song> {
     let mut entries = match path.read_dir() {
         Ok(files) => files
             .filter_map(|file| file.ok())
             .filter(dir_entry_is_song)
             .map(|dir_entry| dir_entry.path())
+            .map(path_to_song)
             .collect(),
         _ => vec![],
     };
-    entries.sort_unstable();
+    entries.sort_unstable_by_key(|i| i.path.clone());
     entries
 }

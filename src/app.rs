@@ -238,7 +238,7 @@ impl<'a> App<'a> {
             KeyCode::Tab => {
                 self.browser_items.unselect();
                 self.set_input_mode(InputMode::Queue);
-                self.queue_items.next();
+                self.queue_items.select_next();
             }
             KeyCode::Right => self.music_handle.seek_forward(),
             KeyCode::Left => self.music_handle.seek_backward(),
@@ -316,13 +316,13 @@ impl<'a> App<'a> {
                     self.music_handle.play(song.path);
                 };
             }
-            KeyCode::Down | KeyCode::Char('j') => self.queue_items.next(),
-            KeyCode::Up | KeyCode::Char('k') => self.queue_items.previous(),
-            KeyCode::Char('r') => self.queue_items.remove(),
+            KeyCode::Down | KeyCode::Char('j') => self.queue_items.select_next(),
+            KeyCode::Up | KeyCode::Char('k') => self.queue_items.select_previous(),
+            KeyCode::Char('r') => self.queue_items.remove_selected(),
             KeyCode::Right => self.music_handle.seek_forward(),
             KeyCode::Left => self.music_handle.seek_backward(),
             KeyCode::Tab => {
-                self.queue_items.unselect();
+                self.queue_items.select_none();
                 self.set_input_mode(InputMode::Browser);
                 self.browser_items.next();
             }

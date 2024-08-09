@@ -62,7 +62,7 @@ impl Queue {
         l
     }
 
-    pub fn next(&mut self) {
+    pub fn select_next(&mut self) {
         if self.items.is_empty() {
             return;
         };
@@ -72,7 +72,7 @@ impl Queue {
         }
     }
 
-    pub fn previous(&mut self) {
+    pub fn select_previous(&mut self) {
         if self.items.is_empty() {
             return;
         };
@@ -82,25 +82,25 @@ impl Queue {
         }
     }
 
-    pub fn unselect(&mut self) {
+    pub fn select_none(&mut self) {
         self.selected_item_index = None;
     }
 
-    pub fn add(&mut self, item: PathBuf) {
-        if item.is_dir() {
-            let files = path_to_song_list(&item);
-            for f in files {
-                let song = path_to_song(f);
+    pub fn add(&mut self, path: PathBuf) {
+        if path.is_dir() {
+            let files = path_to_song_list(&path);
+
+            for song in files {
                 self.items.push_back(song);
             }
         } else {
-            let song = path_to_song(item);
+            let song = path_to_song(path);
             self.items.push_back(song);
         }
         self.refresh_total_time();
     }
 
-    pub fn remove(&mut self) {
+    pub fn remove_selected(&mut self) {
         if self.items.is_empty() {
             return;
         }
