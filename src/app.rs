@@ -319,7 +319,7 @@ impl<'a> App<'a> {
             }
             KeyCode::Down | KeyCode::Char('j') => self.queue_items.select_next(),
             KeyCode::Up | KeyCode::Char('k') => self.queue_items.select_previous(),
-            KeyCode::Char('r') => self.queue_items.remove_selected(),
+            KeyCode::Delete => self.queue_items.remove_selected(),
             KeyCode::Right => self.music_handle.seek_forward(),
             KeyCode::Left => self.music_handle.seek_backward(),
             KeyCode::Tab => {
