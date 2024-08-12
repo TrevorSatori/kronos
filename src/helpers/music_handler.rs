@@ -1,10 +1,4 @@
-use std::{
-    fs::File,
-    io::BufReader,
-    sync::Arc,
-    thread,
-    time::Duration,
-};
+use std::{fs::File, io::BufReader, sync::Arc, thread, time::Duration};
 
 use crate::helpers::gen_funcs::Song;
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};

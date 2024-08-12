@@ -1,6 +1,7 @@
 use crate::app::{App, AppTab};
 use crate::config::Config;
 use crate::constants::{SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
+use crate::helpers::gen_funcs::song_to_string;
 use crate::ui::{instructions_tab, music_tab};
 use ratatui::widgets::{BorderType, Gauge};
 use ratatui::{
@@ -12,7 +13,6 @@ use ratatui::{
     Frame,
 };
 use std::time::Duration;
-use crate::helpers::gen_funcs::song_to_string;
 
 static MAIN_SECTIONS: [&str; 2] = ["Music", "Help"];
 

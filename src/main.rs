@@ -5,6 +5,10 @@ mod helpers;
 mod state;
 mod ui;
 
+use crate::state::{load_state, save_state};
+use app::App;
+use async_std::task;
+use mpris_server;
 use ratatui::{
     backend::CrosstermBackend,
     crossterm::{
@@ -17,23 +21,77 @@ use ratatui::{
 use std::error::Error;
 use std::io::stdout;
 use std::panic::PanicInfo;
+use std::sync::{Arc, Mutex};
+use std::thread;
 
-use crate::state::{load_state, save_state};
-use app::App;
-
-fn main() -> Result<(), Box<dyn Error>> {
+#[async_std::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     std::panic::set_hook(Box::new(on_panic));
 
+    let play_pause: Arc<Mutex<bool>> = Arc::new(Mutex::new(false));
+    let quit: Arc<Mutex<bool>> = Arc::new(Mutex::new(false));
+
+    run_player_thread(play_pause.clone(), quit.clone());
+    run_mpris(play_pause.clone(), quit.clone()).await?;
+
+    Ok(())
+}
+
+fn run_player_thread(play_pause: Arc<Mutex<bool>>, quit: Arc<Mutex<bool>>) {
+    thread::spawn(move || {
+        if let Err(err) = run_player(play_pause, quit) {
+            eprintln!("error :( {:?}", err);
+        }
+    });
+}
+
+fn run_player(play_pause: Arc<Mutex<bool>>, quit: Arc<Mutex<bool>>) -> Result<(), Box<dyn Error>> {
     let state = load_state();
 
     let mut terminal = set_terminal()?;
     let mut app = App::new(state.last_visited_path, state.queue_items);
-    let state = app.start(&mut terminal)?;
+    let state = app.start(&mut terminal, play_pause, quit)?;
 
     save_state(state)?;
 
     reset_terminal(terminal.backend_mut());
     terminal.show_cursor()?;
+
+    Ok(())
+}
+
+async fn run_mpris(
+    play_pause: Arc<Mutex<bool>>,
+    quit: Arc<Mutex<bool>>,
+) -> Result<(), Box<dyn Error>> {
+    let player = mpris_server::Player::builder("com.tarocodes.brock")
+        .can_play(true)
+        .can_pause(true)
+        .can_go_next(true)
+        .build()
+        .await?;
+
+    player.connect_play_pause(move |_player| {
+        eprintln!("wat");
+
+        *play_pause.lock().unwrap() = true;
+    });
+
+    player.connect_next(|_player| {
+        eprintln!("next");
+    });
+
+    async_std::task::spawn_local(player.run());
+
+    player.set_can_play(false).await?;
+    player.seeked(mpris_server::Time::from_millis(1000)).await?;
+
+    loop {
+        task::sleep(std::time::Duration::from_secs(1)).await;
+        if *quit.lock().unwrap() {
+            break;
+        }
+    }
 
     Ok(())
 }
@@ -64,7 +122,7 @@ fn reset_terminal(writer: &mut impl std::io::Write) {
 ///
 /// This hook should take care of reverting it the terminal back to how it was if the app panics,
 /// but if we're still left with a somewhat unusable terminal for whatever reason,
-/// `stty isig icanon iexten opost ixon icrnl ` should fix it.
+/// `stty isig icanon iexten opost ixon icrnl` should fix it.
 ///
 /// See `man cfmakeraw` and `man stty`.
 fn on_panic(info: &PanicInfo) {

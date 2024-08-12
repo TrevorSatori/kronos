@@ -9,6 +9,7 @@ use ratatui::backend::Backend;
 use ratatui::crossterm::event;
 use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::Terminal;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::{
     env, io,
@@ -94,12 +95,22 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn start<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> io::Result<State> {
+    pub fn start<B: Backend>(
+        &mut self,
+        terminal: &mut Terminal<B>,
+        play_pause: Arc<Mutex<bool>>,
+        quit: Arc<Mutex<bool>>,
+    ) -> io::Result<State> {
         let cfg = Config::new();
         let tick_rate = Duration::from_secs(1);
         let mut last_tick = std::time::Instant::now();
 
         loop {
+            if *play_pause.lock().unwrap() {
+                self.music_handle.play_pause();
+                *play_pause.lock().unwrap() = false;
+            }
+
             terminal.draw(|f| crate::ui::render_ui(f, self, &cfg))?;
 
             self.auto_play(); // Up to `tick_rate` lag. A thread may be a better alternative.
@@ -113,6 +124,7 @@ impl<'a> App<'a> {
             }
 
             if self.must_quit {
+                *quit.lock().unwrap() = true;
                 break;
             }
 

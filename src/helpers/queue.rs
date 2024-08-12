@@ -1,7 +1,7 @@
 use std::time::Duration;
 use std::{collections::VecDeque, path::PathBuf};
 
-    use super::gen_funcs::{path_to_song, path_to_song_list, Song};
+use super::gen_funcs::{path_to_song, path_to_song_list, Song};
 
 pub struct Queue {
     items: VecDeque<Song>,
