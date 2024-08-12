@@ -23,8 +23,10 @@ use ratatui::{
     Terminal,
 };
 
-use crate::state::{load_state, save_state};
-use app::App;
+use crate::{
+    app::App,
+    state::{load_state, save_state},
+};
 
 #[async_std::main]
 async fn main() -> Result<(), Box<dyn Error>> {
