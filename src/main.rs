@@ -5,8 +5,12 @@ mod helpers;
 mod state;
 mod ui;
 
-use crate::state::{load_state, save_state};
-use app::App;
+use std::error::Error;
+use std::io::stdout;
+use std::panic::PanicInfo;
+use std::sync::{Arc, Mutex};
+use std::thread;
+
 use async_std::task;
 use mpris_server;
 use ratatui::{
@@ -18,11 +22,9 @@ use ratatui::{
     },
     Terminal,
 };
-use std::error::Error;
-use std::io::stdout;
-use std::panic::PanicInfo;
-use std::sync::{Arc, Mutex};
-use std::thread;
+
+use crate::state::{load_state, save_state};
+use app::App;
 
 #[async_std::main]
 async fn main() -> Result<(), Box<dyn Error>> {
