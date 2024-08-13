@@ -88,16 +88,27 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config, current_song: &Opti
         AppTab::Controls => instructions_tab(f, app, main_layouts[1], cfg),
     };
 
-    render_playing_gauge(f, main_layouts[2], main_layouts[3], current_song, app, cfg);
+    render_playing_gauge(
+        f,
+        cfg,
+        main_layouts[2],
+        main_layouts[3],
+        current_song,
+        app.sink().get_pos(),
+        app.queue_items.total_time(),
+        app.queue_items.length(),
+    );
 }
 
 fn render_playing_gauge(
     f: &mut Frame,
+    cfg: &Config,
     main_layouts: Rect,
     main_layouts2: Rect,
     current_song: &Option<Song>,
-    app: &mut App,
-    cfg: &Config,
+    current_song_position: Duration,
+    queue_total_time: Duration,
+    queue_song_count: usize,
 ) {
     if let Some(current_song) = current_song {
         let playing_file = Block::default()
@@ -112,7 +123,7 @@ fn render_playing_gauge(
     let playing_gauge_label_current_song = match current_song {
         Some(song) => format!(
             "{time_played} / {current_song_length}",
-            time_played = duration_to_string(app.sink().get_pos()),
+            time_played = duration_to_string(current_song_position),
             current_song_length = duration_to_string(song.length),
         ),
         _ => "".to_string(),
@@ -120,13 +131,13 @@ fn render_playing_gauge(
 
     let playing_gauge_label = format!(
         "{playing_gauge_label_current_song} — {total_time}, {queue_items} songs",
-        total_time = duration_to_string(app.queue_items.total_time()),
-        queue_items = app.queue_items.length(),
+        total_time = duration_to_string(queue_total_time),
+        queue_items = queue_song_count,
     );
 
     let song_progress = match current_song {
         Some(song) => f64::clamp(
-            app.sink().get_pos().as_secs_f64() / song.length.as_secs_f64(),
+            current_song_position.as_secs_f64() / song.length.as_secs_f64(),
             0.0,
             1.0,
         ),
