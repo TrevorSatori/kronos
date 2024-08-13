@@ -1,19 +1,20 @@
-use crate::config::Config;
-use crate::helpers::gen_funcs::{path_to_song, Song};
-use crate::helpers::{
-    gen_funcs, music_handler::MusicHandle, queue::Queue, stateful_list::StatefulList,
-    stateful_table::StatefulTable,
-};
-use crate::state::State;
-use ratatui::backend::Backend;
-use ratatui::crossterm::event;
-use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
-use ratatui::Terminal;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use std::{
-    env, io,
-    path::{Path, PathBuf},
+use std::{env, io, path::{Path, PathBuf}, thread};
+
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
+use ratatui::{backend::Backend, Terminal};
+
+use crate::{
+    config::Config,
+    helpers::{
+        gen_funcs::{path_to_song, scan_and_filter_directory, Song},
+        music_handler::MusicHandle,
+        queue::Queue,
+        stateful_list::StatefulList,
+        stateful_table::StatefulTable,
+    },
+    state::State,
 };
 
 #[derive(Clone, Copy)]
@@ -63,7 +64,7 @@ impl<'a> App<'a> {
             });
         }
 
-        let mut browser_items = StatefulList::with_items(gen_funcs::scan_and_filter_directory());
+        let mut browser_items = StatefulList::with_items(scan_and_filter_directory());
         browser_items.select(0);
 
         Self {
@@ -162,7 +163,7 @@ impl<'a> App<'a> {
         if path.is_dir() {
             self.last_visited_path = path.clone();
             env::set_current_dir(path).unwrap();
-            self.browser_items = StatefulList::with_items(gen_funcs::scan_and_filter_directory());
+            self.browser_items = StatefulList::with_items(scan_and_filter_directory());
             self.browser_items.next();
         } else {
             self.music_handle.play(path_to_song(path));
@@ -171,7 +172,7 @@ impl<'a> App<'a> {
 
     pub fn backpedal(&mut self) {
         env::set_current_dir("../").unwrap();
-        self.browser_items = StatefulList::with_items(gen_funcs::scan_and_filter_directory());
+        self.browser_items = StatefulList::with_items(scan_and_filter_directory());
         self.browser_items.select_by_path(&self.last_visited_path);
         self.last_visited_path = env::current_dir().unwrap();
     }
