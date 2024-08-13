@@ -8,7 +8,8 @@ mod ui;
 use std::error::Error;
 use std::io::stdout;
 use std::panic::PanicInfo;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 
 use async_std::task;
@@ -30,8 +31,8 @@ use crate::{
 async fn main() -> Result<(), Box<dyn Error>> {
     std::panic::set_hook(Box::new(on_panic));
 
-    let play_pause: Arc<Mutex<bool>> = Arc::new(Mutex::new(false));
-    let quit: Arc<Mutex<bool>> = Arc::new(Mutex::new(false));
+    let play_pause: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+    let quit: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
 
     run_player_thread(play_pause.clone(), quit.clone());
     run_mpris(play_pause.clone(), quit.clone()).await?;
@@ -39,7 +40,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn run_player_thread(play_pause: Arc<Mutex<bool>>, quit: Arc<Mutex<bool>>) {
+fn run_player_thread(play_pause: Arc<AtomicBool>, quit: Arc<AtomicBool>) {
     thread::spawn(move || {
         if let Err(err) = run_player(play_pause, quit) {
             eprintln!("error :( {:?}", err);
@@ -47,7 +48,7 @@ fn run_player_thread(play_pause: Arc<Mutex<bool>>, quit: Arc<Mutex<bool>>) {
     });
 }
 
-fn run_player(play_pause: Arc<Mutex<bool>>, quit: Arc<Mutex<bool>>) -> Result<(), Box<dyn Error>> {
+fn run_player(play_pause: Arc<AtomicBool>, quit: Arc<AtomicBool>) -> Result<(), Box<dyn Error>> {
     let state = load_state();
 
     let mut terminal = set_terminal()?;
@@ -63,8 +64,8 @@ fn run_player(play_pause: Arc<Mutex<bool>>, quit: Arc<Mutex<bool>>) -> Result<()
 }
 
 async fn run_mpris(
-    play_pause: Arc<Mutex<bool>>,
-    quit: Arc<Mutex<bool>>,
+    play_pause: Arc<AtomicBool>,
+    quit: Arc<AtomicBool>,
 ) -> Result<(), Box<dyn Error>> {
     let player = mpris_server::Player::builder("com.tarocodes.brock")
         .can_play(true)
@@ -74,9 +75,7 @@ async fn run_mpris(
         .await?;
 
     player.connect_play_pause(move |_player| {
-        eprintln!("wat");
-
-        *play_pause.lock().unwrap() = true;
+        play_pause.store(true, Ordering::Relaxed)
     });
 
     player.connect_next(|_player| {
@@ -93,7 +92,7 @@ async fn run_mpris(
 
     loop {
         task::sleep(std::time::Duration::from_secs(1)).await;
-        if *quit.lock().unwrap() {
+        if quit.load(Ordering::Relaxed) {
             break;
         }
     }

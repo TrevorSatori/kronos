@@ -1,7 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc};
 use std::time::Duration;
-use std::{env, io, path::{Path, PathBuf}, thread};
-
+use std::{env, io, path::{Path, PathBuf}};
+use std::sync::atomic::{AtomicBool, Ordering};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{backend::Backend, Terminal};
 
@@ -99,17 +99,17 @@ impl<'a> App<'a> {
     pub fn start<B: Backend>(
         &mut self,
         terminal: &mut Terminal<B>,
-        play_pause: Arc<Mutex<bool>>,
-        quit: Arc<Mutex<bool>>,
+        play_pause: Arc<AtomicBool>,
+        quit: Arc<AtomicBool>,
     ) -> io::Result<State> {
         let cfg = Config::new();
         let tick_rate = Duration::from_secs(1);
         let mut last_tick = std::time::Instant::now();
 
         loop {
-            if *play_pause.lock().unwrap() {
+            if play_pause.load(Ordering::Relaxed){
                 self.music_handle.play_pause();
-                *play_pause.lock().unwrap() = false;
+                play_pause.store(false, Ordering::Relaxed);
             }
 
             terminal.draw(|f| crate::ui::render_ui(f, self, &cfg))?;
@@ -125,7 +125,7 @@ impl<'a> App<'a> {
             }
 
             if self.must_quit {
-                *quit.lock().unwrap() = true;
+                quit.store(true, Ordering::Relaxed);
                 break;
             }
 
