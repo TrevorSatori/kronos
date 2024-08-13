@@ -62,7 +62,7 @@ impl MusicHandle {
 
             sink.append(source);
             sink.sleep_until_end();
-            // TODO: notify something so we can auto_play here rather than randomly probing
+            // TODO: let (tx, rx) = channel(); (see sink.sleep_until_end implementation)
         });
     }
 
