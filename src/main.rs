@@ -128,7 +128,7 @@ fn reset_terminal(writer: &mut impl std::io::Write) {
 ///
 /// This hook should take care of reverting it the terminal back to how it was if the app panics,
 /// but if we're still left with a somewhat unusable terminal for whatever reason,
-/// `stty isig icanon iexten opost ixon icrnl` should fix it.
+/// `reset` or `stty isig icanon iexten opost ixon icrnl` should fix it.
 ///
 /// See `man cfmakeraw` and `man stty`.
 fn on_panic(info: &PanicInfo) {
