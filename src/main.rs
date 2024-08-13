@@ -12,16 +12,14 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 use async_std::task;
-use mpris_server;
-use ratatui::{
-    backend::CrosstermBackend,
-    crossterm::{
-        event::{DisableMouseCapture, EnableMouseCapture},
-        execute,
-        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-    },
-    Terminal,
+use crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use mpris_server;
+use mpris_server::zbus::export::futures_util::StreamExt;
+use ratatui::{backend::CrosstermBackend, Terminal};
 
 use crate::{
     app::App,
@@ -89,6 +87,9 @@ async fn run_mpris(
 
     player.set_can_play(false).await?;
     player.seeked(mpris_server::Time::from_millis(1000)).await?;
+
+    // let mut reader = crossterm::event::EventStream::new();
+    // let mut event = reader.next().fuse();
 
     loop {
         task::sleep(std::time::Duration::from_secs(1)).await;
