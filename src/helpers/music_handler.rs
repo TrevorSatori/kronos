@@ -1,30 +1,19 @@
 use std::{fs::File, io::BufReader, sync::Arc, thread, time::Duration};
 
 use crate::helpers::gen_funcs::Song;
-use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
+use rodio::{Decoder, OutputStreamHandle, Sink};
 
 pub struct MusicHandle {
-    music_output: (OutputStream, OutputStreamHandle),
     sink: Arc<Sink>,
     currently_playing: Option<Song>,
-    volume: f32,
-}
-
-impl Default for MusicHandle {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl MusicHandle {
-    pub fn new() -> Self {
-        let music_output = OutputStream::try_default().unwrap();
-        let sink = Arc::new(Sink::try_new(&music_output.1).unwrap());
+    pub fn new(music_output: &OutputStreamHandle) -> Self {
+        let sink = Arc::new(Sink::try_new(music_output).unwrap());
         Self {
-            music_output,
             sink,
             currently_playing: None,
-            volume: 1.,
         }
     }
 
@@ -69,26 +58,8 @@ impl MusicHandle {
         });
     }
 
-    pub fn play_pause(&mut self) {
-        if self.sink.is_paused() {
-            self.sink.play()
-        } else {
-            self.sink.pause()
-        }
-    }
-
     pub fn skip(&self) {
         self.sink.stop();
-    }
-
-    pub fn change_volume(&mut self, volume: f32) {
-        self.volume += volume;
-        if self.volume < 0. {
-            self.volume = 0.;
-        } else if self.volume > 1. {
-            self.volume = 1.;
-        }
-        self.sink.set_volume(self.volume)
     }
 
     pub fn seek_forward(&mut self) {
@@ -111,5 +82,30 @@ impl MusicHandle {
         self.sink.try_seek(target).unwrap_or_else(|e| {
             eprintln!("could not seek {:?}", e);
         });
+    }
+}
+
+pub trait ExtendedSink {
+    fn toggle(&self);
+    fn change_volume(&self, amount: f32);
+}
+
+impl ExtendedSink for Sink {
+    fn toggle(&self) {
+        if self.is_paused() {
+            self.play()
+        } else {
+            self.pause()
+        }
+    }
+
+    fn change_volume(&self, amount: f32) {
+        let mut volume = self.volume() + amount;
+        if volume < 0. {
+            volume = 0.;
+        } else if volume > 1. {
+            volume = 1.;
+        }
+        self.set_volume(volume)
     }
 }

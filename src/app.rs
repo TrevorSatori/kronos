@@ -5,13 +5,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Receiver;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{backend::Backend, Terminal};
-use rodio::Sink;
+use rodio::{OutputStream, OutputStreamHandle, Sink};
 
 use crate::{
     config::Config,
     helpers::{
         gen_funcs::{path_to_song, scan_and_filter_directory, Song},
-        music_handler::MusicHandle,
+        music_handler::{MusicHandle, ExtendedSink},
         queue::Queue,
         stateful_list::StatefulList,
         stateful_table::StatefulTable,
@@ -37,7 +37,6 @@ impl AppTab {
     pub fn next(&self) -> Self {
         match self {
             Self::Music => Self::Controls,
-            // Wrap around to the first tab.
             Self::Controls => Self::Music,
         }
     }
@@ -47,6 +46,7 @@ pub struct App<'a> {
     pub browser_items: StatefulList<String>,
     pub queue_items: Queue,
     pub control_table: StatefulTable<'a>,
+    music_output: (OutputStream, OutputStreamHandle),
     pub music_handle: MusicHandle,
     input_mode: InputMode,
     pub active_tab: AppTab,
@@ -69,16 +69,19 @@ impl<'a> App<'a> {
         let mut browser_items = StatefulList::with_items(scan_and_filter_directory());
         browser_items.select(0);
 
+        let music_output = OutputStream::try_default().unwrap();
+
         Self {
             must_quit: false,
             browser_items,
             queue_items: Queue::new(queue),
             control_table: StatefulTable::new(),
-            music_handle: MusicHandle::new(),
+            music_handle: MusicHandle::new(&music_output.1),
             input_mode: InputMode::Browser,
             active_tab: AppTab::Music,
             last_visited_path: env::current_dir().unwrap(),
             browser_filter: None,
+            music_output,
         }
     }
 
@@ -104,11 +107,7 @@ impl<'a> App<'a> {
                 if let Err(err) = play_pause_receiver.recv() {
                     eprintln!("error receiving! {}", err);
                 } else {
-                    if sink.is_paused() {
-                        sink.play()
-                    } else {
-                        sink.pause()
-                    }
+                    sink.toggle();
                 }
             }
         });
@@ -248,7 +247,7 @@ impl<'a> App<'a> {
             KeyCode::Char('q') => {
                 self.must_quit = true;
             }
-            KeyCode::Char('p') | KeyCode::Char(' ') => self.music_handle.play_pause(),
+            KeyCode::Char('p') | KeyCode::Char(' ') => self.music_handle.sink().toggle(),
             KeyCode::Char('g') => self.music_handle.skip(),
             KeyCode::Char('a') => {
                 self.queue_items.add(self.get_selected_browser_item());
@@ -271,8 +270,8 @@ impl<'a> App<'a> {
             }
             KeyCode::Right => self.music_handle.seek_forward(),
             KeyCode::Left => self.music_handle.seek_backward(),
-            KeyCode::Char('-') => self.music_handle.change_volume(-0.05),
-            KeyCode::Char('+') => self.music_handle.change_volume(0.05),
+            KeyCode::Char('-') => self.music_handle.sink().change_volume(-0.05),
+            KeyCode::Char('+') => self.music_handle.sink().change_volume(0.05),
             KeyCode::Char('2') => {
                 self.next();
                 match self.input_mode() {
@@ -338,7 +337,7 @@ impl<'a> App<'a> {
     fn handle_queue_key_events(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Char('q') => self.must_quit = true,
-            KeyCode::Char('p') => self.music_handle.play_pause(),
+            KeyCode::Char('p') => self.music_handle.sink().toggle(),
             KeyCode::Char('g') => self.music_handle.skip(),
             KeyCode::Enter => {
                 if let Some(song) = self.queue_items.selected_song() {
@@ -369,7 +368,7 @@ impl<'a> App<'a> {
     fn handle_help_key_events(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Char('q') => self.must_quit = true,
-            KeyCode::Char('p') => self.music_handle.play_pause(),
+            KeyCode::Char('p') => self.music_handle.sink().toggle(),
             KeyCode::Char('g') => self.music_handle.skip(),
             KeyCode::Down | KeyCode::Char('j') => self.control_table.next(),
             KeyCode::Up | KeyCode::Char('k') => self.control_table.previous(),
