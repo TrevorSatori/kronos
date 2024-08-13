@@ -4,7 +4,7 @@ use crate::helpers::gen_funcs::Song;
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 
 pub struct MusicHandle {
-    music_output: Arc<(OutputStream, OutputStreamHandle)>,
+    music_output: (OutputStream, OutputStreamHandle),
     sink: Arc<Sink>,
     currently_playing: Option<Song>,
     volume: f32,
@@ -18,7 +18,7 @@ impl Default for MusicHandle {
 
 impl MusicHandle {
     pub fn new() -> Self {
-        let music_output = Arc::new(OutputStream::try_default().unwrap());
+        let music_output = OutputStream::try_default().unwrap();
         let sink = Arc::new(Sink::try_new(&music_output.1).unwrap());
         Self {
             music_output,
