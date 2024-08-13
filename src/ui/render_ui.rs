@@ -1,7 +1,7 @@
 use crate::app::{App, AppTab};
 use crate::config::Config;
 use crate::constants::{SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
-use crate::helpers::gen_funcs::song_to_string;
+use crate::helpers::gen_funcs::{Song, song_to_string};
 use crate::ui::{instructions_tab, music_tab};
 use ratatui::widgets::{BorderType, Gauge};
 use ratatui::{
@@ -16,7 +16,7 @@ use std::time::Duration;
 
 static MAIN_SECTIONS: [&str; 2] = ["Music", "Help"];
 
-pub fn duration_to_string(total_time: Duration) -> String {
+fn duration_to_string(total_time: Duration) -> String {
     let hours = total_time.as_secs() / SECONDS_PER_HOUR;
     let minutes = (total_time.as_secs() % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
     let seconds = total_time.as_secs() % SECONDS_PER_MINUTE;
@@ -34,7 +34,7 @@ pub fn duration_to_string(total_time: Duration) -> String {
     strings.join(":")
 }
 
-pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
+pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config, current_song: &Option<Song>) {
     let size = f.size();
 
     let main_layouts = Layout::default()
@@ -88,25 +88,31 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
         AppTab::Controls => instructions_tab(f, app, main_layouts[1], cfg),
     };
 
-    if let Some(current_song) = app.current_song() {
+    render_playing_gauge(f,main_layouts[2], main_layouts[3], current_song, app, cfg);
+}
+
+fn render_playing_gauge(f: &mut Frame, main_layouts: Rect, main_layouts2: Rect, current_song: &Option<Song>, app: &mut App, cfg: &Config) {
+    if let Some(current_song) = current_song {
         let playing_file = Block::default()
             .style(Style::default().fg(cfg.foreground()))
             .title(song_to_string(&current_song))
             .borders(Borders::NONE)
             .title_alignment(Alignment::Center)
             .title_position(ratatui::widgets::block::Position::Bottom);
-        f.render_widget(playing_file, main_layouts[2]);
+        f.render_widget(playing_file, main_layouts);
     }
 
-    let song_length = match &app.currently_playing {
-        Some(song) => song.length,
-        _ => Duration::from_secs(0),
+    let playing_gauge_label_current_song = match current_song {
+        Some(song) => format!(
+            "{time_played} / {current_song_length}",
+            time_played = duration_to_string(app.sink().get_pos()),
+            current_song_length = duration_to_string(song.length),
+        ),
+        _ => "".to_string(),
     };
 
     let playing_gauge_label = format!(
-        "{time_played} / {current_song_length} — {total_time}, {queue_items} songs",
-        time_played = duration_to_string(app.sink().get_pos()),
-        current_song_length = duration_to_string(song_length),
+        "{playing_gauge_label_current_song} — {total_time}, {queue_items} songs",
         total_time = duration_to_string(app.queue_items.total_time()),
         queue_items = app.queue_items.length(),
     );
@@ -116,5 +122,5 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config) {
         .label(playing_gauge_label)
         .gauge_style(Style::default().fg(cfg.highlight_background()))
         .ratio(app.song_progress());
-    f.render_widget(playing_gauge, main_layouts[3]);
+    f.render_widget(playing_gauge, main_layouts2);
 }

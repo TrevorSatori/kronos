@@ -135,7 +135,8 @@ impl<'a> App<'a> {
         self.play_pause_recv(play_pause_receiver, self.sink.clone());
 
         loop {
-            terminal.draw(|f| crate::ui::render_ui(f, self, &cfg))?;
+            let currently_playing = &self.currently_playing.clone();
+            terminal.draw(|f| crate::ui::render_ui(f, self, &cfg, currently_playing))?;
 
             self.auto_play(); // Up to `tick_rate` lag. A thread may be a better alternative.
 
