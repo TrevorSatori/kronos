@@ -180,7 +180,7 @@ impl<'a> App<'a> {
         if self.sink.empty() && self.queue_items.is_empty() {
             None
         } else {
-            self.music_handle.currently_playing()
+            self.currently_playing.clone()
         }
     }
 

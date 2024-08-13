@@ -16,10 +16,6 @@ impl MusicHandle {
         }
     }
 
-    pub fn currently_playing(&self) -> Option<Song> {
-        self.currently_playing.clone()
-    }
-
     pub fn song_length(&self) -> Duration {
         match &self.currently_playing {
             Some(song) => song.length,
