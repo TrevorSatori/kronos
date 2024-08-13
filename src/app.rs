@@ -1,7 +1,8 @@
 use std::sync::{Arc};
 use std::time::Duration;
-use std::{env, io, path::{Path, PathBuf}};
+use std::{env, io, path::{Path, PathBuf}, thread};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::Receiver;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{backend::Backend, Terminal};
 
@@ -96,15 +97,28 @@ impl<'a> App<'a> {
         }
     }
 
+    fn play_pause_recv(&self, play_pause_receiver: Receiver<()>, play_pause: Arc<AtomicBool>) {
+        thread::spawn(move || {
+            loop {
+                play_pause_receiver.recv().unwrap();
+                play_pause.store(true, Ordering::Relaxed);
+            }
+        });
+    }
+
     pub fn start<B: Backend>(
         &mut self,
         terminal: &mut Terminal<B>,
-        play_pause: Arc<AtomicBool>,
+        play_pause_receiver: Receiver<()>,
         quit: Arc<AtomicBool>,
     ) -> io::Result<State> {
         let cfg = Config::new();
         let tick_rate = Duration::from_secs(1);
         let mut last_tick = std::time::Instant::now();
+
+        let play_pause = Arc::new(AtomicBool::new(false));
+
+        self.play_pause_recv(play_pause_receiver, play_pause.clone());
 
         loop {
             if play_pause.load(Ordering::Relaxed){

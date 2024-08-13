@@ -8,7 +8,7 @@ mod ui;
 use std::error::Error;
 use std::io::stdout;
 use std::panic::PanicInfo;
-use std::sync::{Arc};
+use std::sync::{Arc, mpsc::{channel, Receiver, Sender}};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 
@@ -31,16 +31,17 @@ use crate::{
 async fn main() -> Result<(), Box<dyn Error>> {
     std::panic::set_hook(Box::new(on_panic));
 
-    let play_pause: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
     let quit: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
 
-    run_player_thread(play_pause.clone(), quit.clone());
-    run_mpris(play_pause.clone(), quit.clone()).await?;
+    let (play_pause_sender, play_pause_receiver) = channel();
+
+    run_player_thread(play_pause_receiver, quit.clone());
+    run_mpris(play_pause_sender, quit.clone()).await?;
 
     Ok(())
 }
 
-fn run_player_thread(play_pause: Arc<AtomicBool>, quit: Arc<AtomicBool>) {
+fn run_player_thread(play_pause: Receiver<()>, quit: Arc<AtomicBool>) {
     thread::spawn(move || {
         if let Err(err) = run_player(play_pause, quit) {
             eprintln!("error :( {:?}", err);
@@ -48,7 +49,7 @@ fn run_player_thread(play_pause: Arc<AtomicBool>, quit: Arc<AtomicBool>) {
     });
 }
 
-fn run_player(play_pause: Arc<AtomicBool>, quit: Arc<AtomicBool>) -> Result<(), Box<dyn Error>> {
+fn run_player(play_pause: Receiver<()>, quit: Arc<AtomicBool>) -> Result<(), Box<dyn Error>> {
     let state = load_state();
 
     let mut terminal = set_terminal()?;
@@ -64,7 +65,7 @@ fn run_player(play_pause: Arc<AtomicBool>, quit: Arc<AtomicBool>) -> Result<(), 
 }
 
 async fn run_mpris(
-    play_pause: Arc<AtomicBool>,
+    play_pause: Sender<()>,
     quit: Arc<AtomicBool>,
 ) -> Result<(), Box<dyn Error>> {
     let player = mpris_server::Player::builder("com.tarocodes.brock")
@@ -75,7 +76,9 @@ async fn run_mpris(
         .await?;
 
     player.connect_play_pause(move |_player| {
-        play_pause.store(true, Ordering::Relaxed)
+        if let Err(err) = play_pause.send(()) {
+            eprintln!("Failed to send play_pause! {:?}", err);
+        }
     });
 
     player.connect_next(|_player| {
