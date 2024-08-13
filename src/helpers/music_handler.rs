@@ -16,17 +16,6 @@ impl MusicHandle {
         }
     }
 
-    pub fn song_length(&self) -> Duration {
-        match &self.currently_playing {
-            Some(song) => song.length,
-            _ => Duration::from_secs(0),
-        }
-    }
-
-    pub fn time_played(&self) -> Duration {
-        self.sink.get_pos()
-    }
-
     pub fn play(&mut self, song: Song) {
         let path = song.path.clone();
         self.currently_playing = Some(song);

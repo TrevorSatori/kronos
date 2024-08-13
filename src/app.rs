@@ -54,7 +54,7 @@ pub struct App<'a> {
     pub browser_filter: Option<String>,
     pub must_quit: bool,
     sink: Arc<Sink>,
-    currently_playing: Option<Song>,
+    pub currently_playing: Option<Song>,
 }
 
 impl<'a> App<'a> {
@@ -89,6 +89,10 @@ impl<'a> App<'a> {
             browser_filter: None,
             currently_playing: None,
         }
+    }
+
+    pub fn sink(&self) -> Arc<Sink> {
+        self.sink.clone()
     }
 
     fn to_state(&self) -> State {
