@@ -5,6 +5,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Receiver;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{backend::Backend, Terminal};
+use rodio::Sink;
 
 use crate::{
     config::Config,
@@ -97,11 +98,18 @@ impl<'a> App<'a> {
         }
     }
 
-    fn play_pause_recv(&self, play_pause_receiver: Receiver<()>, play_pause: Arc<AtomicBool>) {
+    fn play_pause_recv(&self, play_pause_receiver: Receiver<()>, sink: Arc<Sink>) {
         thread::spawn(move || {
             loop {
-                play_pause_receiver.recv().unwrap();
-                play_pause.store(true, Ordering::Relaxed);
+                if let Err(err) = play_pause_receiver.recv() {
+                    eprintln!("error receiving! {}", err);
+                } else {
+                    if sink.is_paused() {
+                        sink.play()
+                    } else {
+                        sink.pause()
+                    }
+                }
             }
         });
     }
@@ -116,16 +124,9 @@ impl<'a> App<'a> {
         let tick_rate = Duration::from_secs(1);
         let mut last_tick = std::time::Instant::now();
 
-        let play_pause = Arc::new(AtomicBool::new(false));
-
-        self.play_pause_recv(play_pause_receiver, play_pause.clone());
+        self.play_pause_recv(play_pause_receiver, self.music_handle.sink());
 
         loop {
-            if play_pause.load(Ordering::Relaxed){
-                self.music_handle.play_pause();
-                play_pause.store(false, Ordering::Relaxed);
-            }
-
             terminal.draw(|f| crate::ui::render_ui(f, self, &cfg))?;
 
             self.auto_play(); // Up to `tick_rate` lag. A thread may be a better alternative.

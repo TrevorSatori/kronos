@@ -18,12 +18,18 @@ impl Default for MusicHandle {
 
 impl MusicHandle {
     pub fn new() -> Self {
+        let music_output = Arc::new(OutputStream::try_default().unwrap());
+        let sink = Arc::new(Sink::try_new(&music_output.1).unwrap());
         Self {
-            music_output: Arc::new(OutputStream::try_default().unwrap()),
-            sink: Arc::new(Sink::new_idle().0), // more efficient way, shouldn't have to do twice?
+            music_output,
+            sink,
             currently_playing: None,
             volume: 1.,
         }
+    }
+
+    pub fn sink(&self) -> Arc<Sink> {
+        self.sink.clone()
     }
 
     pub fn currently_playing(&self) -> Option<Song> {
@@ -50,9 +56,6 @@ impl MusicHandle {
 
         let path = song.path.clone();
         self.currently_playing = Some(song);
-
-        // reinitialize due to rodio crate
-        self.sink = Arc::new(Sink::try_new(&self.music_output.1).unwrap());
 
         let sink = self.sink.clone();
 

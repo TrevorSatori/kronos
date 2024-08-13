@@ -19,7 +19,6 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use mpris_server;
-use mpris_server::zbus::export::futures_util::StreamExt;
 use ratatui::{backend::CrosstermBackend, Terminal};
 
 use crate::{
