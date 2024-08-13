@@ -34,7 +34,7 @@ fn duration_to_string(total_time: Duration) -> String {
     strings.join(":")
 }
 
-pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config, current_song: &Option<Song>) {
+pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config, active_tab: AppTab, current_song: &Option<Song>) {
     let size = f.size();
 
     let main_layouts = Layout::default()
@@ -70,7 +70,7 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config, current_song: &Opti
                 .border_type(BorderType::Plain)
                 .border_style(Style::default().fg(cfg.background()).bg(cfg.background())),
         )
-        .select(app.active_tab as usize)
+        .select(active_tab as usize)
         .style(
             Style::default()
                 .fg(cfg.foreground())
@@ -83,7 +83,7 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config, current_song: &Opti
         );
     f.render_widget(tabs, main_layouts[0]);
 
-    match app.active_tab {
+    match active_tab {
         AppTab::Music => music_tab(f, app, main_layouts[1], cfg),
         AppTab::Controls => instructions_tab(f, app, main_layouts[1], cfg),
     };

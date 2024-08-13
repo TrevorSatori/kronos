@@ -136,7 +136,7 @@ impl<'a> App<'a> {
 
         loop {
             let currently_playing = &self.currently_playing.clone();
-            terminal.draw(|f| crate::ui::render_ui(f, self, &cfg, currently_playing))?;
+            terminal.draw(|f| crate::ui::render_ui(f, self, &cfg, self.active_tab, currently_playing))?;
 
             self.auto_play(); // Up to `tick_rate` lag. A thread may be a better alternative.
 
