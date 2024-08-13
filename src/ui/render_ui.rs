@@ -1,7 +1,7 @@
 use crate::app::{App, AppTab};
 use crate::config::Config;
 use crate::constants::{SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
-use crate::helpers::gen_funcs::{Song, song_to_string};
+use crate::helpers::gen_funcs::{song_to_string, Song};
 use crate::ui::{instructions_tab, music_tab};
 use ratatui::widgets::{BorderType, Gauge};
 use ratatui::{
@@ -88,10 +88,17 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config, current_song: &Opti
         AppTab::Controls => instructions_tab(f, app, main_layouts[1], cfg),
     };
 
-    render_playing_gauge(f,main_layouts[2], main_layouts[3], current_song, app, cfg);
+    render_playing_gauge(f, main_layouts[2], main_layouts[3], current_song, app, cfg);
 }
 
-fn render_playing_gauge(f: &mut Frame, main_layouts: Rect, main_layouts2: Rect, current_song: &Option<Song>, app: &mut App, cfg: &Config) {
+fn render_playing_gauge(
+    f: &mut Frame,
+    main_layouts: Rect,
+    main_layouts2: Rect,
+    current_song: &Option<Song>,
+    app: &mut App,
+    cfg: &Config,
+) {
     if let Some(current_song) = current_song {
         let playing_file = Block::default()
             .style(Style::default().fg(cfg.foreground()))
@@ -117,10 +124,19 @@ fn render_playing_gauge(f: &mut Frame, main_layouts: Rect, main_layouts2: Rect, 
         queue_items = app.queue_items.length(),
     );
 
+    let song_progress = match current_song {
+        Some(song) => f64::clamp(
+            app.sink().get_pos().as_secs_f64() / song.length.as_secs_f64(),
+            0.0,
+            1.0,
+        ),
+        _ => 0.0,
+    };
+
     let playing_gauge = Gauge::default()
         .style(Style::default().fg(cfg.foreground()))
         .label(playing_gauge_label)
         .gauge_style(Style::default().fg(cfg.highlight_background()))
-        .ratio(app.song_progress());
+        .ratio(song_progress);
     f.render_widget(playing_gauge, main_layouts2);
 }

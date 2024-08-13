@@ -228,19 +228,6 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn song_progress(&self) -> f64 {
-        if let Some(song) = &self.currently_playing {
-            f64::clamp(
-                self.sink.get_pos().as_secs_f64()
-                    / song.length.as_secs_f64(),
-                0.0,
-                1.0,
-            )
-        } else {
-            0.0
-        }
-    }
-
     pub fn get_selected_browser_item(&self) -> PathBuf {
         let current_dir = env::current_dir().unwrap();
         if self.browser_items.empty() {
