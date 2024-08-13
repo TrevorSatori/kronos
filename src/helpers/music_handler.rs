@@ -1,7 +1,7 @@
 use std::{fs::File, io::BufReader, sync::Arc, thread, time::Duration};
 
 use crate::helpers::gen_funcs::Song;
-use rodio::{Decoder, OutputStreamHandle, Sink};
+use rodio::{Decoder, Sink};
 
 pub struct MusicHandle {
     sink: Arc<Sink>,
@@ -32,8 +32,6 @@ impl MusicHandle {
     }
 
     pub fn play(&mut self, song: Song) {
-        self.sink.stop();
-
         let path = song.path.clone();
         self.currently_playing = Some(song);
 
@@ -46,32 +44,6 @@ impl MusicHandle {
             sink.append(source);
             sink.sleep_until_end();
             // TODO: let (tx, rx) = channel(); (see sink.sleep_until_end implementation)
-        });
-    }
-
-    pub fn skip(&self) {
-        self.sink.stop();
-    }
-
-    pub fn seek_forward(&mut self) {
-        let target = self
-            .sink
-            .get_pos()
-            .saturating_add(Duration::from_secs(5))
-            .min(self.song_length());
-        self.sink.try_seek(target).unwrap_or_else(|e| {
-            eprintln!("could not seek {:?}", e);
-        });
-    }
-
-    pub fn seek_backward(&mut self) {
-        let target = self
-            .sink
-            .get_pos()
-            .saturating_sub(Duration::from_secs(5))
-            .max(Duration::from_secs(0));
-        self.sink.try_seek(target).unwrap_or_else(|e| {
-            eprintln!("could not seek {:?}", e);
         });
     }
 }

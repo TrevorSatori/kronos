@@ -54,6 +54,7 @@ pub struct App<'a> {
     pub browser_filter: Option<String>,
     pub must_quit: bool,
     sink: Arc<Sink>,
+    currently_playing: Option<Song>,
 }
 
 impl<'a> App<'a> {
@@ -86,6 +87,7 @@ impl<'a> App<'a> {
             active_tab: AppTab::Music,
             last_visited_path: env::current_dir().unwrap(),
             browser_filter: None,
+            currently_playing: None,
         }
     }
 
@@ -167,6 +169,13 @@ impl<'a> App<'a> {
         self.input_mode = in_mode
     }
 
+    fn play(&mut self, song: Song) {
+        self.sink.stop();
+
+        self.music_handle.play(song.clone());
+        self.currently_playing = Some(song);
+    }
+
     pub fn current_song(&self) -> Option<Song> {
         if self.sink.empty() && self.queue_items.is_empty() {
             None
@@ -184,7 +193,7 @@ impl<'a> App<'a> {
             self.browser_items = StatefulList::with_items(scan_and_filter_directory());
             self.browser_items.next();
         } else {
-            self.music_handle.play(path_to_song(path));
+            self.play(path_to_song(path));
         }
     }
 
@@ -199,15 +208,16 @@ impl<'a> App<'a> {
     pub fn auto_play(&mut self) {
         if self.sink.empty() && !self.queue_items.is_empty() {
             // thread::sleep(Duration::from_millis(250)); // this introduces a pause between tracks. should be configurable, and there must be a better way.
-            self.music_handle.play(self.queue_items.pop());
+            let song = self.queue_items.pop();
+            self.play(song);
         }
     }
 
-    pub fn song_progress(&mut self) -> f64 {
-        if !self.sink.empty() {
+    pub fn song_progress(&self) -> f64 {
+        if let Some(song) = &self.currently_playing {
             f64::clamp(
                 self.sink.get_pos().as_secs_f64()
-                    / self.music_handle.song_length().as_secs_f64(),
+                    / song.length.as_secs_f64(),
                 0.0,
                 1.0,
             )
@@ -237,6 +247,30 @@ impl<'a> App<'a> {
         }
     }
 
+    pub fn seek_forward(&mut self) {
+        if let Some(song) = &self.currently_playing {
+            let target = self
+                .sink
+                .get_pos()
+                .saturating_add(Duration::from_secs(5))
+                .min(song.length);
+            self.sink.try_seek(target).unwrap_or_else(|e| {
+                eprintln!("could not seek {:?}", e);
+            });
+        }
+    }
+
+    pub fn seek_backward(&mut self) {
+        let target = self
+            .sink
+            .get_pos()
+            .saturating_sub(Duration::from_secs(5))
+            .max(Duration::from_secs(0));
+        self.sink.try_seek(target).unwrap_or_else(|e| {
+            eprintln!("could not seek {:?}", e);
+        });
+    }
+
     pub fn handle_key_event(&mut self, key: KeyEvent) {
         match self.input_mode() {
             InputMode::Browser => self.handle_browser_key_events(key),
@@ -252,7 +286,7 @@ impl<'a> App<'a> {
                 self.must_quit = true;
             }
             KeyCode::Char('p') | KeyCode::Char(' ') => self.sink.toggle(),
-            KeyCode::Char('g') => self.music_handle.skip(),
+            KeyCode::Char('g') => self.sink.stop(),
             KeyCode::Char('a') => {
                 self.queue_items.add(self.get_selected_browser_item());
                 self.browser_items.next();
@@ -272,8 +306,8 @@ impl<'a> App<'a> {
                 self.set_input_mode(InputMode::Queue);
                 self.queue_items.select_next();
             }
-            KeyCode::Right => self.music_handle.seek_forward(),
-            KeyCode::Left => self.music_handle.seek_backward(),
+            KeyCode::Right => self.seek_forward(),
+            KeyCode::Left => self.seek_backward(),
             KeyCode::Char('-') => self.sink.change_volume(-0.05),
             KeyCode::Char('+') => self.sink.change_volume(0.05),
             KeyCode::Char('2') => {
@@ -342,17 +376,17 @@ impl<'a> App<'a> {
         match key.code {
             KeyCode::Char('q') => self.must_quit = true,
             KeyCode::Char('p') => self.sink.toggle(),
-            KeyCode::Char('g') => self.music_handle.skip(),
+            KeyCode::Char('g') => self.sink.stop(),
             KeyCode::Enter => {
                 if let Some(song) = self.queue_items.selected_song() {
-                    self.music_handle.play(song);
+                    self.play(song);
                 };
             }
             KeyCode::Down | KeyCode::Char('j') => self.queue_items.select_next(),
             KeyCode::Up | KeyCode::Char('k') => self.queue_items.select_previous(),
             KeyCode::Delete => self.queue_items.remove_selected(),
-            KeyCode::Right => self.music_handle.seek_forward(),
-            KeyCode::Left => self.music_handle.seek_backward(),
+            KeyCode::Right => self.seek_forward(),
+            KeyCode::Left => self.seek_backward(),
             KeyCode::Tab => {
                 self.queue_items.select_none();
                 self.set_input_mode(InputMode::Browser);
@@ -373,7 +407,7 @@ impl<'a> App<'a> {
         match key.code {
             KeyCode::Char('q') => self.must_quit = true,
             KeyCode::Char('p') => self.sink.toggle(),
-            KeyCode::Char('g') => self.music_handle.skip(),
+            KeyCode::Char('g') => self.sink.stop(),
             KeyCode::Down | KeyCode::Char('j') => self.control_table.next(),
             KeyCode::Up | KeyCode::Char('k') => self.control_table.previous(),
             KeyCode::Char('1') => {
