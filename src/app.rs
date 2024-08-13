@@ -53,6 +53,7 @@ pub struct App<'a> {
     pub last_visited_path: PathBuf,
     pub browser_filter: Option<String>,
     pub must_quit: bool,
+    sink: Arc<Sink>,
 }
 
 impl<'a> App<'a> {
@@ -70,18 +71,21 @@ impl<'a> App<'a> {
         browser_items.select(0);
 
         let music_output = OutputStream::try_default().unwrap();
+        let sink = Arc::new(Sink::try_new(&music_output.1).unwrap());
+        let music_handle = MusicHandle::new(sink.clone());
 
         Self {
-            must_quit: false,
+            music_output,
+            sink,
+            music_handle,
             browser_items,
+            must_quit: false,
             queue_items: Queue::new(queue),
             control_table: StatefulTable::new(),
-            music_handle: MusicHandle::new(&music_output.1),
             input_mode: InputMode::Browser,
             active_tab: AppTab::Music,
             last_visited_path: env::current_dir().unwrap(),
             browser_filter: None,
-            music_output,
         }
     }
 
@@ -123,7 +127,7 @@ impl<'a> App<'a> {
         let tick_rate = Duration::from_secs(1);
         let mut last_tick = std::time::Instant::now();
 
-        self.play_pause_recv(play_pause_receiver, self.music_handle.sink());
+        self.play_pause_recv(play_pause_receiver, self.sink.clone());
 
         loop {
             terminal.draw(|f| crate::ui::render_ui(f, self, &cfg))?;
@@ -164,7 +168,7 @@ impl<'a> App<'a> {
     }
 
     pub fn current_song(&self) -> Option<Song> {
-        if self.music_handle.sink_empty() && self.queue_items.is_empty() {
+        if self.sink.empty() && self.queue_items.is_empty() {
             None
         } else {
             self.music_handle.currently_playing()
@@ -193,16 +197,16 @@ impl<'a> App<'a> {
 
     /// Automatically start playing next song if current one has ended.
     pub fn auto_play(&mut self) {
-        if self.music_handle.sink_empty() && !self.queue_items.is_empty() {
+        if self.sink.empty() && !self.queue_items.is_empty() {
             // thread::sleep(Duration::from_millis(250)); // this introduces a pause between tracks. should be configurable, and there must be a better way.
             self.music_handle.play(self.queue_items.pop());
         }
     }
 
     pub fn song_progress(&mut self) -> f64 {
-        if !self.music_handle.sink_empty() {
+        if !self.sink.empty() {
             f64::clamp(
-                self.music_handle.time_played().as_secs_f64()
+                self.sink.get_pos().as_secs_f64()
                     / self.music_handle.song_length().as_secs_f64(),
                 0.0,
                 1.0,
@@ -247,7 +251,7 @@ impl<'a> App<'a> {
             KeyCode::Char('q') => {
                 self.must_quit = true;
             }
-            KeyCode::Char('p') | KeyCode::Char(' ') => self.music_handle.sink().toggle(),
+            KeyCode::Char('p') | KeyCode::Char(' ') => self.sink.toggle(),
             KeyCode::Char('g') => self.music_handle.skip(),
             KeyCode::Char('a') => {
                 self.queue_items.add(self.get_selected_browser_item());
@@ -270,8 +274,8 @@ impl<'a> App<'a> {
             }
             KeyCode::Right => self.music_handle.seek_forward(),
             KeyCode::Left => self.music_handle.seek_backward(),
-            KeyCode::Char('-') => self.music_handle.sink().change_volume(-0.05),
-            KeyCode::Char('+') => self.music_handle.sink().change_volume(0.05),
+            KeyCode::Char('-') => self.sink.change_volume(-0.05),
+            KeyCode::Char('+') => self.sink.change_volume(0.05),
             KeyCode::Char('2') => {
                 self.next();
                 match self.input_mode() {
@@ -337,7 +341,7 @@ impl<'a> App<'a> {
     fn handle_queue_key_events(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Char('q') => self.must_quit = true,
-            KeyCode::Char('p') => self.music_handle.sink().toggle(),
+            KeyCode::Char('p') => self.sink.toggle(),
             KeyCode::Char('g') => self.music_handle.skip(),
             KeyCode::Enter => {
                 if let Some(song) = self.queue_items.selected_song() {
@@ -368,7 +372,7 @@ impl<'a> App<'a> {
     fn handle_help_key_events(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Char('q') => self.must_quit = true,
-            KeyCode::Char('p') => self.music_handle.sink().toggle(),
+            KeyCode::Char('p') => self.sink.toggle(),
             KeyCode::Char('g') => self.music_handle.skip(),
             KeyCode::Down | KeyCode::Char('j') => self.control_table.next(),
             KeyCode::Up | KeyCode::Char('k') => self.control_table.previous(),

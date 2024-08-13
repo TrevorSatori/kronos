@@ -9,16 +9,11 @@ pub struct MusicHandle {
 }
 
 impl MusicHandle {
-    pub fn new(music_output: &OutputStreamHandle) -> Self {
-        let sink = Arc::new(Sink::try_new(music_output).unwrap());
+    pub fn new(sink: Arc<Sink>) -> Self {
         Self {
             sink,
             currently_playing: None,
         }
-    }
-
-    pub fn sink(&self) -> Arc<Sink> {
-        self.sink.clone()
     }
 
     pub fn currently_playing(&self) -> Option<Song> {
@@ -34,10 +29,6 @@ impl MusicHandle {
 
     pub fn time_played(&self) -> Duration {
         self.sink.get_pos()
-    }
-
-    pub fn sink_empty(&self) -> bool {
-        self.sink.empty()
     }
 
     pub fn play(&mut self, song: Song) {
