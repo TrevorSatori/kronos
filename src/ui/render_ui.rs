@@ -53,6 +53,26 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config, active_tab: AppTab,
     let block = Block::default().style(Style::default().bg(cfg.background()));
     f.render_widget(block, size);
 
+    render_top_bar(f, cfg, main_layouts[0], active_tab);
+
+    match active_tab {
+        AppTab::Music => music_tab(f, app, main_layouts[1], cfg),
+        AppTab::Controls => instructions_tab(f, app, main_layouts[1], cfg),
+    };
+
+    render_playing_gauge(
+        f,
+        cfg,
+        main_layouts[2],
+        main_layouts[3],
+        current_song,
+        app.sink().get_pos(),
+        app.queue_items.total_time(),
+        app.queue_items.length(),
+    );
+}
+
+fn render_top_bar(f: &mut Frame, cfg: &Config, main_layouts: Rect, active_tab: AppTab) {
     let tab_titles: Vec<Line> = MAIN_SECTIONS
         .iter()
         .map(|t| {
@@ -81,23 +101,7 @@ pub fn render_ui(f: &mut Frame, app: &mut App, cfg: &Config, active_tab: AppTab,
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::from_hsl(39.0, 67.0, 69.0)), // .bg(cfg.highlight_background()),
         );
-    f.render_widget(tabs, main_layouts[0]);
-
-    match active_tab {
-        AppTab::Music => music_tab(f, app, main_layouts[1], cfg),
-        AppTab::Controls => instructions_tab(f, app, main_layouts[1], cfg),
-    };
-
-    render_playing_gauge(
-        f,
-        cfg,
-        main_layouts[2],
-        main_layouts[3],
-        current_song,
-        app.sink().get_pos(),
-        app.queue_items.total_time(),
-        app.queue_items.length(),
-    );
+    f.render_widget(tabs, main_layouts);
 }
 
 fn render_playing_gauge(
