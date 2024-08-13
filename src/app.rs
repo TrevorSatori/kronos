@@ -1,17 +1,19 @@
 use std::sync::{Arc};
 use std::time::Duration;
 use std::{env, io, path::{Path, PathBuf}, thread};
+use std::fs::File;
+use std::io::BufReader;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Receiver;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{backend::Backend, Terminal};
-use rodio::{OutputStream, OutputStreamHandle, Sink};
+use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 
 use crate::{
     config::Config,
     helpers::{
         gen_funcs::{path_to_song, scan_and_filter_directory, Song},
-        music_handler::{MusicHandle, ExtendedSink},
+        music_handler::{ExtendedSink},
         queue::Queue,
         stateful_list::StatefulList,
         stateful_table::StatefulTable,
@@ -47,7 +49,6 @@ pub struct App<'a> {
     pub queue_items: Queue,
     pub control_table: StatefulTable<'a>,
     music_output: (OutputStream, OutputStreamHandle),
-    pub music_handle: MusicHandle,
     input_mode: InputMode,
     pub active_tab: AppTab,
     pub last_visited_path: PathBuf,
@@ -73,12 +74,10 @@ impl<'a> App<'a> {
 
         let music_output = OutputStream::try_default().unwrap();
         let sink = Arc::new(Sink::try_new(&music_output.1).unwrap());
-        let music_handle = MusicHandle::new(sink.clone());
 
         Self {
             music_output,
             sink,
-            music_handle,
             browser_items,
             must_quit: false,
             queue_items: Queue::new(queue),
@@ -176,8 +175,19 @@ impl<'a> App<'a> {
     fn play(&mut self, song: Song) {
         self.sink.stop();
 
-        self.music_handle.play(song.clone());
+        let path = song.path.clone();
+        let sink = self.sink.clone();
+
         self.currently_playing = Some(song);
+
+        thread::spawn(move || {
+            let file = BufReader::new(File::open(path).unwrap());
+            let source = Decoder::new(file).unwrap();
+
+            sink.append(source);
+            sink.sleep_until_end();
+            // TODO: let (tx, rx) = channel(); (see sink.sleep_until_end implementation)
+        });
     }
 
     pub fn current_song(&self) -> Option<Song> {

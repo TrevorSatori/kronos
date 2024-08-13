@@ -1,37 +1,4 @@
-use std::{fs::File, io::BufReader, sync::Arc, thread, time::Duration};
-
-use crate::helpers::gen_funcs::Song;
-use rodio::{Decoder, Sink};
-
-pub struct MusicHandle {
-    sink: Arc<Sink>,
-    currently_playing: Option<Song>,
-}
-
-impl MusicHandle {
-    pub fn new(sink: Arc<Sink>) -> Self {
-        Self {
-            sink,
-            currently_playing: None,
-        }
-    }
-
-    pub fn play(&mut self, song: Song) {
-        let path = song.path.clone();
-        self.currently_playing = Some(song);
-
-        let sink = self.sink.clone();
-
-        let _t1 = thread::spawn(move || {
-            let file = BufReader::new(File::open(path).unwrap());
-            let source = Decoder::new(file).unwrap();
-
-            sink.append(source);
-            sink.sleep_until_end();
-            // TODO: let (tx, rx) = channel(); (see sink.sleep_until_end implementation)
-        });
-    }
-}
+use rodio::{Sink};
 
 pub trait ExtendedSink {
     fn toggle(&self);
