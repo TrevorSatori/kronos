@@ -83,6 +83,9 @@ I've also extensively refactored the code base:
 - Removed a thread that tracked the current playing position. 
   - _This was possible thanks to the migration to Ratatui._
 - Broke down rendering code into smaller pieces.
+- Moved some logic into `app`
+- Reduced the number of mutable references overall
+  - And plan to do so as much as I can. I want everything to have the least possible access.
 
 ### Future
 
