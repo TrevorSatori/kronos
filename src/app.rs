@@ -274,7 +274,7 @@ impl<'a> App<'a> {
     }
 
     pub fn handle_key_event(&mut self, key: KeyEvent) {
-        match self.input_mode() {
+        match self.input_mode {
             InputMode::Browser => self.handle_browser_key_events(key),
             InputMode::Queue => self.handle_queue_key_events(key),
             InputMode::Controls => self.handle_help_key_events(key),
@@ -314,7 +314,7 @@ impl<'a> App<'a> {
             KeyCode::Char('+') => self.sink.change_volume(0.05),
             KeyCode::Char('2') => {
                 self.next();
-                match self.input_mode() {
+                match self.input_mode {
                     InputMode::Controls => self.set_input_mode(InputMode::Browser),
                     _ => self.set_input_mode(InputMode::Controls),
                 };
@@ -396,7 +396,7 @@ impl<'a> App<'a> {
             }
             KeyCode::Char('2') => {
                 self.next();
-                match self.input_mode() {
+                match self.input_mode {
                     InputMode::Controls => self.set_input_mode(InputMode::Browser),
                     _ => self.set_input_mode(InputMode::Controls),
                 };
@@ -414,7 +414,7 @@ impl<'a> App<'a> {
             KeyCode::Up | KeyCode::Char('k') => self.control_table.previous(),
             KeyCode::Char('1') => {
                 self.next();
-                match self.input_mode() {
+                match self.input_mode {
                     InputMode::Controls => self.set_input_mode(InputMode::Browser),
                     _ => self.set_input_mode(InputMode::Controls),
                 };
