@@ -1,4 +1,6 @@
-# Jolteon - A Terminal Music Player For Offline Listening
+# Jolteon 
+
+A Terminal Music Player For Offline Listening
 
 ![Music](assets/music_tab.png?raw=true)
 ![Controls](assets/controls_tab.png?raw=true)
@@ -40,20 +42,23 @@ And I _suspect_ I prefer the keyboard over the mouse/trackpad because of my ADHD
 
 Not yet available. Will add CI/CD in the future. Not a priority because I'm always running this with `cargo run`.
 
-``
 ### Build From Source
 
-``
+```
 git clone --depth=1 https://github.com/lautarodragan/jolteon.git
 cd jolteon
 cargo run --release
-``
+```
 
 ###  Public Repositories
 
 Won't be publishing this to `apt`, `yum`, etc. any time soon.
 
-## Differences between Jolteon and Kronos
+## Features
+
+Since this started as a fork of Kronos, I'll skip the features it supports.
+
+### Differences between Jolteon and Kronos
 
 Some features I've added to Jolteon that weren't available in Kronos:
 - Media keys Play/Pause support via MPRIS in Linux
@@ -79,6 +84,13 @@ I've also extensively refactored the code base:
   - _This was possible thanks to the migration to Ratatui._
 - Broke down rendering code into smaller pieces.
 
+### Future
+
+- Playlists (like `cmus`)
+- Audio library (like `cmus`)
+- Media metadata overrides
+  - This is something I've always wanted. I have many albums that belong to a same artist, but have the artist field spelled differently, so they'll show up as different entries in the `artists` list. And I absolutely do NOT want to edit the files, because reasons. So, for example, if I have `Dark Side of the Moon` by `Pink Floyd` and `The Piper at the Gates of Dawn` by `PINK FLOYD`, I want them both to show under `Pink Floyd`, and see `PINK FLOYD` nowhere, other than the list of overrides.  
+
 ## Supported Audio Formats
 
 Jolteon uses Rodeo to play music, so it supports whatever formats Rodeo does.
@@ -97,7 +109,7 @@ wav |
 
 ## Customization
 
-Customization was present in Kronos but not completely respected in Jolteon. Son colors are currently hard-coded.
+Customization was present in Kronos but not completely respected in Jolteon. Some colors are currently hard-coded.
 
 I will un-hard-code them eventually.
 
@@ -117,7 +129,7 @@ after a while.
 I was feeling brave and decided to `git clone` and build it myself. Having practically no experience with C/C++, 
 I found this particularly challenging, but eventually succeeded.
 
-Then, after a while, I upgraded from PopOS to Ubuntu 23, and found the `cmus` I had built wasn't working anymore.
+Then, after a while, I upgraded from PopOS to Ubuntu 24, and found the `cmus` I had built wasn't working anymore.
 I tried building again, but couldn't install one `apt` dependency due to one of them not being available in the repos
 set up by Ubuntu. Thanks to the modular nature of `cmus`, I could run it and listen to music... except for `flac`, and
 that is what I use the most.
@@ -135,20 +147,16 @@ Took me less than 5 minutes to go from not even having `cargo` or `rust` (let al
 making modifications to the code and running them.
 
 I initially submitted a couple of fixes to upstream Kronos, but later decided I just wanted the freedom to commit and push to `main`
-and break the application if needed, prioritizing speed and fun over process and quality.
+and break the application if needed, prioritizing speed, fun and the features _I_ wanted over process, quality and community.
 
-This is my fork of Kronos. It is not aimed at being easily consumable by anyone, or customizable.
+This is my fork of Kronos. It is not aimed at being easily consumable by anyone, or customizable. At least not for now.
 I use Jolteon daily, pretty much all day, and work on the features I want to have, and fix the bugs as I find them.
 
 This is my first Rust application, and I'm learning as I go, so the code can be pretty bad at times.
 But, so far, I'm amazed by how beautiful a language Rust is. And I don't say this lightly! 
-I've been writing software for 20+ years.   
+I've been writing software for 20+ years. 
 
 ## Contribute
 
 In general, I won't accept contributions, because I don't have enough time or Rust knowledge to properly do code review. 
-
-
-
-
 
