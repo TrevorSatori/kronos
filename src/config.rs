@@ -50,7 +50,7 @@ fn load_config_string() -> Option<(PathBuf, String)> {
     let config_paths = [home::home_dir()
         .unwrap()
         .as_path()
-        .join(".config/kronos/config.toml")];
+        .join(".config/jolteon/config.toml")];
 
     for config in config_paths {
         let result: Result<String, std::io::Error> = fs::read_to_string(&config);

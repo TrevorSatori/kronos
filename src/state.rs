@@ -22,7 +22,7 @@ pub fn load_state() -> State {
     let state_file_paths = [home::home_dir()
         .unwrap()
         .as_path()
-        .join(".config/kronos/state.toml")];
+        .join(".config/jolteon/state.toml")];
 
     let content: String = {
         let mut content: String = "".to_owned();
@@ -46,7 +46,7 @@ pub fn save_state(state: State) -> Result<(), String> {
     let state_file_path = home::home_dir()
         .unwrap()
         .as_path()
-        .join(".config/kronos/state.toml");
+        .join(".config/jolteon/state.toml");
 
     toml::to_string(&state)
         .map_err(|e| e.to_string())
