@@ -55,7 +55,7 @@ fn run_player(play_pause: Receiver<()>, quit: Arc<AtomicBool>) -> Result<(), Box
     let mut app = App::new(state.last_visited_path, state.queue_items);
     let state = app.start(&mut terminal, play_pause, quit)?;
 
-    save_state(state)?;
+    save_state(&state)?;
 
     reset_terminal(terminal.backend_mut());
     terminal.show_cursor()?;
