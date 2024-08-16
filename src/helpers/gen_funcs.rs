@@ -2,7 +2,7 @@ use glob::glob;
 use lofty::{Accessor, AudioFile, LoftyError, Probe, TaggedFileExt};
 use std::fs::DirEntry;
 use std::{
-    collections::HashSet,
+    collections::{HashSet, VecDeque},
     env,
     ffi::OsStr,
     path::{Path, PathBuf},
@@ -105,4 +105,19 @@ pub fn path_to_song_list(path: &PathBuf) -> Vec<Song> {
     };
     entries.sort_unstable_by_key(|i| i.path.clone());
     entries
+}
+
+pub fn path_list_to_song_list(queue: Vec<String>) -> (VecDeque<Song>, VecDeque<(PathBuf, LoftyError)>) {
+    let mut paths: VecDeque<PathBuf> = queue.iter().map(PathBuf::from).collect();
+    let mut songs: VecDeque<Song> = VecDeque::new();
+    let mut errors: VecDeque<(PathBuf, LoftyError)> = VecDeque::new();
+
+    for path in paths {
+        match path_to_song(&path) {
+            Ok(song) => { songs.push_back(song); }
+            Err(err) => { errors.push_back(( path, err )); }
+        };
+    }
+
+    (songs, errors)
 }

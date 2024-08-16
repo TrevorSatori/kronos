@@ -1,7 +1,6 @@
 use std::time::Duration;
 use std::{collections::VecDeque, path::PathBuf};
-use lofty::LoftyError;
-use super::gen_funcs::{path_to_song, path_to_song_list, Song};
+use super::gen_funcs::{path_list_to_song_list, path_to_song, path_to_song_list, Song};
 
 pub struct Queue {
     items: VecDeque<Song>,
@@ -15,15 +14,10 @@ fn song_list_to_duration(items: &VecDeque<Song>) -> Duration {
 
 impl Queue {
     pub fn new(queue: Vec<String>) -> Self {
-        let mut songs: VecDeque<Song> = VecDeque::new();
-        let mut paths: VecDeque<PathBuf> = queue.iter().map(PathBuf::from).collect();
+        let (songs, errors) = path_list_to_song_list(queue);
 
-        for path in paths {
-            let song = path_to_song(&path);
-            match song {
-                Ok(song) => { songs.push_back(song); }
-                Err(err) => eprintln!("Could not add song {:?} to queue {:?}", &path, err)
-            };
+        if !errors.is_empty() {
+            eprintln!("Failed to load some songs.\n{:?}", errors);
         }
 
         let total_time = song_list_to_duration(&songs);
