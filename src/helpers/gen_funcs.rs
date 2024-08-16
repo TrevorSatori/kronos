@@ -1,5 +1,5 @@
 use glob::glob;
-use lofty::{Accessor, AudioFile, Probe, TaggedFileExt};
+use lofty::{Accessor, AudioFile, LoftyError, Probe, TaggedFileExt};
 use std::fs::DirEntry;
 use std::{
     collections::HashSet,
@@ -16,14 +16,9 @@ pub struct Song {
     pub title: Option<String>,
 }
 
-pub fn path_to_song(path: PathBuf) -> Song {
-    let path = Path::new(&path);
-    let tagged_file = Probe::open(path)
-        .expect("ERROR: Bad path provided!")
-        .read()
-        .expect("ERROR: Failed to read file!");
-
-    let properties = &tagged_file.properties();
+pub fn path_to_song(path: &PathBuf) -> Result<Song, LoftyError> {
+    let path = Path::new(path);
+    let tagged_file = Probe::open(path)?.read()?;
 
     let (artist, title) = match tagged_file.primary_tag() {
         Some(primary_tag) => {
@@ -32,12 +27,12 @@ pub fn path_to_song(path: PathBuf) -> Song {
         _ => (None, None),
     };
 
-    Song {
+    Ok(Song {
         path: PathBuf::from(path),
-        length: properties.duration(),
+        length: tagged_file.properties().duration(),
         artist,
         title,
-    }
+    })
 }
 
 pub fn song_to_string(song: &Song) -> String {
@@ -103,7 +98,8 @@ pub fn path_to_song_list(path: &PathBuf) -> Vec<Song> {
             .filter_map(|file| file.ok())
             .filter(dir_entry_is_song)
             .map(|dir_entry| dir_entry.path())
-            .map(path_to_song)
+            .map(|s| path_to_song(&s))
+            .filter_map(|i| i.ok())
             .collect(),
         _ => vec![],
     };

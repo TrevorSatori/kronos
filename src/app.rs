@@ -204,11 +204,14 @@ impl<'a> App<'a> {
 
         if path.is_dir() {
             self.last_visited_path = path.clone();
-            env::set_current_dir(path).unwrap();
+            env::set_current_dir(path).unwrap(); // TODO: avoid `unwrap`
             self.browser_items = StatefulList::with_items(scan_and_filter_directory());
             self.browser_items.next();
         } else {
-            self.play(path_to_song(path));
+            match path_to_song(&path) {
+                Ok(song) => self.play(song),
+                Err(err) => eprintln!("Could not play song {:?}. Error was {:?}", &path, err),
+            }
         }
     }
 

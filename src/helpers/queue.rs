@@ -15,10 +15,20 @@ fn song_list_to_duration(items: &VecDeque<Song>) -> Duration {
 
 impl Queue {
     pub fn new(queue: Vec<String>) -> Self {
-        let items: VecDeque<Song> = queue.iter().map(PathBuf::from).map(path_to_song).collect();
-        let total_time = song_list_to_duration(&items);
+        let mut songs: VecDeque<Song> = VecDeque::new();
+
+        for path in queue {
+            let path = PathBuf::from(path);
+            let song = path_to_song(&path);
+            match song {
+                Ok(song) => { songs.push_back(song); }
+                Err(err) => eprintln!("Could not add song {:?} to queue {:?}", &path, err)
+            };
+        }
+
+        let total_time = song_list_to_duration(&songs);
         Self {
-            items,
+            items: songs,
             selected_item_index: None,
             total_time,
         }
@@ -98,8 +108,12 @@ impl Queue {
                 self.items.push_back(song);
             }
         } else {
-            let song = path_to_song(path);
-            self.items.push_back(song);
+            match path_to_song(&path) {
+                Ok(song) => self.items.push_back(song),
+                Err(err) => {
+                    eprintln!("Could not add {:?}. Error was {:?}", &path, err);
+                }
+            }
         }
         self.refresh_total_time();
     }
