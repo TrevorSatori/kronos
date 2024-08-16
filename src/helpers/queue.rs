@@ -14,7 +14,7 @@ fn song_list_to_duration(items: &VecDeque<Song>) -> Duration {
 
 impl Queue {
     pub fn new(queue: Vec<String>) -> Self {
-        let (songs, errors) = path_list_to_song_list(queue);
+        let (songs, errors) = path_list_to_song_list(queue.iter().map(PathBuf::from).collect());
 
         if !errors.is_empty() {
             eprintln!("Failed to load some songs.\n{:?}", errors);
@@ -97,10 +97,7 @@ impl Queue {
     pub fn add(&mut self, path: PathBuf) {
         if path.is_dir() {
             let files = path_to_song_list(&path);
-
-            for song in files {
-                self.items.push_back(song);
-            }
+            self.items.append(&mut VecDeque::from(files));
         } else {
             match path_to_song(&path) {
                 Ok(song) => self.items.push_back(song),

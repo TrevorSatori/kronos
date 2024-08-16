@@ -93,22 +93,29 @@ fn dir_entry_is_song(dir_entry: &DirEntry) -> bool {
 }
 
 pub fn path_to_song_list(path: &PathBuf) -> Vec<Song> {
-    let mut entries = match path.read_dir() {
-        Ok(files) => files
-            .filter_map(|file| file.ok())
-            .filter(dir_entry_is_song)
-            .map(|dir_entry| dir_entry.path())
-            .map(|s| path_to_song(&s))
-            .filter_map(|i| i.ok())
-            .collect(),
-        _ => vec![],
-    };
-    entries.sort_unstable_by_key(|i| i.path.clone());
-    entries
+    match path.read_dir() {
+        Ok(read_dir) => {
+            let paths = read_dir
+                .filter_map(|file| file.ok())
+                .filter(dir_entry_is_song)
+                .map(|dir_entry| dir_entry.path())
+                .collect();
+            let (songs, errors) = path_list_to_song_list(paths);
+
+            if !errors.is_empty() {
+                eprintln!("Could not add some songs: {:?}", errors);
+            }
+
+            let mut songs = Vec::from(songs);
+            songs.sort_unstable_by_key(|i| i.path.clone());
+            songs
+        },
+        _ => Vec::new(),
+    }
+
 }
 
-pub fn path_list_to_song_list(queue: Vec<String>) -> (VecDeque<Song>, VecDeque<(PathBuf, LoftyError)>) {
-    let mut paths: VecDeque<PathBuf> = queue.iter().map(PathBuf::from).collect();
+pub fn path_list_to_song_list(paths: Vec<PathBuf>) -> (VecDeque<Song>, VecDeque<(PathBuf, LoftyError)>) {
     let mut songs: VecDeque<Song> = VecDeque::new();
     let mut errors: VecDeque<(PathBuf, LoftyError)> = VecDeque::new();
 
