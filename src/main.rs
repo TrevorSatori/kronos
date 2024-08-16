@@ -23,7 +23,7 @@ use ratatui::{backend::CrosstermBackend, Terminal};
 
 use crate::{
     app::App,
-    state::{load_state, save_state},
+    state::{load_state, save_state, State},
 };
 
 #[async_std::main]
@@ -49,7 +49,7 @@ fn run_player_thread(play_pause: Receiver<()>, quit: Arc<AtomicBool>) {
 }
 
 fn run_player(play_pause: Receiver<()>, quit: Arc<AtomicBool>) -> Result<(), Box<dyn Error>> {
-    let state = load_state();
+    let state = load_state().unwrap_or(State::default());
 
     let mut terminal = set_terminal()?;
     let mut app = App::new(state.last_visited_path, state.queue_items);

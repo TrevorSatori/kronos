@@ -17,29 +17,11 @@ impl Default for State {
     }
 }
 
-pub fn load_state() -> State {
-    let state_file_paths = [home::home_dir()
-        .unwrap()
-        .as_path()
-        .join(".config/jolteon/state.toml")];
-
-    let content: String = {
-        let mut content: String = "".to_owned();
-        for state_file_path in state_file_paths {
-            let result: Result<String, std::io::Error> = read_to_string(state_file_path);
-
-            if let Ok(file_content) = result {
-                content = file_content;
-                break;
-            }
-        }
-        content
-    };
-
-    toml::from_str(&content).unwrap_or_else(|e| {
-        eprintln!("load_state toml error: {:?}", e);
-        State::default()
-    })
+pub fn load_state() -> Result<State, Box<dyn std::error::Error>> {
+    let state_file_path = get_state_file_path()?;
+    let content = read_to_string(state_file_path)?;
+    let state = toml::from_str(&content)?;
+    Ok(state) // why do we need to `?` and `Ok(state)`?
 }
 
 fn get_config_dir_path() -> Result<std::path::PathBuf, String> {
