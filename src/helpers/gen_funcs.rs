@@ -24,9 +24,13 @@ pub fn path_to_song(path: PathBuf) -> Song {
         .expect("ERROR: Failed to read file!");
 
     let properties = &tagged_file.properties();
-    let primary_tag = tagged_file.primary_tag().unwrap();
-    let artist = primary_tag.artist().map(String::from);
-    let title = primary_tag.title().map(String::from);
+
+    let (artist, title) = match tagged_file.primary_tag() {
+        Some(primary_tag) => {
+            (primary_tag.artist().map(String::from), primary_tag.title().map(String::from))
+        },
+        _ => (None, None),
+    };
 
     Song {
         path: PathBuf::from(path),
