@@ -26,36 +26,29 @@ pub enum InputMode {
     Browser,
     BrowserFilter,
     Queue,
-    Controls,
+    HelpControls,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum AppTab {
-    Music = 0,
-    Controls,
-}
-
-impl AppTab {
-    pub fn next(&self) -> Self {
-        match self {
-            Self::Music => Self::Controls,
-            Self::Controls => Self::Music,
-        }
-    }
+    FileBrowser = 0,
+    Help,
 }
 
 pub struct App<'a> {
-    pub browser_items: StatefulList<String>,
-    pub queue_items: Queue,
-    pub control_table: StatefulTable<'a>,
-    music_output: (OutputStream, OutputStreamHandle),
     input_mode: InputMode,
     active_tab: AppTab,
+    pub control_table: StatefulTable<'a>,
+
+    pub browser_items: StatefulList<String>,
     pub browser_current_directory: PathBuf,
     pub browser_filter: Option<String>,
-    must_quit: bool,
+
+    pub queue_items: Queue,
+    music_output: (OutputStream, OutputStreamHandle),
     sink: Arc<Sink>,
     currently_playing: Option<Song>,
+    must_quit: bool,
 }
 
 impl<'a> App<'a> {
@@ -79,7 +72,7 @@ impl<'a> App<'a> {
             queue_items: Queue::new(queue),
             control_table: StatefulTable::new(),
             input_mode: InputMode::Browser,
-            active_tab: AppTab::Music,
+            active_tab: AppTab::FileBrowser,
             browser_current_directory: last_visited_path,
             browser_filter: None,
             currently_playing: None,
@@ -151,10 +144,6 @@ impl<'a> App<'a> {
         }
 
         Ok(self.to_state())
-    }
-
-    pub fn next_tab(&mut self) {
-        self.active_tab = self.active_tab.next();
     }
 
     pub fn input_mode(&self) -> InputMode {
@@ -272,7 +261,7 @@ impl<'a> App<'a> {
         match self.input_mode {
             InputMode::Browser => self.handle_browser_key_events(key),
             InputMode::Queue => self.handle_queue_key_events(key),
-            InputMode::Controls => self.handle_help_key_events(key),
+            InputMode::HelpControls => self.handle_help_key_events(key),
             InputMode::BrowserFilter => self.handle_browser_filter_key_events(key),
         }
     }
@@ -308,11 +297,8 @@ impl<'a> App<'a> {
             KeyCode::Char('-') => self.sink.change_volume(-0.05),
             KeyCode::Char('+') => self.sink.change_volume(0.05),
             KeyCode::Char('2') => {
-                self.next_tab();
-                match self.input_mode {
-                    InputMode::Controls => self.set_input_mode(InputMode::Browser),
-                    _ => self.set_input_mode(InputMode::Controls),
-                };
+                self.active_tab = AppTab::Help;
+                self.set_input_mode(InputMode::HelpControls);
             }
             KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
                 self.set_input_mode(InputMode::BrowserFilter);
@@ -390,11 +376,8 @@ impl<'a> App<'a> {
                 self.browser_items.next();
             }
             KeyCode::Char('2') => {
-                self.next_tab();
-                match self.input_mode {
-                    InputMode::Controls => self.set_input_mode(InputMode::Browser),
-                    _ => self.set_input_mode(InputMode::Controls),
-                };
+                self.active_tab = AppTab::Help;
+                self.set_input_mode(InputMode::HelpControls);
             }
             _ => {}
         }
@@ -408,11 +391,8 @@ impl<'a> App<'a> {
             KeyCode::Down | KeyCode::Char('j') => self.control_table.next(),
             KeyCode::Up | KeyCode::Char('k') => self.control_table.previous(),
             KeyCode::Char('1') => {
-                self.next_tab();
-                match self.input_mode {
-                    InputMode::Controls => self.set_input_mode(InputMode::Browser),
-                    _ => self.set_input_mode(InputMode::Controls),
-                };
+                self.active_tab = AppTab::FileBrowser;
+                self.set_input_mode(InputMode::Browser);
             }
             _ => {}
         }

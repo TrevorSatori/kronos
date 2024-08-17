@@ -55,8 +55,8 @@ pub fn render_ui(frame: &mut Frame, app: &mut App, config: &Config, active_tab: 
     render_top_bar(frame, config, areas[0], active_tab);
 
     match active_tab {
-        AppTab::Music => music_tab(frame, app, areas[1], config),
-        AppTab::Controls => instructions_tab(frame, app, areas[1], config),
+        AppTab::FileBrowser => music_tab(frame, app, areas[1], config),
+        AppTab::Help => instructions_tab(frame, app, areas[1], config),
     };
 
     render_playing_gauge(
