@@ -13,6 +13,7 @@ use ratatui::{
 
 fn top_bar<'a>(app: &App, cfg: &Config) -> Block<'a> {
     let folder_name = app
+        .browser
         .browser_current_directory
         .file_name()
         .map(|s| s.to_str())
@@ -24,7 +25,7 @@ fn top_bar<'a>(app: &App, cfg: &Config) -> Block<'a> {
         InputMode::BrowserFilter => Line::from(vec![
             Span::styled("  search: ", Style::default()),
             Span::styled(
-                app.browser_filter.clone().unwrap_or("".to_string()),
+                app.browser.browser_filter.clone().unwrap_or("".to_string()),
                 Style::default().fg(Color::Red),
             ),
         ]),
@@ -43,11 +44,12 @@ fn top_bar<'a>(app: &App, cfg: &Config) -> Block<'a> {
 
 fn file_list<'a>(app: &App, cfg: &Config) -> List<'a> {
     let browser_items: Vec<ListItem> = app
+        .browser
         .browser_items
         .items()
         .iter()
         .map(|i| {
-            let fg = match app.browser_filter.as_ref() {
+            let fg = match app.browser.browser_filter.as_ref() {
                 Some(s) if (i.to_lowercase().contains(&s.to_lowercase())) => Color::Red,
                 _ => Color::Reset,
             };
@@ -130,13 +132,13 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
         panic!("Layout.split() failed");
     };
 
-    app.browser_items.height = area_main_left.height;
+    app.browser.browser_items.height = area_main_left.height;
 
     frame.render_widget(top_bar(app, cfg), area_top);
     frame.render_stateful_widget(
         file_list(app, cfg),
         area_main_left,
-        &mut app.browser_items.state(),
+        &mut app.browser.browser_items.state(),
     );
 
     let vertical_separator = Block::default()
