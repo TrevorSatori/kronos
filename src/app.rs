@@ -19,7 +19,6 @@ use crate::{
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum InputMode {
     Browser,
-    BrowserFilter,
     Queue,
     HelpControls,
 }
@@ -34,6 +33,139 @@ pub struct Browser {
     pub items: StatefulList<String>,
     pub current_directory: PathBuf,
     pub filter: Option<String>,
+}
+
+impl Browser {
+    pub fn selected_item(&self) -> PathBuf {
+        if self.items.empty() {
+            Path::new(&self.current_directory).into()
+        } else {
+            Path::join(&self.current_directory, Path::new(&self.items.item()))
+        }
+    }
+
+    pub fn enter_selection(&mut self) -> Option<Song> {
+        let path = self.selected_item();
+
+        if path.is_dir() {
+            self.navigate_into();
+            None
+        } else {
+            match path_to_song(&path) {
+                Ok(song) => Some(song),
+                Err(err) => None,
+            }
+        }
+    }
+
+    pub fn navigate_into(&mut self) {
+        let path = self.selected_item();
+
+        if path.is_dir() {
+            self.current_directory = path.clone();
+            self.items = StatefulList::with_items(scan_and_filter_directory(&path));
+            self.items.next();
+        }
+    }
+
+    pub fn navigate_up(&mut self) {
+        let parent = self.current_directory.as_path().parent().unwrap().to_path_buf();
+        self.items = StatefulList::with_items(scan_and_filter_directory(&parent));
+        self.items.select_by_path(&self.current_directory);
+        self.current_directory = parent;
+    }
+
+    pub fn select_last(&mut self) {
+        self.items.select(self.items.items().len() - 1)
+    }
+
+    pub fn select_next_match(&mut self) {
+        if let Some(s) = &self.filter {
+            self.items.select_next_by_match(s)
+        }
+    }
+
+    pub fn select_previous_match(&mut self) {
+        if let Some(s) = &self.filter {
+            self.items.select_previous_by_match(s)
+        }
+    }
+
+    pub fn filter_delete(&mut self) {
+        self.filter = match &self.filter {
+            Some(s) if s.len() > 0 => Some(s[..s.len() - 1].to_string()), // TODO: s[..s.len()-1] can panic! use .substring crate
+            _ => None,
+        };
+    }
+
+    pub fn filter_append(&mut self, char: char) {
+        self.filter = match &self.filter {
+            Some(s) => Some(s.to_owned() + char.to_string().as_str()),
+            _ => Some(char.to_string()),
+        };
+        if !self
+            .items
+            .item()
+            .to_lowercase()
+            .contains(&self.filter.clone().unwrap().to_lowercase())
+        {
+            self.items.select_next_by_match(&self.filter.clone().unwrap());
+        }
+    }
+
+    fn on_key_event(&mut self, key: KeyEvent) {
+        if !self.filter.is_some() {
+            self.on_normal_key_event(key);
+        } else  {
+            self.on_filter_key_event(key);
+        }
+    }
+
+    fn on_normal_key_event(&mut self, key: KeyEvent) {
+        match key.code {
+            KeyCode::Backspace => self.navigate_up(),
+            KeyCode::Down | KeyCode::Char('j') => self.items.next(),
+            KeyCode::Up | KeyCode::Char('k') => self.items.previous(),
+            KeyCode::PageUp => self.items.previous_by(5),
+            KeyCode::PageDown => self.items.next_by(5),
+            KeyCode::End => self.select_last(),
+            KeyCode::Home => self.items.select(0),
+            KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
+                self.filter = Some("".to_string());
+            }
+            _ => {}
+        }
+    }
+
+    fn on_filter_key_event(&mut self, key: KeyEvent) {
+        match key.code {
+            KeyCode::Enter => {
+                self.filter = None;
+            }
+            KeyCode::Esc => {
+                self.filter = None;
+            }
+            KeyCode::Down => {
+                self.select_next_match();
+            }
+            KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
+                self.select_next_match();
+            }
+            KeyCode::Up => {
+                self.select_previous_match();
+            }
+            KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => {
+                self.select_previous_match();
+            }
+            KeyCode::Backspace => {
+                self.filter_delete();
+            }
+            KeyCode::Char(char) => {
+                self.filter_append(char);
+            }
+            _ => {}
+        }
+    }
 }
 
 pub struct App<'a> {
@@ -214,62 +346,20 @@ impl<'a> App<'a> {
         });
     }
 
-    pub fn browser_enter_selection(&mut self) {
-        let path = self.browser_selected_item();
-
-        if path.is_dir() {
-            self.browser.current_directory = path.clone();
-            self.browser.items = StatefulList::with_items(scan_and_filter_directory(&path));
-            self.browser.items.next();
-        } else {
-            match path_to_song(&path) {
-                Ok(song) => self.player_play(song),
-                Err(err) => eprintln!("Could not play song {:?}. Error was {:?}", &path, err),
-            }
-        }
-    }
-
-    pub fn browser_navigate_up(&mut self) {
-        let parent = self.browser.current_directory.as_path().parent().unwrap().to_path_buf();
-        self.browser.items = StatefulList::with_items(scan_and_filter_directory(&parent));
-        self.browser.items.select_by_path(&self.browser.current_directory);
-        self.browser.current_directory = parent;
-    }
-
-    pub fn browser_selected_item(&self) -> PathBuf {
-        if self.browser.items.empty() {
-            Path::new(&self.browser.current_directory).into()
-        } else {
-            Path::join(&self.browser.current_directory, Path::new(&self.browser.items.item()))
-        }
-    }
-
-    fn browser_select_next_match(&mut self) {
-        if let Some(s) = &self.browser.filter {
-            self.browser.items.select_next_by_match(s)
-        }
-    }
-
-    fn browser_select_previous_match(&mut self) {
-        if let Some(s) = &self.browser.filter {
-            self.browser.items.select_previous_by_match(s)
-        }
-    }
-
     pub fn handle_key_event(&mut self, key: KeyEvent) {
-        let focus_trapped = self.input_mode == InputMode::BrowserFilter;
-        let handled = !focus_trapped && self.handle_common_key_event(&key);
+        let focus_trapped = self.input_mode == InputMode::Browser && self.browser.filter.is_some();
+        let handled = !focus_trapped && self.handle_app_key_event(&key);
 
         if !handled {
             match self.input_mode {
-                InputMode::Browser | InputMode::BrowserFilter => self.handle_browser_key_events(key),
+                InputMode::Browser => self.handle_browser_key_events(key),
                 InputMode::Queue => self.handle_queue_key_events(key),
                 InputMode::HelpControls => self.handle_help_key_events(key),
             }
         }
     }
 
-    fn handle_common_key_event(&mut self, key: &KeyEvent) -> bool {
+    fn handle_app_key_event(&mut self, key: &KeyEvent) -> bool {
         let mut handled = true;
         match key.code {
             KeyCode::Char('q') => {
@@ -283,6 +373,31 @@ impl<'a> App<'a> {
                 self.active_tab = AppTab::Help;
                 self.set_input_mode(InputMode::HelpControls);
             },
+            KeyCode::Tab => if self.browser.filter.is_none() {
+                match self.active_tab {
+                    AppTab::FileBrowser => {
+                        self.input_mode = match self.input_mode {
+                            InputMode::Browser => InputMode::Queue,
+                            InputMode::Queue => InputMode::Browser,
+                            e => e,
+                        };
+
+                        // TODO: focus/blur colors
+                        match self.input_mode {
+                            InputMode::Browser => {
+                                self.browser.items.next();
+                                self.queue_items.select_none();
+                            },
+                            InputMode::Queue => {
+                                self.browser.items.unselect();
+                                self.queue_items.select_next();
+                            },
+                            _ => {},
+                        };
+                    },
+                    _ => {},
+                }
+            }
             KeyCode::Right => self.player_seek_forward(),
             KeyCode::Left => self.player_seek_backward(),
             KeyCode::Char('-') => self.sink.change_volume(-0.05),
@@ -295,89 +410,24 @@ impl<'a> App<'a> {
     }
 
     fn handle_browser_key_events(&mut self, key: KeyEvent) {
-        match self.input_mode {
-            InputMode::Browser => self.handle_browser_normal_key_events(key),
-            InputMode::BrowserFilter => self.handle_browser_filter_key_events(key),
-            _ => {},
-        }
-    }
-
-    fn handle_browser_normal_key_events(&mut self, key: KeyEvent) {
         match key.code {
-            KeyCode::Char('a') => {
-                self.queue_items.add(self.browser_selected_item());
+            KeyCode::Enter if key.modifiers == KeyModifiers::ALT => {
+                self.queue_items.add(self.browser.selected_item());
                 self.browser.items.next();
             }
-            KeyCode::Enter => self.browser_enter_selection(),
-            KeyCode::Backspace => self.browser_navigate_up(),
-            KeyCode::Down | KeyCode::Char('j') => self.browser.items.next(),
-            KeyCode::Up | KeyCode::Char('k') => self.browser.items.previous(),
-            KeyCode::PageUp => self.browser.items.previous_by(5),
-            KeyCode::PageDown => self.browser.items.next_by(5),
-            KeyCode::End => self
-                .browser
-                .items
-                .select(self.browser.items.items().len() - 1),
-            KeyCode::Home => self.browser.items.select(0),
-            KeyCode::Tab => {
-                self.browser.items.unselect();
-                self.set_input_mode(InputMode::Queue);
-                self.queue_items.select_next();
-            }
-            KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
-                self.set_input_mode(InputMode::BrowserFilter);
-            }
-            _ => {}
-        }
-    }
-
-    fn handle_browser_filter_key_events(&mut self, key: KeyEvent) {
-        match key.code {
-            KeyCode::Esc => {
-                self.set_input_mode(InputMode::Browser);
-                self.browser.filter = None;
+            KeyCode::Char('a') if self.browser.filter.is_none() => {
+                self.queue_items.add(self.browser.selected_item());
+                self.browser.items.next();
             }
             KeyCode::Enter => {
-                self.set_input_mode(InputMode::Browser);
-                self.browser.filter = None;
-                self.browser_enter_selection();
-            }
-            KeyCode::Down => {
-                self.browser_select_next_match();
-            }
-            KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
-                self.browser_select_next_match();
-            }
-            KeyCode::Up => {
-                self.browser_select_previous_match();
-            }
-            KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => {
-                self.browser_select_previous_match();
-            }
-            KeyCode::Backspace => {
-                self.browser.filter = match &self.browser.filter {
-                    Some(s) if s.len() > 0 => Some(s[..s.len() - 1].to_string()), // TODO: s[..s.len()-1] can panic! use .substring crate
-                    _ => None,
-                };
-            }
-            KeyCode::Char(char) => {
-                self.browser.filter = match &self.browser.filter {
-                    Some(s) => Some(s.to_owned() + char.to_string().as_str()),
-                    _ => Some(char.to_string()),
-                };
-                if !self
-                    .browser
-                    .items
-                    .item()
-                    .to_lowercase()
-                    .contains(&self.browser.filter.clone().unwrap().to_lowercase())
-                {
-                    self.browser.items
-                        .select_next_by_match(&self.browser.filter.clone().unwrap());
+                if let Some(song) = self.browser.enter_selection() {
+                    self.player_play(song);
                 }
             }
             _ => {}
         }
+
+        self.browser.on_key_event(key);
     }
 
     fn handle_queue_key_events(&mut self, key: KeyEvent) {
@@ -390,13 +440,6 @@ impl<'a> App<'a> {
             KeyCode::Down | KeyCode::Char('j') => self.queue_items.select_next(),
             KeyCode::Up | KeyCode::Char('k') => self.queue_items.select_previous(),
             KeyCode::Delete => self.queue_items.remove_selected(),
-            KeyCode::Right => self.player_seek_forward(),
-            KeyCode::Left => self.player_seek_backward(),
-            KeyCode::Tab => {
-                self.queue_items.select_none();
-                self.set_input_mode(InputMode::Browser);
-                self.browser.items.next();
-            }
             _ => {}
         }
     }
