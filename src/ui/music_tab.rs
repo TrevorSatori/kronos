@@ -1,4 +1,4 @@
-use crate::app::{App, InputMode};
+use crate::app::{App, Browser, InputMode};
 use crate::config::Config;
 use crate::helpers::gen_funcs;
 use ratatui::widgets::block::Position;
@@ -10,10 +10,10 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, List, ListItem},
     Frame,
 };
+use crate::helpers::queue::Queue;
 
-fn top_bar<'a>(app: &App, cfg: &Config) -> Block<'a> {
-    let folder_name = app
-        .browser
+fn top_bar<'a>(browser: &Browser, cfg: &Config) -> Block<'a> {
+    let folder_name = browser
         .current_directory
         .file_name()
         .map(|s| s.to_str())
@@ -21,11 +21,11 @@ fn top_bar<'a>(app: &App, cfg: &Config) -> Block<'a> {
         .map(String::from)
         .unwrap_or("".to_string());
 
-    let browser_title = match app.input_mode() {
-        InputMode::BrowserFilter => Line::from(vec![
+    let browser_title = match &browser.filter {
+        Some(filter) => Line::from(vec![
             Span::styled("  search: ", Style::default()),
             Span::styled(
-                app.browser.filter.clone().unwrap_or("".to_string()),
+                filter.clone(),
                 Style::default().fg(Color::Red),
             ),
         ]),
@@ -42,14 +42,13 @@ fn top_bar<'a>(app: &App, cfg: &Config) -> Block<'a> {
     top_bar
 }
 
-fn file_list<'a>(app: &App, cfg: &Config) -> List<'a> {
-    let browser_items: Vec<ListItem> = app
-        .browser
+fn file_list<'a>(browser: &Browser, cfg: &Config) -> List<'a> {
+    let browser_items: Vec<ListItem> = browser
         .items
         .items()
         .iter()
         .map(|i| {
-            let fg = match app.browser.filter.as_ref() {
+            let fg = match browser.filter.as_ref() {
                 Some(s) if (i.to_lowercase().contains(&s.to_lowercase())) => Color::Red,
                 _ => Color::Reset,
             };
@@ -71,9 +70,8 @@ fn file_list<'a>(app: &App, cfg: &Config) -> List<'a> {
     browser_list
 }
 
-fn queue_list<'a>(app: &App, cfg: &Config) -> List<'a> {
-    let queue_items: Vec<String> = app
-        .queue_items
+fn queue_list<'a>(queue_items: &Queue, cfg: &Config) -> List<'a> {
+    let queue_items: Vec<String> = queue_items
         .songs()
         .iter()
         .map(gen_funcs::song_to_string)
@@ -134,9 +132,9 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
 
     app.browser.items.height = area_main_left.height;
 
-    frame.render_widget(top_bar(app, cfg), area_top);
+    frame.render_widget(top_bar(&app.browser, cfg), area_top);
     frame.render_stateful_widget(
-        file_list(app, cfg),
+        file_list(&app.browser, cfg),
         area_main_left,
         &mut app.browser.items.state(),
     );
@@ -147,7 +145,7 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
 
     frame.render_widget(vertical_separator, separator_middle);
     frame.render_stateful_widget(
-        queue_list(app, cfg),
+        queue_list(&app.queue_items, cfg),
         area_main_right,
         &mut ListState::default().with_selected(app.queue_items.selected_song_index()),
     );
