@@ -2,7 +2,7 @@ use glob::glob;
 use lofty::{Accessor, AudioFile, LoftyError, Probe, TaggedFileExt};
 use std::fs::DirEntry;
 use std::{
-    collections::{HashSet, VecDeque},
+    collections::VecDeque,
     env,
     ffi::OsStr,
     path::{Path, PathBuf},
@@ -15,6 +15,8 @@ pub struct Song {
     pub artist: Option<String>,
     pub title: Option<String>,
 }
+
+const valid_extensions: [&str; 7] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac"];
 
 pub fn path_to_song(path: &PathBuf) -> Result<Song, LoftyError> {
     let path = Path::new(path);
@@ -48,44 +50,45 @@ pub fn song_to_string(song: &Song) -> String {
 }
 
 pub fn scan_and_filter_directory() -> Vec<String> {
-    let mut items = Vec::new();
-    let valid_extensions: HashSet<&str> = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac"]
-        .iter()
-        .cloned()
+    let current_dir = env::current_dir().expect("Failed to get current directory");
+    let entries = current_dir.read_dir().unwrap();
+
+    let mut items: Vec<String> = entries
+        .filter_map(|e| e.ok())
+        .filter(|entry| dir_entry_is_dir(&entry) || (dir_entry_is_file(&entry) && dir_entry_has_song_extension(&entry)))
+        .map(|entry| entry.path())
+        .filter(path_is_not_hidden)
+        .filter_map(|path| path
+            .file_name()
+            .and_then(|e| e.to_str())
+            .map(|e| e.to_string())
+        )
         .collect();
 
-    let current_dir = env::current_dir().expect("Failed to get current directory");
-
-    // Use glob instead of glob_with, which uses default match options
-    for entry in glob("./*").expect("Failed to read glob pattern").flatten() {
-        let path = current_dir.join(&entry);
-
-        if path.is_dir() {
-            if let Some(file_name) = path.file_name() {
-                if !file_name.to_str().unwrap_or_default().starts_with('.') {
-                    items.push(entry.to_str().unwrap().to_owned());
-                }
-            }
-        } else if let Some(ext) = path.extension().and_then(OsStr::to_str) {
-            if valid_extensions.contains(ext) {
-                items.push(entry.to_str().unwrap().to_owned());
-            }
-        }
-    }
+    items.sort_unstable();
     items
 }
 
-const extensions: [&str; 7] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac"];
-
 fn dir_entry_is_file(dir_entry: &DirEntry) -> bool {
     dir_entry.file_type().is_ok_and(|ft| ft.is_file())
+}
+
+fn dir_entry_is_dir(dir_entry: &DirEntry) -> bool {
+    dir_entry.file_type().is_ok_and(|ft| ft.is_dir())
+}
+
+fn path_is_not_hidden(path: &PathBuf) -> bool {
+    path.file_name()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_string())
+        .is_some_and(|d| !d.starts_with('.'))
 }
 
 fn dir_entry_has_song_extension(dir_entry: &DirEntry) -> bool {
     dir_entry
         .path()
         .extension()
-        .is_some_and(|e| extensions.contains(&e.to_str().unwrap()))
+        .is_some_and(|e| valid_extensions.contains(&e.to_str().unwrap()))
 }
 
 fn dir_entry_is_song(dir_entry: &DirEntry) -> bool {
