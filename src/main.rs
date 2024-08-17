@@ -6,6 +6,7 @@ mod state;
 mod ui;
 mod mpris;
 mod term;
+mod file_browser;
 
 use std::error::Error;
 use std::io::stdout;

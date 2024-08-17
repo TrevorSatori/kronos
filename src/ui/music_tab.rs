@@ -1,16 +1,14 @@
-use crate::app::{App, Browser};
-use crate::config::Config;
-use crate::helpers::gen_funcs;
-use ratatui::widgets::block::Position;
-use ratatui::widgets::ListState;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, BorderType, Borders, List, ListItem},
+    widgets::{ListState, Block, BorderType, Borders, List, ListItem, block::Position},
     Frame,
 };
-use crate::helpers::queue::Queue;
+use crate::helpers::{queue::Queue, gen_funcs};
+use crate::app::App;
+use crate::config::Config;
+use crate::file_browser::Browser;
 
 impl Browser {
     pub fn top_bar<'a>(self: &Self, cfg: &Config) -> Block<'a> {
