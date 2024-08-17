@@ -1,10 +1,5 @@
-use std::sync::{Arc};
-use std::time::Duration;
-use std::{env, io, path::{Path, PathBuf}, thread};
-use std::fs::File;
-use std::io::BufReader;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::Receiver;
+use std::{env, io, path::{Path, PathBuf}, thread, time::Duration, fs::File};
+use std::sync::{Arc, atomic::{AtomicBool, Ordering}, mpsc::Receiver};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{backend::Backend, Terminal};
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
@@ -171,7 +166,7 @@ impl<'a> App<'a> {
         self.currently_playing = Some(song);
 
         thread::spawn(move || {
-            let file = BufReader::new(File::open(path).unwrap());
+            let file = io::BufReader::new(File::open(path).unwrap());
             let source = Decoder::new(file).unwrap();
 
             sink.append(source);
