@@ -1,10 +1,7 @@
-use glob::glob;
 use lofty::{Accessor, AudioFile, LoftyError, Probe, TaggedFileExt};
 use std::fs::DirEntry;
 use std::{
     collections::VecDeque,
-    env,
-    ffi::OsStr,
     path::{Path, PathBuf},
 };
 
@@ -49,9 +46,8 @@ pub fn song_to_string(song: &Song) -> String {
     }
 }
 
-pub fn scan_and_filter_directory() -> Vec<String> {
-    let current_dir = env::current_dir().expect("Failed to get current directory");
-    let entries = current_dir.read_dir().unwrap();
+pub fn scan_and_filter_directory(path: &PathBuf) -> Vec<String> {
+    let entries = path.read_dir().unwrap();
 
     let mut items: Vec<String> = entries
         .filter_map(|e| e.ok())

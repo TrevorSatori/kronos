@@ -13,7 +13,7 @@ use ratatui::{
 
 fn top_bar<'a>(app: &App, cfg: &Config) -> Block<'a> {
     let folder_name = app
-        .last_visited_path
+        .browser_current_directory
         .file_name()
         .map(|s| s.to_str())
         .flatten()

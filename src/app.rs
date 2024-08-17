@@ -51,7 +51,7 @@ pub struct App<'a> {
     music_output: (OutputStream, OutputStreamHandle),
     input_mode: InputMode,
     pub active_tab: AppTab,
-    pub last_visited_path: PathBuf,
+    pub browser_current_directory: PathBuf,
     pub browser_filter: Option<String>,
     pub must_quit: bool,
     sink: Arc<Sink>,
@@ -60,16 +60,12 @@ pub struct App<'a> {
 
 impl<'a> App<'a> {
     pub fn new(initial_directory: Option<String>, queue: Vec<String>) -> Self {
-        if let Some(path) = initial_directory {
-            env::set_current_dir(&path).unwrap_or_else(|err| {
-                eprintln!(
-                    "Could not set_current_dir to last_visited_path\n\tPath: {}\n\tError: {:?}",
-                    path, err
-                );
-            });
-        }
+        let last_visited_path = match &initial_directory {
+            Some(s) => PathBuf::from(s),
+            None => env::current_dir().unwrap(),
+        };
 
-        let mut browser_items = StatefulList::with_items(scan_and_filter_directory());
+        let mut browser_items = StatefulList::with_items(scan_and_filter_directory(&last_visited_path));
         browser_items.select(0);
 
         let music_output = OutputStream::try_default().unwrap();
@@ -84,7 +80,7 @@ impl<'a> App<'a> {
             control_table: StatefulTable::new(),
             input_mode: InputMode::Browser,
             active_tab: AppTab::Music,
-            last_visited_path: env::current_dir().unwrap(),
+            browser_current_directory: last_visited_path,
             browser_filter: None,
             currently_playing: None,
         }
@@ -105,7 +101,7 @@ impl<'a> App<'a> {
             .collect();
 
         State {
-            last_visited_path: self.last_visited_path.to_str().map(String::from),
+            last_visited_path: self.browser_current_directory.to_str().map(String::from),
             queue_items,
         }
     }
@@ -203,9 +199,8 @@ impl<'a> App<'a> {
         let path = self.get_selected_browser_item();
 
         if path.is_dir() {
-            self.last_visited_path = path.clone();
-            env::set_current_dir(path).unwrap(); // TODO: avoid `unwrap`
-            self.browser_items = StatefulList::with_items(scan_and_filter_directory());
+            self.browser_current_directory = path.clone();
+            self.browser_items = StatefulList::with_items(scan_and_filter_directory(&path));
             self.browser_items.next();
         } else {
             match path_to_song(&path) {
@@ -216,27 +211,24 @@ impl<'a> App<'a> {
     }
 
     pub fn backpedal(&mut self) {
-        env::set_current_dir("../").unwrap();
-        self.browser_items = StatefulList::with_items(scan_and_filter_directory());
-        self.browser_items.select_by_path(&self.last_visited_path);
-        self.last_visited_path = env::current_dir().unwrap();
+        let parent = self.browser_current_directory.as_path().parent().unwrap().to_path_buf();
+        self.browser_items = StatefulList::with_items(scan_and_filter_directory(&parent));
+        self.browser_items.select_by_path(&self.browser_current_directory);
+        self.browser_current_directory = parent;
     }
 
-    /// Automatically start playing next song if current one has ended.
     pub fn auto_play(&mut self) {
         if self.sink.empty() && !self.queue_items.is_empty() {
-            // thread::sleep(Duration::from_millis(250)); // this introduces a pause between tracks. should be configurable, and there must be a better way.
             let song = self.queue_items.pop();
             self.play(song);
         }
     }
 
     pub fn get_selected_browser_item(&self) -> PathBuf {
-        let current_dir = env::current_dir().unwrap();
         if self.browser_items.empty() {
-            Path::new(&current_dir).into()
+            Path::new(&self.browser_current_directory).into()
         } else {
-            Path::join(&current_dir, Path::new(&self.browser_items.item()))
+            Path::join(&self.browser_current_directory, Path::new(&self.browser_items.item()))
         }
     }
 
