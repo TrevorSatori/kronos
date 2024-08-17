@@ -348,7 +348,7 @@ impl<'a> App<'a> {
         ui::render_ui::render_top_bar(frame, config, areas[0], self.active_tab);
 
         match self.active_tab {
-            AppTab::FileBrowser => ui::music_tab::music_tab(frame, &mut self.browser, &self.queue_items, areas[1], config),
+            AppTab::FileBrowser => self.browser.render(frame, &self.queue_items, areas[1], config),
             AppTab::Help => ui::instructions_tab::instructions_tab(frame, &mut self.control_table, areas[1], config),
         };
 

@@ -10,6 +10,17 @@ use crate::config::Config;
 use crate::file_browser::Browser;
 
 impl Browser {
+    pub fn render(self: &mut Self, frame: &mut Frame, queue_items: &Queue, area: Rect, cfg: &Config) {
+        let (area_top, area_main_left, area_main_separator, area_main_right) = create_areas(area);
+
+        self.items.height = area_main_left.height;
+
+        self.render_top_bar(cfg, frame, area_top);
+        self.render_file_list(cfg, frame, area_main_left);
+        render_separator(frame, area_main_separator);
+        render_queue_list(frame, &queue_items, cfg, area_main_right);
+    }
+
     pub fn top_bar<'a>(self: &Self, cfg: &Config) -> Block<'a> {
         let folder_name = self
             .current_directory
@@ -137,19 +148,6 @@ fn create_areas(area: Rect) -> (Rect, Rect, Rect, Rect) {
     (area_top, area_main_left, area_main_separator, area_main_right)
 }
 
-
-pub fn music_tab(frame: &mut Frame, browser: &mut Browser, queue_items: &Queue, area: Rect, cfg: &Config) {
-    let (area_top, area_main_left, area_main_separator, area_main_right) = create_areas(area);
-
-    browser.render_top_bar(cfg, frame, area_top);
-
-    browser.items.height = area_main_left.height;
-    browser.render_file_list(cfg, frame, area_main_left);
-
-    render_separator(frame, area_main_separator);
-
-    render_queue_list(frame, &queue_items, cfg, area_main_right);
-}
 
 fn render_separator(frame: &mut Frame, area_main_separator: Rect) {
     let [_separator_left, separator_middle, _separator_right] = *Layout::default()
