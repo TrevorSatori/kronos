@@ -86,10 +86,6 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn sink(&self) -> Arc<Sink> {
-        self.sink.clone()
-    }
-
     fn to_state(&self) -> State {
         let queue_items = self
             .queue_items
@@ -134,7 +130,7 @@ impl<'a> App<'a> {
             let currently_playing = &self.currently_playing.clone();
             terminal.draw(|f| crate::ui::render_ui(f, self, &cfg, self.active_tab, currently_playing))?;
 
-            self.auto_play(); // Up to `tick_rate` lag. A thread may be a better alternative.
+            self.player_auto_play(); // Up to `tick_rate` lag. A thread may be a better alternative.
 
             let timeout = tick_rate.saturating_sub(last_tick.elapsed());
 
@@ -157,7 +153,7 @@ impl<'a> App<'a> {
         Ok(self.to_state())
     }
 
-    pub fn next(&mut self) {
+    pub fn next_tab(&mut self) {
         self.active_tab = self.active_tab.next();
     }
 
@@ -169,7 +165,11 @@ impl<'a> App<'a> {
         self.input_mode = in_mode
     }
 
-    fn play(&mut self, song: Song) {
+    pub fn player_sink(&self) -> Arc<Sink> {
+        self.sink.clone()
+    }
+
+    fn player_play(&mut self, song: Song) {
         self.sink.stop();
 
         let path = song.path.clone();
@@ -187,7 +187,7 @@ impl<'a> App<'a> {
         });
     }
 
-    pub fn current_song(&self) -> Option<Song> {
+    pub fn player_current_song(&self) -> Option<Song> {
         if self.sink.empty() && self.queue_items.is_empty() {
             None
         } else {
@@ -195,56 +195,14 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn evaluate(&mut self) {
-        let path = self.get_selected_browser_item();
-
-        if path.is_dir() {
-            self.browser_current_directory = path.clone();
-            self.browser_items = StatefulList::with_items(scan_and_filter_directory(&path));
-            self.browser_items.next();
-        } else {
-            match path_to_song(&path) {
-                Ok(song) => self.play(song),
-                Err(err) => eprintln!("Could not play song {:?}. Error was {:?}", &path, err),
-            }
-        }
-    }
-
-    pub fn backpedal(&mut self) {
-        let parent = self.browser_current_directory.as_path().parent().unwrap().to_path_buf();
-        self.browser_items = StatefulList::with_items(scan_and_filter_directory(&parent));
-        self.browser_items.select_by_path(&self.browser_current_directory);
-        self.browser_current_directory = parent;
-    }
-
-    pub fn auto_play(&mut self) {
+    pub fn player_auto_play(&mut self) {
         if self.sink.empty() && !self.queue_items.is_empty() {
             let song = self.queue_items.pop();
-            self.play(song);
+            self.player_play(song);
         }
     }
 
-    pub fn get_selected_browser_item(&self) -> PathBuf {
-        if self.browser_items.empty() {
-            Path::new(&self.browser_current_directory).into()
-        } else {
-            Path::join(&self.browser_current_directory, Path::new(&self.browser_items.item()))
-        }
-    }
-
-    fn select_next_browser_by_match(&mut self) {
-        if let Some(s) = &self.browser_filter {
-            self.browser_items.select_next_by_match(s)
-        }
-    }
-
-    fn select_previous_browser_by_match(&mut self) {
-        if let Some(s) = &self.browser_filter {
-            self.browser_items.select_previous_by_match(s)
-        }
-    }
-
-    pub fn seek_forward(&mut self) {
+    pub fn player_seek_forward(&mut self) {
         if let Some(song) = &self.currently_playing {
             let target = self
                 .sink
@@ -257,7 +215,7 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn seek_backward(&mut self) {
+    pub fn player_seek_backward(&mut self) {
         let target = self
             .sink
             .get_pos()
@@ -266,6 +224,48 @@ impl<'a> App<'a> {
         self.sink.try_seek(target).unwrap_or_else(|e| {
             eprintln!("could not seek {:?}", e);
         });
+    }
+
+    pub fn browser_enter_selection(&mut self) {
+        let path = self.browser_selected_item();
+
+        if path.is_dir() {
+            self.browser_current_directory = path.clone();
+            self.browser_items = StatefulList::with_items(scan_and_filter_directory(&path));
+            self.browser_items.next();
+        } else {
+            match path_to_song(&path) {
+                Ok(song) => self.player_play(song),
+                Err(err) => eprintln!("Could not play song {:?}. Error was {:?}", &path, err),
+            }
+        }
+    }
+
+    pub fn browser_navigate_up(&mut self) {
+        let parent = self.browser_current_directory.as_path().parent().unwrap().to_path_buf();
+        self.browser_items = StatefulList::with_items(scan_and_filter_directory(&parent));
+        self.browser_items.select_by_path(&self.browser_current_directory);
+        self.browser_current_directory = parent;
+    }
+
+    pub fn browser_selected_item(&self) -> PathBuf {
+        if self.browser_items.empty() {
+            Path::new(&self.browser_current_directory).into()
+        } else {
+            Path::join(&self.browser_current_directory, Path::new(&self.browser_items.item()))
+        }
+    }
+
+    fn browser_select_next_match(&mut self) {
+        if let Some(s) = &self.browser_filter {
+            self.browser_items.select_next_by_match(s)
+        }
+    }
+
+    fn browser_select_previous_match(&mut self) {
+        if let Some(s) = &self.browser_filter {
+            self.browser_items.select_previous_by_match(s)
+        }
     }
 
     pub fn handle_key_event(&mut self, key: KeyEvent) {
@@ -285,11 +285,11 @@ impl<'a> App<'a> {
             KeyCode::Char('p') | KeyCode::Char(' ') => self.sink.toggle(),
             KeyCode::Char('g') => self.sink.stop(),
             KeyCode::Char('a') => {
-                self.queue_items.add(self.get_selected_browser_item());
+                self.queue_items.add(self.browser_selected_item());
                 self.browser_items.next();
             }
-            KeyCode::Enter => self.evaluate(),
-            KeyCode::Backspace => self.backpedal(),
+            KeyCode::Enter => self.browser_enter_selection(),
+            KeyCode::Backspace => self.browser_navigate_up(),
             KeyCode::Down | KeyCode::Char('j') => self.browser_items.next(),
             KeyCode::Up | KeyCode::Char('k') => self.browser_items.previous(),
             KeyCode::PageUp => self.browser_items.previous_by(5),
@@ -303,12 +303,12 @@ impl<'a> App<'a> {
                 self.set_input_mode(InputMode::Queue);
                 self.queue_items.select_next();
             }
-            KeyCode::Right => self.seek_forward(),
-            KeyCode::Left => self.seek_backward(),
+            KeyCode::Right => self.player_seek_forward(),
+            KeyCode::Left => self.player_seek_backward(),
             KeyCode::Char('-') => self.sink.change_volume(-0.05),
             KeyCode::Char('+') => self.sink.change_volume(0.05),
             KeyCode::Char('2') => {
-                self.next();
+                self.next_tab();
                 match self.input_mode {
                     InputMode::Controls => self.set_input_mode(InputMode::Browser),
                     _ => self.set_input_mode(InputMode::Controls),
@@ -330,19 +330,19 @@ impl<'a> App<'a> {
             KeyCode::Enter => {
                 self.set_input_mode(InputMode::Browser);
                 self.browser_filter = None;
-                self.evaluate();
+                self.browser_enter_selection();
             }
             KeyCode::Down => {
-                self.select_next_browser_by_match();
+                self.browser_select_next_match();
             }
             KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
-                self.select_next_browser_by_match();
+                self.browser_select_next_match();
             }
             KeyCode::Up => {
-                self.select_previous_browser_by_match();
+                self.browser_select_previous_match();
             }
             KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => {
-                self.select_previous_browser_by_match();
+                self.browser_select_previous_match();
             }
             KeyCode::Backspace => {
                 self.browser_filter = match &self.browser_filter {
@@ -376,21 +376,21 @@ impl<'a> App<'a> {
             KeyCode::Char('g') => self.sink.stop(),
             KeyCode::Enter => {
                 if let Some(song) = self.queue_items.selected_song() {
-                    self.play(song);
+                    self.player_play(song);
                 };
             }
             KeyCode::Down | KeyCode::Char('j') => self.queue_items.select_next(),
             KeyCode::Up | KeyCode::Char('k') => self.queue_items.select_previous(),
             KeyCode::Delete => self.queue_items.remove_selected(),
-            KeyCode::Right => self.seek_forward(),
-            KeyCode::Left => self.seek_backward(),
+            KeyCode::Right => self.player_seek_forward(),
+            KeyCode::Left => self.player_seek_backward(),
             KeyCode::Tab => {
                 self.queue_items.select_none();
                 self.set_input_mode(InputMode::Browser);
                 self.browser_items.next();
             }
             KeyCode::Char('2') => {
-                self.next();
+                self.next_tab();
                 match self.input_mode {
                     InputMode::Controls => self.set_input_mode(InputMode::Browser),
                     _ => self.set_input_mode(InputMode::Controls),
@@ -408,7 +408,7 @@ impl<'a> App<'a> {
             KeyCode::Down | KeyCode::Char('j') => self.control_table.next(),
             KeyCode::Up | KeyCode::Char('k') => self.control_table.previous(),
             KeyCode::Char('1') => {
-                self.next();
+                self.next_tab();
                 match self.input_mode {
                     InputMode::Controls => self.set_input_mode(InputMode::Browser),
                     _ => self.set_input_mode(InputMode::Controls),

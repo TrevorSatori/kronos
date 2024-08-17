@@ -64,7 +64,7 @@ pub fn render_ui(frame: &mut Frame, app: &mut App, config: &Config, active_tab: 
         config,
         areas[2],
         current_song,
-        app.sink().get_pos(),
+        app.player_sink().get_pos(),
         app.queue_items.total_time(),
         app.queue_items.length(),
     );
