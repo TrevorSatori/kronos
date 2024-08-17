@@ -21,7 +21,7 @@ use crate::{
     state::State,
 };
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub enum InputMode {
     Browser,
     BrowserFilter,
@@ -258,21 +258,46 @@ impl<'a> App<'a> {
     }
 
     pub fn handle_key_event(&mut self, key: KeyEvent) {
-        match self.input_mode {
-            InputMode::Browser => self.handle_browser_key_events(key),
-            InputMode::Queue => self.handle_queue_key_events(key),
-            InputMode::HelpControls => self.handle_help_key_events(key),
-            InputMode::BrowserFilter => self.handle_browser_filter_key_events(key),
+        let focus_trapped = self.input_mode == InputMode::BrowserFilter;
+        let handled = !focus_trapped && self.handle_common_key_event(&key);
+
+        if !handled {
+            match self.input_mode {
+                InputMode::Browser => self.handle_browser_key_events(key),
+                InputMode::Queue => self.handle_queue_key_events(key),
+                InputMode::HelpControls => self.handle_help_key_events(key),
+                InputMode::BrowserFilter => self.handle_browser_filter_key_events(key),
+            }
         }
     }
 
-    fn handle_browser_key_events(&mut self, key: KeyEvent) {
+    pub fn handle_common_key_event(&mut self, key: &KeyEvent) -> bool {
+        let mut handled = true;
         match key.code {
             KeyCode::Char('q') => {
                 self.must_quit = true;
             }
+            KeyCode::Char('1') => {
+                self.active_tab = AppTab::FileBrowser;
+                self.set_input_mode(InputMode::Browser);
+            },
+            KeyCode::Char('2') => {
+                self.active_tab = AppTab::Help;
+                self.set_input_mode(InputMode::HelpControls);
+            },
+            KeyCode::Right => self.player_seek_forward(),
+            KeyCode::Left => self.player_seek_backward(),
+            KeyCode::Char('-') => self.sink.change_volume(-0.05),
+            KeyCode::Char('+') => self.sink.change_volume(0.05),
             KeyCode::Char('p') | KeyCode::Char(' ') => self.sink.toggle(),
             KeyCode::Char('g') => self.sink.stop(),
+            _ => { handled = false; },
+        }
+        handled
+    }
+
+    fn handle_browser_key_events(&mut self, key: KeyEvent) {
+        match key.code {
             KeyCode::Char('a') => {
                 self.queue_items.add(self.browser_selected_item());
                 self.browser_items.next();
@@ -291,14 +316,6 @@ impl<'a> App<'a> {
                 self.browser_items.unselect();
                 self.set_input_mode(InputMode::Queue);
                 self.queue_items.select_next();
-            }
-            KeyCode::Right => self.player_seek_forward(),
-            KeyCode::Left => self.player_seek_backward(),
-            KeyCode::Char('-') => self.sink.change_volume(-0.05),
-            KeyCode::Char('+') => self.sink.change_volume(0.05),
-            KeyCode::Char('2') => {
-                self.active_tab = AppTab::Help;
-                self.set_input_mode(InputMode::HelpControls);
             }
             KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
                 self.set_input_mode(InputMode::BrowserFilter);
@@ -357,9 +374,6 @@ impl<'a> App<'a> {
 
     fn handle_queue_key_events(&mut self, key: KeyEvent) {
         match key.code {
-            KeyCode::Char('q') => self.must_quit = true,
-            KeyCode::Char('p') => self.sink.toggle(),
-            KeyCode::Char('g') => self.sink.stop(),
             KeyCode::Enter => {
                 if let Some(song) = self.queue_items.selected_song() {
                     self.player_play(song);
@@ -375,25 +389,14 @@ impl<'a> App<'a> {
                 self.set_input_mode(InputMode::Browser);
                 self.browser_items.next();
             }
-            KeyCode::Char('2') => {
-                self.active_tab = AppTab::Help;
-                self.set_input_mode(InputMode::HelpControls);
-            }
             _ => {}
         }
     }
 
     fn handle_help_key_events(&mut self, key: KeyEvent) {
         match key.code {
-            KeyCode::Char('q') => self.must_quit = true,
-            KeyCode::Char('p') => self.sink.toggle(),
-            KeyCode::Char('g') => self.sink.stop(),
             KeyCode::Down | KeyCode::Char('j') => self.control_table.next(),
             KeyCode::Up | KeyCode::Char('k') => self.control_table.previous(),
-            KeyCode::Char('1') => {
-                self.active_tab = AppTab::FileBrowser;
-                self.set_input_mode(InputMode::Browser);
-            }
             _ => {}
         }
     }
