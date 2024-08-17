@@ -1,5 +1,5 @@
 use std::{path::{Path, PathBuf}};
-use crossterm::event::{self, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
     helpers::{
@@ -12,9 +12,22 @@ pub struct Browser {
     pub items: StatefulList<String>,
     pub current_directory: PathBuf,
     pub filter: Option<String>,
+    last_offset: usize,
 }
 
 impl Browser {
+    pub fn new(
+        items: StatefulList<String>,
+        current_directory: PathBuf,
+    ) -> Self {
+        Self {
+            items,
+            current_directory,
+            filter: None,
+            last_offset: 0,
+        }
+    }
+
     pub fn selected_item(&self) -> PathBuf {
         if self.items.empty() {
             Path::new(&self.current_directory).into()
@@ -42,6 +55,7 @@ impl Browser {
 
         if path.is_dir() {
             self.current_directory = path.clone();
+            self.last_offset = self.items.offset;
             self.items = StatefulList::with_items(scan_and_filter_directory(&path));
             self.items.next();
         }
@@ -51,6 +65,7 @@ impl Browser {
         let parent = self.current_directory.as_path().parent().unwrap().to_path_buf();
         self.items = StatefulList::with_items(scan_and_filter_directory(&parent));
         self.items.select_by_path(&self.current_directory);
+        self.items.offset = self.last_offset;
         self.current_directory = parent;
     }
 

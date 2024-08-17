@@ -1,13 +1,20 @@
 use std::{env, io, path::PathBuf, thread, time::Duration, fs::File};
 use std::sync::{Arc, atomic::{AtomicBool, Ordering}, mpsc::Receiver};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
-use ratatui::{backend::Backend, Terminal};
+use ratatui::{
+    layout::{Constraint, Direction, Layout},
+    backend::Backend,
+    prelude::Style,
+    widgets::Block,
+    Frame,
+    Terminal,
+};
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 
 use crate::{
     config::Config,
     helpers::{
-        gen_funcs::{path_to_song, scan_and_filter_directory, Song},
+        gen_funcs::{scan_and_filter_directory, Song},
         music_handler::{ExtendedSink},
         queue::Queue,
         stateful_list::StatefulList,
@@ -15,6 +22,7 @@ use crate::{
     },
     state::State,
     file_browser::Browser,
+    ui,
 };
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -62,11 +70,10 @@ impl<'a> App<'a> {
             music_output,
             sink,
             currently_playing: None,
-            browser: Browser {
-                items: browser_items,
+            browser: Browser::new(
+                browser_items,
                 current_directory,
-                filter: None,
-            },
+            ),
             queue_items: Queue::new(queue),
             control_table: StatefulTable::new(),
         }
@@ -113,8 +120,10 @@ impl<'a> App<'a> {
         self.play_pause_recv(play_pause_receiver, self.sink.clone());
 
         loop {
-            let currently_playing = &self.currently_playing.clone();
-            terminal.draw(|f| crate::ui::render_ui(f, self, &cfg, self.active_tab, currently_playing))?;
+            terminal.draw(|frame| self.render(
+                frame,
+                &cfg,
+            ))?;
 
             self.player_auto_play(); // Up to `tick_rate` lag. A thread may be a better alternative.
 
@@ -312,5 +321,45 @@ impl<'a> App<'a> {
             KeyCode::Up | KeyCode::Char('k') => self.control_table.previous(),
             _ => {}
         }
+    }
+
+    fn render(
+        self: &mut Self,
+        frame: &mut Frame,
+        config: &Config,
+    ) {
+        let area = frame.size();
+
+        let areas = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Length(2),
+                    Constraint::Min(0),
+                    Constraint::Length(3),
+                ]
+                    .as_ref(),
+            )
+            .split(area);
+
+        let block = Block::default().style(Style::default().bg(config.background()));
+        frame.render_widget(block, area);
+
+        ui::render_ui::render_top_bar(frame, config, areas[0], self.active_tab);
+
+        match self.active_tab {
+            AppTab::FileBrowser => ui::music_tab::music_tab(frame, &mut self.browser, &self.queue_items, areas[1], config),
+            AppTab::Help => ui::instructions_tab::instructions_tab(frame, &mut self.control_table, areas[1], config),
+        };
+
+        ui::render_ui::render_playing_gauge(
+            frame,
+            config,
+            areas[2],
+            &self.currently_playing.clone(),
+            self.player_sink().get_pos(),
+            self.queue_items.total_time(),
+            self.queue_items.length(),
+        );
     }
 }

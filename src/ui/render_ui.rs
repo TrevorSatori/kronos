@@ -1,20 +1,20 @@
-use crate::app::{App, AppTab};
-use crate::config::Config;
-use crate::constants::{SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
-use crate::helpers::gen_funcs::{song_to_string, Song};
-use crate::ui::{instructions_tab, music_tab};
-use ratatui::widgets::{BorderType, Gauge};
+use std::time::Duration;
+
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     prelude::*,
     style::{Modifier, Style},
     text::Span,
-    widgets::{Block, Borders, Tabs},
+    widgets::{Block, Borders, Tabs, BorderType, Gauge},
     Frame,
 };
-use std::time::Duration;
 
-static MAIN_SECTIONS: [&str; 2] = ["Music", "Help"];
+use crate::{
+    app::AppTab,
+    config::Config,
+    constants::{SECONDS_PER_HOUR, SECONDS_PER_MINUTE, MAIN_SECTIONS},
+    helpers::gen_funcs::{song_to_string, Song},
+};
 
 fn duration_to_string(total_time: Duration) -> String {
     let hours = total_time.as_secs() / SECONDS_PER_HOUR;
@@ -34,43 +34,7 @@ fn duration_to_string(total_time: Duration) -> String {
     strings.join(":")
 }
 
-pub fn render_ui(frame: &mut Frame, app: &mut App, config: &Config, active_tab: AppTab, current_song: &Option<Song>) {
-    let area = frame.size();
-
-    let areas = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Length(2),
-                Constraint::Min(0),
-                Constraint::Length(3),
-            ]
-            .as_ref(),
-        )
-        .split(area);
-
-    let block = Block::default().style(Style::default().bg(config.background()));
-    frame.render_widget(block, area);
-
-    render_top_bar(frame, config, areas[0], active_tab);
-
-    match active_tab {
-        AppTab::FileBrowser => music_tab(frame, &mut app.browser, &app.queue_items, areas[1], config),
-        AppTab::Help => instructions_tab(frame, &mut app.control_table, areas[1], config),
-    };
-
-    render_playing_gauge(
-        frame,
-        config,
-        areas[2],
-        current_song,
-        app.player_sink().get_pos(),
-        app.queue_items.total_time(),
-        app.queue_items.length(),
-    );
-}
-
-fn render_top_bar(frame: &mut Frame, config: &Config, area: Rect, active_tab: AppTab) {
+pub fn render_top_bar(frame: &mut Frame, config: &Config, area: Rect, active_tab: AppTab) {
     let tab_titles: Vec<Line> = MAIN_SECTIONS
         .iter()
         .map(|t| {
@@ -102,7 +66,7 @@ fn render_top_bar(frame: &mut Frame, config: &Config, area: Rect, active_tab: Ap
     frame.render_widget(tabs, area);
 }
 
-fn render_playing_gauge(
+pub fn render_playing_gauge(
     frame: &mut Frame,
     config: &Config,
     area: Rect,

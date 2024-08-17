@@ -6,7 +6,6 @@ use ratatui::{
     Frame,
 };
 use crate::helpers::{queue::Queue, gen_funcs};
-use crate::app::App;
 use crate::config::Config;
 use crate::file_browser::Browser;
 

@@ -106,6 +106,7 @@ impl<T> StatefulList<T> {
     pub fn unselect(&mut self) {
         self.state.select(None);
     }
+
     pub fn select(&mut self, i: usize) {
         self.curr = i;
         self.state.select(Some(i));
