@@ -50,12 +50,12 @@ pub struct App<'a> {
     pub control_table: StatefulTable<'a>,
     music_output: (OutputStream, OutputStreamHandle),
     input_mode: InputMode,
-    pub active_tab: AppTab,
+    active_tab: AppTab,
     pub browser_current_directory: PathBuf,
     pub browser_filter: Option<String>,
-    pub must_quit: bool,
+    must_quit: bool,
     sink: Arc<Sink>,
-    pub currently_playing: Option<Song>,
+    currently_playing: Option<Song>,
 }
 
 impl<'a> App<'a> {
