@@ -82,6 +82,14 @@ impl Browser {
     }
 }
 
+fn render_queue_list<'a>(frame: &mut Frame, queue_items: &Queue, cfg: &Config, area_main_right: Rect) {
+    frame.render_stateful_widget(
+        queue_list(&queue_items, cfg),
+        area_main_right,
+        &mut ListState::default().with_selected(queue_items.selected_song_index()),
+    );
+}
+
 fn queue_list<'a>(queue_items: &Queue, cfg: &Config) -> List<'a> {
     let queue_items: Vec<String> = queue_items
         .songs()
@@ -102,12 +110,12 @@ fn queue_list<'a>(queue_items: &Queue, cfg: &Config) -> List<'a> {
     queue_list
 }
 
-pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
+fn create_areas(area: Rect) -> (Rect, Rect, Rect, Rect) {
     let [area_top, area_main] = *Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(2), Constraint::Min(1)].as_ref())
         .horizontal_margin(2)
-        .split(chunks)
+        .split(area)
     else {
         panic!("Layout.split() failed");
     };
@@ -120,13 +128,31 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
                 Constraint::Length(5),
                 Constraint::Percentage(50),
             ]
-            .as_ref(),
+                .as_ref(),
         )
         .split(area_main)
     else {
         panic!("Layout.split() failed");
     };
 
+    (area_top, area_main_left, area_main_separator, area_main_right)
+}
+
+
+pub fn music_tab(frame: &mut Frame, app: &mut App, area: Rect, cfg: &Config) {
+    let (area_top, area_main_left, area_main_separator, area_main_right) = create_areas(area);
+
+    app.browser.render_top_bar(cfg, frame, area_top);
+
+    app.browser.items.height = area_main_left.height;
+    app.browser.render_file_list(cfg, frame, area_main_left);
+
+    render_separator(frame, area_main_separator);
+
+    render_queue_list(frame, &app.queue_items, cfg, area_main_right);
+}
+
+fn render_separator(frame: &mut Frame, area_main_separator: Rect) {
     let [_separator_left, separator_middle, _separator_right] = *Layout::default()
         .direction(Direction::Horizontal)
         .constraints(
@@ -135,26 +161,15 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
                 Constraint::Length(1),
                 Constraint::Min(1),
             ]
-            .as_ref(),
+                .as_ref(),
         )
         .split(area_main_separator)
     else {
         panic!("Layout.split() failed");
     };
 
-    app.browser.items.height = area_main_left.height;
-
-    app.browser.render_top_bar(cfg, frame, area_top);
-    app.browser.render_file_list(cfg, frame, area_main_left);
-
     let vertical_separator = Block::default()
         .borders(Borders::RIGHT)
         .border_type(BorderType::Double);
     frame.render_widget(vertical_separator, separator_middle);
-
-    frame.render_stateful_widget(
-        queue_list(&app.queue_items, cfg),
-        area_main_right,
-        &mut ListState::default().with_selected(app.queue_items.selected_song_index()),
-    );
 }
