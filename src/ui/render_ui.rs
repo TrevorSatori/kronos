@@ -35,7 +35,7 @@ fn duration_to_string(total_time: Duration) -> String {
 }
 
 pub fn render_ui(frame: &mut Frame, app: &mut App, config: &Config, active_tab: AppTab, current_song: &Option<Song>) {
-    let size = frame.size();
+    let area = frame.size();
 
     let areas = Layout::default()
         .direction(Direction::Vertical)
@@ -47,16 +47,16 @@ pub fn render_ui(frame: &mut Frame, app: &mut App, config: &Config, active_tab: 
             ]
             .as_ref(),
         )
-        .split(size);
+        .split(area);
 
     let block = Block::default().style(Style::default().bg(config.background()));
-    frame.render_widget(block, size);
+    frame.render_widget(block, area);
 
     render_top_bar(frame, config, areas[0], active_tab);
 
     match active_tab {
-        AppTab::FileBrowser => music_tab(frame, app, areas[1], config),
-        AppTab::Help => instructions_tab(frame, app, areas[1], config),
+        AppTab::FileBrowser => music_tab(frame, &mut app.browser, &app.queue_items, areas[1], config),
+        AppTab::Help => instructions_tab(frame, &mut app.control_table, areas[1], config),
     };
 
     render_playing_gauge(

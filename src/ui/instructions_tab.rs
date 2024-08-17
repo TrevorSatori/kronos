@@ -5,18 +5,17 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::App;
 use crate::config::Config;
+use crate::helpers::stateful_table::StatefulTable;
 
-pub fn instructions_tab(f: &mut Frame, app: &mut App, area: Rect, cfg: &Config) {
+pub fn instructions_tab<'a>(f: &mut Frame, control_table: &mut StatefulTable<'a>, area: Rect, cfg: &Config) {
     let layout = Layout::default()
         .direction(Direction::Horizontal)
         .horizontal_margin(1)
         .constraints([Constraint::Percentage(50)].as_ref())
         .split(area);
 
-    let header = app
-        .control_table
+    let header = control_table
         .header
         .iter()
         .map(|h| Cell::from(*h).style(Style::default().fg(cfg.highlight_foreground())));
@@ -26,7 +25,7 @@ pub fn instructions_tab(f: &mut Frame, app: &mut App, area: Rect, cfg: &Config) 
         .height(1)
         .bottom_margin(0);
 
-    let rows = app.control_table.items.iter().map(|item| {
+    let rows = control_table.items.iter().map(|item| {
         let height = item
             .iter()
             .map(|content| content.chars().filter(|c| *c == '\n').count())
@@ -61,5 +60,5 @@ pub fn instructions_tab(f: &mut Frame, app: &mut App, area: Rect, cfg: &Config) 
             Constraint::Length(30),
             Constraint::Min(10),
         ]);
-    f.render_stateful_widget(table, layout[0], &mut app.control_table.state);
+    f.render_stateful_widget(table, layout[0], &mut control_table.state);
 }

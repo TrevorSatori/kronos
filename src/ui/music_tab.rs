@@ -139,17 +139,17 @@ fn create_areas(area: Rect) -> (Rect, Rect, Rect, Rect) {
 }
 
 
-pub fn music_tab(frame: &mut Frame, app: &mut App, area: Rect, cfg: &Config) {
+pub fn music_tab(frame: &mut Frame, browser: &mut Browser, queue_items: &Queue, area: Rect, cfg: &Config) {
     let (area_top, area_main_left, area_main_separator, area_main_right) = create_areas(area);
 
-    app.browser.render_top_bar(cfg, frame, area_top);
+    browser.render_top_bar(cfg, frame, area_top);
 
-    app.browser.items.height = area_main_left.height;
-    app.browser.render_file_list(cfg, frame, area_main_left);
+    browser.items.height = area_main_left.height;
+    browser.render_file_list(cfg, frame, area_main_left);
 
     render_separator(frame, area_main_separator);
 
-    render_queue_list(frame, &app.queue_items, cfg, area_main_right);
+    render_queue_list(frame, &queue_items, cfg, area_main_right);
 }
 
 fn render_separator(frame: &mut Frame, area_main_separator: Rect) {
