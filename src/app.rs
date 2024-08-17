@@ -36,52 +36,50 @@ pub enum AppTab {
 }
 
 pub struct Browser {
-    pub browser_items: StatefulList<String>,
-    pub browser_current_directory: PathBuf,
-    pub browser_filter: Option<String>,
+    pub items: StatefulList<String>,
+    pub current_directory: PathBuf,
+    pub filter: Option<String>,
 }
 
 pub struct App<'a> {
+    must_quit: bool,
     input_mode: InputMode,
     active_tab: AppTab,
-    pub control_table: StatefulTable<'a>,
-
     pub browser: Browser,
-
     pub queue_items: Queue,
+    pub control_table: StatefulTable<'a>,
     music_output: (OutputStream, OutputStreamHandle),
     sink: Arc<Sink>,
     currently_playing: Option<Song>,
-    must_quit: bool,
 }
 
 impl<'a> App<'a> {
     pub fn new(initial_directory: Option<String>, queue: Vec<String>) -> Self {
-        let last_visited_path = match &initial_directory {
+        let current_directory = match &initial_directory {
             Some(s) => PathBuf::from(s),
             None => env::current_dir().unwrap(),
         };
 
-        let mut browser_items = StatefulList::with_items(scan_and_filter_directory(&last_visited_path));
+        let mut browser_items = StatefulList::with_items(scan_and_filter_directory(&current_directory));
         browser_items.select(0);
 
         let music_output = OutputStream::try_default().unwrap();
         let sink = Arc::new(Sink::try_new(&music_output.1).unwrap());
 
         Self {
-            music_output,
-            sink,
-            browser: Browser {
-                browser_items,
-                browser_current_directory: last_visited_path,
-                browser_filter: None,
-            },
             must_quit: false,
-            queue_items: Queue::new(queue),
-            control_table: StatefulTable::new(),
             input_mode: InputMode::Browser,
             active_tab: AppTab::FileBrowser,
+            music_output,
+            sink,
             currently_playing: None,
+            browser: Browser {
+                items: browser_items,
+                current_directory,
+                filter: None,
+            },
+            queue_items: Queue::new(queue),
+            control_table: StatefulTable::new(),
         }
     }
 
@@ -96,7 +94,7 @@ impl<'a> App<'a> {
             .collect();
 
         State {
-            last_visited_path: self.browser.browser_current_directory.to_str().map(String::from),
+            last_visited_path: self.browser.current_directory.to_str().map(String::from),
             queue_items,
         }
     }
@@ -225,9 +223,9 @@ impl<'a> App<'a> {
         let path = self.browser_selected_item();
 
         if path.is_dir() {
-            self.browser.browser_current_directory = path.clone();
-            self.browser.browser_items = StatefulList::with_items(scan_and_filter_directory(&path));
-            self.browser.browser_items.next();
+            self.browser.current_directory = path.clone();
+            self.browser.items = StatefulList::with_items(scan_and_filter_directory(&path));
+            self.browser.items.next();
         } else {
             match path_to_song(&path) {
                 Ok(song) => self.player_play(song),
@@ -237,29 +235,29 @@ impl<'a> App<'a> {
     }
 
     pub fn browser_navigate_up(&mut self) {
-        let parent = self.browser.browser_current_directory.as_path().parent().unwrap().to_path_buf();
-        self.browser.browser_items = StatefulList::with_items(scan_and_filter_directory(&parent));
-        self.browser.browser_items.select_by_path(&self.browser.browser_current_directory);
-        self.browser.browser_current_directory = parent;
+        let parent = self.browser.current_directory.as_path().parent().unwrap().to_path_buf();
+        self.browser.items = StatefulList::with_items(scan_and_filter_directory(&parent));
+        self.browser.items.select_by_path(&self.browser.current_directory);
+        self.browser.current_directory = parent;
     }
 
     pub fn browser_selected_item(&self) -> PathBuf {
-        if self.browser.browser_items.empty() {
-            Path::new(&self.browser.browser_current_directory).into()
+        if self.browser.items.empty() {
+            Path::new(&self.browser.current_directory).into()
         } else {
-            Path::join(&self.browser.browser_current_directory, Path::new(&self.browser.browser_items.item()))
+            Path::join(&self.browser.current_directory, Path::new(&self.browser.items.item()))
         }
     }
 
     fn browser_select_next_match(&mut self) {
-        if let Some(s) = &self.browser.browser_filter {
-            self.browser.browser_items.select_next_by_match(s)
+        if let Some(s) = &self.browser.filter {
+            self.browser.items.select_next_by_match(s)
         }
     }
 
     fn browser_select_previous_match(&mut self) {
-        if let Some(s) = &self.browser.browser_filter {
-            self.browser.browser_items.select_previous_by_match(s)
+        if let Some(s) = &self.browser.filter {
+            self.browser.items.select_previous_by_match(s)
         }
     }
 
@@ -313,21 +311,21 @@ impl<'a> App<'a> {
         match key.code {
             KeyCode::Char('a') => {
                 self.queue_items.add(self.browser_selected_item());
-                self.browser.browser_items.next();
+                self.browser.items.next();
             }
             KeyCode::Enter => self.browser_enter_selection(),
             KeyCode::Backspace => self.browser_navigate_up(),
-            KeyCode::Down | KeyCode::Char('j') => self.browser.browser_items.next(),
-            KeyCode::Up | KeyCode::Char('k') => self.browser.browser_items.previous(),
-            KeyCode::PageUp => self.browser.browser_items.previous_by(5),
-            KeyCode::PageDown => self.browser.browser_items.next_by(5),
+            KeyCode::Down | KeyCode::Char('j') => self.browser.items.next(),
+            KeyCode::Up | KeyCode::Char('k') => self.browser.items.previous(),
+            KeyCode::PageUp => self.browser.items.previous_by(5),
+            KeyCode::PageDown => self.browser.items.next_by(5),
             KeyCode::End => self
                 .browser
-                .browser_items
-                .select(self.browser.browser_items.items().len() - 1),
-            KeyCode::Home => self.browser.browser_items.select(0),
+                .items
+                .select(self.browser.items.items().len() - 1),
+            KeyCode::Home => self.browser.items.select(0),
             KeyCode::Tab => {
-                self.browser.browser_items.unselect();
+                self.browser.items.unselect();
                 self.set_input_mode(InputMode::Queue);
                 self.queue_items.select_next();
             }
@@ -342,11 +340,11 @@ impl<'a> App<'a> {
         match key.code {
             KeyCode::Esc => {
                 self.set_input_mode(InputMode::Browser);
-                self.browser.browser_filter = None;
+                self.browser.filter = None;
             }
             KeyCode::Enter => {
                 self.set_input_mode(InputMode::Browser);
-                self.browser.browser_filter = None;
+                self.browser.filter = None;
                 self.browser_enter_selection();
             }
             KeyCode::Down => {
@@ -362,25 +360,25 @@ impl<'a> App<'a> {
                 self.browser_select_previous_match();
             }
             KeyCode::Backspace => {
-                self.browser.browser_filter = match &self.browser.browser_filter {
+                self.browser.filter = match &self.browser.filter {
                     Some(s) if s.len() > 0 => Some(s[..s.len() - 1].to_string()), // TODO: s[..s.len()-1] can panic! use .substring crate
                     _ => None,
                 };
             }
             KeyCode::Char(char) => {
-                self.browser.browser_filter = match &self.browser.browser_filter {
+                self.browser.filter = match &self.browser.filter {
                     Some(s) => Some(s.to_owned() + char.to_string().as_str()),
                     _ => Some(char.to_string()),
                 };
                 if !self
                     .browser
-                    .browser_items
+                    .items
                     .item()
                     .to_lowercase()
-                    .contains(&self.browser.browser_filter.clone().unwrap().to_lowercase())
+                    .contains(&self.browser.filter.clone().unwrap().to_lowercase())
                 {
-                    self.browser.browser_items
-                        .select_next_by_match(&self.browser.browser_filter.clone().unwrap());
+                    self.browser.items
+                        .select_next_by_match(&self.browser.filter.clone().unwrap());
                 }
             }
             _ => {}
@@ -402,7 +400,7 @@ impl<'a> App<'a> {
             KeyCode::Tab => {
                 self.queue_items.select_none();
                 self.set_input_mode(InputMode::Browser);
-                self.browser.browser_items.next();
+                self.browser.items.next();
             }
             _ => {}
         }
