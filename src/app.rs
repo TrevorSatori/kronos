@@ -263,15 +263,14 @@ impl<'a> App<'a> {
 
         if !handled {
             match self.input_mode {
-                InputMode::Browser => self.handle_browser_key_events(key),
+                InputMode::Browser | InputMode::BrowserFilter => self.handle_browser_key_events(key),
                 InputMode::Queue => self.handle_queue_key_events(key),
                 InputMode::HelpControls => self.handle_help_key_events(key),
-                InputMode::BrowserFilter => self.handle_browser_filter_key_events(key),
             }
         }
     }
 
-    pub fn handle_common_key_event(&mut self, key: &KeyEvent) -> bool {
+    fn handle_common_key_event(&mut self, key: &KeyEvent) -> bool {
         let mut handled = true;
         match key.code {
             KeyCode::Char('q') => {
@@ -297,6 +296,14 @@ impl<'a> App<'a> {
     }
 
     fn handle_browser_key_events(&mut self, key: KeyEvent) {
+        match self.input_mode {
+            InputMode::Browser => self.handle_browser_normal_key_events(key),
+            InputMode::BrowserFilter => self.handle_browser_filter_key_events(key),
+            _ => {},
+        }
+    }
+
+    fn handle_browser_normal_key_events(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Char('a') => {
                 self.queue_items.add(self.browser_selected_item());
