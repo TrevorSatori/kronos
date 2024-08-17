@@ -1,29 +1,23 @@
 mod app;
 mod config;
-pub mod constants;
+mod constants;
 mod helpers;
 mod state;
 mod ui;
+mod mpris;
+mod term;
 
 use std::error::Error;
 use std::io::stdout;
 use std::panic::PanicInfo;
-use std::sync::{Arc, mpsc::{channel, Receiver, Sender}};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, mpsc::{channel, Receiver}, atomic::AtomicBool};
 use std::thread;
-
-use async_std::task;
-use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
-use mpris_server;
-use ratatui::{backend::CrosstermBackend, Terminal};
 
 use crate::{
     app::App,
     state::{load_state, save_state, State},
+    mpris::run_mpris,
+    term::{reset_terminal, set_terminal},
 };
 
 #[async_std::main]
@@ -61,64 +55,6 @@ fn run_player(play_pause: Receiver<()>, quit: Arc<AtomicBool>) -> Result<(), Box
     terminal.show_cursor()?;
 
     Ok(())
-}
-
-async fn run_mpris(
-    play_pause: Sender<()>,
-    quit: Arc<AtomicBool>,
-) -> Result<(), Box<dyn Error>> {
-    let player = mpris_server::Player::builder("com.tarocodes.brock")
-        .can_play(true)
-        .can_pause(true)
-        .can_go_next(true)
-        .build()
-        .await?;
-
-    player.connect_play_pause(move |_player| {
-        if let Err(err) = play_pause.send(()) {
-            eprintln!("Failed to send play_pause! {:?}", err);
-        }
-    });
-
-    player.connect_next(|_player| {
-        eprintln!("next");
-    });
-
-    async_std::task::spawn_local(player.run());
-
-    player.set_can_play(false).await?;
-    player.seeked(mpris_server::Time::from_millis(1000)).await?;
-
-    // let mut reader = crossterm::event::EventStream::new();
-    // let mut event = reader.next().fuse();
-
-    loop {
-        task::sleep(std::time::Duration::from_secs(1)).await;
-        if quit.load(Ordering::Relaxed) {
-            break;
-        }
-    }
-
-    Ok(())
-}
-
-fn set_terminal() -> Result<Terminal<CrosstermBackend<std::io::Stdout>>, impl Error> {
-    enable_raw_mode()?;
-    let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-
-    let backend = CrosstermBackend::new(stdout);
-    Terminal::new(backend)
-}
-
-fn reset_terminal(writer: &mut impl std::io::Write) {
-    execute!(writer, LeaveAlternateScreen, DisableMouseCapture).unwrap_or_else(|e| {
-        eprintln!("tried to execute(...) but couldn't :( {e}");
-    });
-
-    disable_raw_mode().unwrap_or_else(|e| {
-        eprintln!("tried to disable_raw_mode but couldn't :( {e}");
-    });
 }
 
 /// If our app panics after entering raw mode and before leaving it,
