@@ -1,4 +1,4 @@
-use crate::app::{App, Browser, InputMode};
+use crate::app::{App, Browser};
 use crate::config::Config;
 use crate::helpers::gen_funcs;
 use ratatui::widgets::block::Position;
@@ -12,62 +12,76 @@ use ratatui::{
 };
 use crate::helpers::queue::Queue;
 
-fn top_bar<'a>(browser: &Browser, cfg: &Config) -> Block<'a> {
-    let folder_name = browser
-        .current_directory
-        .file_name()
-        .map(|s| s.to_str())
-        .flatten()
-        .map(String::from)
-        .unwrap_or("".to_string());
+impl Browser {
+    pub fn top_bar<'a>(self: &Self, cfg: &Config) -> Block<'a> {
+        let folder_name = self
+            .current_directory
+            .file_name()
+            .map(|s| s.to_str())
+            .flatten()
+            .map(String::from)
+            .unwrap_or("".to_string());
 
-    let browser_title = match &browser.filter {
-        Some(filter) => Line::from(vec![
-            Span::styled("  search: ", Style::default()),
-            Span::styled(
-                filter.clone(),
-                Style::default().fg(Color::Red),
-            ),
-        ]),
-        _ => Line::from(folder_name),
-    };
+        let browser_title = match &self.filter {
+            Some(filter) => Line::from(vec![
+                Span::styled("  search: ", Style::default()),
+                Span::styled(
+                    filter.clone(),
+                    Style::default().fg(Color::Red),
+                ),
+            ]),
+            _ => Line::from(folder_name),
+        };
 
-    let top_bar = Block::default()
-        .borders(Borders::NONE)
-        .title(browser_title)
-        .title_alignment(Alignment::Left)
-        .title_position(Position::Top)
-        .title_style(Style::new().bg(cfg.background()).fg(cfg.foreground()));
+        let top_bar = Block::default()
+            .borders(Borders::NONE)
+            .title(browser_title)
+            .title_alignment(Alignment::Left)
+            .title_position(Position::Top)
+            .title_style(Style::new().bg(cfg.background()).fg(cfg.foreground()));
 
-    top_bar
-}
+        top_bar
+    }
 
-fn file_list<'a>(browser: &Browser, cfg: &Config) -> List<'a> {
-    let browser_items: Vec<ListItem> = browser
-        .items
-        .items()
-        .iter()
-        .map(|i| {
-            let fg = match browser.filter.as_ref() {
-                Some(s) if (i.to_lowercase().contains(&s.to_lowercase())) => Color::Red,
-                _ => Color::Reset,
-            };
-            ListItem::new(Text::from(i.to_owned())).style(Style::default().fg(fg))
-        })
-        .collect();
+    pub fn render_top_bar(self: &Self, cfg: &Config, frame: &mut Frame, area: Rect) {
+        frame.render_widget(self.top_bar(cfg), area);
+    }
 
-    let browser_list = List::new(browser_items)
-        .style(Style::default().fg(cfg.foreground()))
-        .highlight_style(
-            Style::default()
-                .bg(cfg.highlight_background())
-                .fg(cfg.highlight_foreground())
-                .add_modifier(Modifier::BOLD),
-        )
-        .scroll_padding(0)
-        .highlight_symbol("");
+    fn file_list<'a>(self: &Self, cfg: &Config) -> List<'a> {
+        let browser_items: Vec<ListItem> = self
+            .items
+            .items()
+            .iter()
+            .map(|i| {
+                let fg = match self.filter.as_ref() {
+                    Some(s) if (i.to_lowercase().contains(&s.to_lowercase())) => Color::Red,
+                    _ => Color::Reset,
+                };
+                ListItem::new(Text::from(i.to_owned())).style(Style::default().fg(fg))
+            })
+            .collect();
 
-    browser_list
+        let browser_list = List::new(browser_items)
+            .style(Style::default().fg(cfg.foreground()))
+            .highlight_style(
+                Style::default()
+                    .bg(cfg.highlight_background())
+                    .fg(cfg.highlight_foreground())
+                    .add_modifier(Modifier::BOLD),
+            )
+            .scroll_padding(0)
+            .highlight_symbol("");
+
+        browser_list
+    }
+
+    pub fn render_file_list(self: &Self, cfg: &Config, frame: &mut Frame, area: Rect) {
+        frame.render_stateful_widget(
+            self.file_list(cfg),
+            area,
+            &mut self.items.state(),
+        );
+    }
 }
 
 fn queue_list<'a>(queue_items: &Queue, cfg: &Config) -> List<'a> {
@@ -132,18 +146,14 @@ pub fn music_tab(frame: &mut Frame, app: &mut App, chunks: Rect, cfg: &Config) {
 
     app.browser.items.height = area_main_left.height;
 
-    frame.render_widget(top_bar(&app.browser, cfg), area_top);
-    frame.render_stateful_widget(
-        file_list(&app.browser, cfg),
-        area_main_left,
-        &mut app.browser.items.state(),
-    );
+    app.browser.render_top_bar(cfg, frame, area_top);
+    app.browser.render_file_list(cfg, frame, area_main_left);
 
     let vertical_separator = Block::default()
         .borders(Borders::RIGHT)
         .border_type(BorderType::Double);
-
     frame.render_widget(vertical_separator, separator_middle);
+
     frame.render_stateful_widget(
         queue_list(&app.queue_items, cfg),
         area_main_right,
