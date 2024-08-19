@@ -21,34 +21,39 @@ use crate::{
     term::{reset_terminal, set_terminal},
 };
 
+pub enum Command {
+    PlayPause,
+    Next,
+}
+
 #[async_std::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     std::panic::set_hook(Box::new(on_panic));
 
     let quit: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
 
-    let (play_pause_sender, play_pause_receiver) = channel();
+    let (player_command_sender, player_command_receiver) = channel();
 
-    run_player_thread(play_pause_receiver, quit.clone());
-    run_mpris(play_pause_sender, quit.clone()).await?;
+    run_player_thread(player_command_receiver, quit.clone());
+    run_mpris(player_command_sender, quit.clone()).await?;
 
     Ok(())
 }
 
-fn run_player_thread(play_pause: Receiver<()>, quit: Arc<AtomicBool>) {
+fn run_player_thread(player_command_receiver: Receiver<Command>, quit: Arc<AtomicBool>) {
     thread::spawn(move || {
-        if let Err(err) = run_player(play_pause, quit) {
+        if let Err(err) = run_player(player_command_receiver, quit) {
             eprintln!("error :( {:?}", err);
         }
     });
 }
 
-fn run_player(play_pause: Receiver<()>, quit: Arc<AtomicBool>) -> Result<(), Box<dyn Error>> {
+fn run_player(player_command_receiver: Receiver<Command>, quit: Arc<AtomicBool>) -> Result<(), Box<dyn Error>> {
     let state = load_state().unwrap_or(State::default());
 
     let mut terminal = set_terminal()?;
     let mut app = App::new(state.last_visited_path, state.queue_items);
-    let state = app.start(&mut terminal, play_pause, quit)?;
+    let state = app.start(&mut terminal, player_command_receiver, quit)?;
 
     save_state(&state)?;
 

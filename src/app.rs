@@ -23,6 +23,7 @@ use crate::{
     state::State,
     file_browser::Browser,
     ui,
+    Command,
 };
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -95,13 +96,19 @@ impl<'a> App<'a> {
         }
     }
 
-    fn play_pause_recv(&self, play_pause_receiver: Receiver<()>, sink: Arc<Sink>) {
+    fn play_pause_recv(&self, player_command_receiver: Receiver<Command>, sink: Arc<Sink>) {
         thread::spawn(move || {
             loop {
-                if let Err(err) = play_pause_receiver.recv() {
-                    eprintln!("error receiving! {}", err);
-                } else {
-                    sink.toggle();
+                match player_command_receiver.recv() {
+                    Ok(Command::PlayPause) => {
+                        sink.toggle();
+                    }
+                    Ok(Command::Next) => {
+                        sink.stop();
+                    }
+                    Err(err) => {
+                        eprintln!("error receiving! {}", err);
+                    }
                 }
             }
         });
@@ -110,14 +117,14 @@ impl<'a> App<'a> {
     pub fn start<B: Backend>(
         &mut self,
         terminal: &mut Terminal<B>,
-        play_pause_receiver: Receiver<()>,
+        player_command_receiver: Receiver<Command>,
         quit: Arc<AtomicBool>,
     ) -> io::Result<State> {
         let cfg = Config::new();
         let tick_rate = Duration::from_secs(1);
         let mut last_tick = std::time::Instant::now();
 
-        self.play_pause_recv(play_pause_receiver, self.sink.clone());
+        self.play_pause_recv(player_command_receiver, self.sink.clone());
 
         loop {
             terminal.draw(|frame| self.render(
