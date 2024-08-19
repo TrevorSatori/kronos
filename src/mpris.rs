@@ -33,9 +33,6 @@ pub async fn run_mpris(
 
     async_std::task::spawn_local(player.run());
 
-    player.set_can_play(false).await?;
-    player.seeked(mpris_server::Time::from_millis(1000)).await?;
-
     loop {
         task::sleep(std::time::Duration::from_secs(1)).await;
         if quit.load(Ordering::Relaxed) {
