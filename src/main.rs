@@ -20,8 +20,8 @@ use crate::{
     state::{load_state, save_state, State},
     mpris::run_mpris,
     term::{reset_terminal, set_terminal},
+    quit_future::{Quit, QuitState},
 };
-use crate::quit_future::{Quit, QuitState};
 
 pub enum Command {
     PlayPause,
@@ -32,30 +32,23 @@ pub enum Command {
 async fn main() -> Result<(), Box<dyn Error>> {
     std::panic::set_hook(Box::new(on_panic));
 
-    let quit_state = Arc::new(Mutex::new(QuitState {
-        completed: false,
-        waker: None,
-    }));
-    let quit_state_2 = quit_state.clone();
-    let quit = Quit { shared_state: quit_state };
-
+    let quit = Quit::new();
     let (player_command_sender, player_command_receiver) = channel();
 
-    run_player_thread(player_command_receiver, quit_state_2);
+    run_player_thread(player_command_receiver, quit.state());
     run_mpris(player_command_sender, quit).await?;
 
     Ok(())
 }
 
-fn run_player_thread(player_command_receiver: Receiver<Command>, quit_state: Arc<Mutex<QuitState>>) {
+fn run_player_thread(player_command_receiver: Receiver<Command>, quit: Arc<Mutex<QuitState>>) {
     thread::spawn(move || {
         if let Err(err) = run_player(player_command_receiver) {
             eprintln!("error :( {:?}", err);
         }
 
-        let mut quit = quit_state.lock().unwrap();
-        quit.completed = true;
-        quit.waker.take().unwrap().wake();
+        let mut quit = quit.lock().unwrap();
+        quit.complete();
     });
 }
 
