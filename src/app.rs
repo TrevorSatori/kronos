@@ -1,5 +1,7 @@
 use std::{env, io, path::PathBuf, thread, time::Duration, fs::File};
+use std::error::Error;
 use std::sync::{Arc, mpsc::Receiver};
+
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
@@ -7,7 +9,6 @@ use ratatui::{
     prelude::Style,
     widgets::Block,
     Frame,
-    Terminal,
 };
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 
@@ -24,6 +25,7 @@ use crate::{
     file_browser::Browser,
     ui,
     Command,
+    term::set_terminal,
 };
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -114,11 +116,12 @@ impl<'a> App<'a> {
         });
     }
 
-    pub fn start<B: Backend>(
+    pub fn start(
         &mut self,
-        terminal: &mut Terminal<B>,
         player_command_receiver: Receiver<Command>,
-    ) -> io::Result<State> {
+    ) -> Result<State, Box<dyn Error>> {
+        let mut terminal = set_terminal()?;
+
         let tick_rate = Duration::from_secs(1);
         let mut last_tick = std::time::Instant::now();
 

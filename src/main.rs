@@ -41,7 +41,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let (player_command_sender, player_command_receiver) = channel();
 
-    let task_player = run_player_thread(player_command_receiver).fuse();
+    let task_player = run_player(player_command_receiver).fuse();
     let task_mpris = run_mpris(player_command_sender).fuse();
 
     pin_mut!(task_player, task_mpris);
@@ -51,38 +51,28 @@ async fn main() -> Result<(), Box<dyn Error>> {
         (r) = task_mpris => (),
     }
 
+    reset_terminal(&mut stdout());
+
     Ok(())
 }
 
-fn run_player_thread(player_command_receiver: Receiver<Command>) -> Quit {
+fn run_player(player_command_receiver: Receiver<Command>) -> Quit {
     let quit = Quit::new();
     let quit_state = quit.state();
 
     thread::spawn(move || {
-        if let Err(err) = run_player(player_command_receiver) {
-            eprintln!("error :( {:?}", err);
+        let state = load_state().unwrap_or(State::default());
+        let mut app = App::new(state.last_visited_path, state.queue_items);
+
+        match app.start(player_command_receiver) {
+            Ok(state) => save_state(&state).unwrap(),
+            Err(err) => eprintln!("error :( {:?}", err),
         }
 
-        let mut quit = quit_state.lock().unwrap();
-        quit.complete();
+        quit_state.lock().unwrap().complete();
     });
 
     quit
-}
-
-fn run_player(player_command_receiver: Receiver<Command>) -> Result<(), Box<dyn Error>> {
-    let state = load_state().unwrap_or(State::default());
-
-    let mut terminal = set_terminal()?;
-    let mut app = App::new(state.last_visited_path, state.queue_items);
-    let state = app.start(&mut terminal, player_command_receiver)?;
-
-    save_state(&state)?;
-
-    reset_terminal(terminal.backend_mut());
-    terminal.show_cursor()?;
-
-    Ok(())
 }
 
 /// If our app panics after entering raw mode and before leaving it,
