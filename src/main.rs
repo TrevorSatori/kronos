@@ -7,12 +7,13 @@ mod ui;
 mod mpris;
 mod term;
 mod file_browser;
+mod quit_future;
 
 use std::error::Error;
 use std::io::stdout;
 use std::panic::PanicInfo;
 use std::sync::{Arc, mpsc::{channel, Receiver}, Mutex};
-use std::{task, thread};
+use std::{thread};
 
 use crate::{
     app::App,
@@ -20,32 +21,11 @@ use crate::{
     mpris::run_mpris,
     term::{reset_terminal, set_terminal},
 };
+use crate::quit_future::{Quit, QuitState};
 
 pub enum Command {
     PlayPause,
     Next,
-}
-
-pub struct QuitState {
-    completed: bool,
-    waker: Option<task::Waker>,
-}
-
-pub struct Quit {
-    shared_state: Arc<Mutex<QuitState>>,
-}
-
-impl std::future::Future for Quit {
-    type Output = ();
-    fn poll(self: std::pin::Pin<&mut Self>, cx: &mut task::Context<'_>) -> task::Poll<Self::Output> {
-        let mut shared_state = self.shared_state.lock().unwrap();
-        if shared_state.completed {
-            task::Poll::Ready(())
-        } else {
-            shared_state.waker = Some(cx.waker().clone());
-            task::Poll::Pending
-        }
-    }
 }
 
 #[async_std::main]
