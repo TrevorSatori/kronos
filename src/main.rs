@@ -35,7 +35,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let (player_command_sender, player_command_receiver) = channel();
 
     let quit = run_player_thread(player_command_receiver);
-    run_mpris(player_command_sender, quit).await?;
+    run_mpris(player_command_sender).await?;
+
+    quit.await;
 
     Ok(())
 }

@@ -3,11 +3,10 @@ use std::sync::{mpsc::Sender};
 
 use mpris_server;
 
-use crate::{Command, Quit};
+use crate::{Command};
 
 pub async fn run_mpris(
     player_command_sender: Sender<Command>,
-    quit: Quit,
 ) -> Result<(), Box<dyn Error>> {
     let player = mpris_server::Player::builder("com.taro-codes.jolteon")
         .can_play(true)
@@ -31,8 +30,6 @@ pub async fn run_mpris(
     });
 
     async_std::task::spawn_local(player.run());
-
-    quit.await;
 
     Ok(())
 }
