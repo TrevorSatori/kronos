@@ -11,8 +11,8 @@ mod file_browser;
 use std::error::Error;
 use std::io::stdout;
 use std::panic::PanicInfo;
-use std::sync::{Arc, mpsc::{channel, Receiver}, atomic::AtomicBool};
-use std::thread;
+use std::sync::{Arc, mpsc::{channel, Receiver}, Mutex};
+use std::{task, thread};
 
 use crate::{
     app::App,
@@ -26,34 +26,65 @@ pub enum Command {
     Next,
 }
 
+pub struct QuitState {
+    completed: bool,
+    waker: Option<task::Waker>,
+}
+
+pub struct Quit {
+    shared_state: Arc<Mutex<QuitState>>,
+}
+
+impl std::future::Future for Quit {
+    type Output = ();
+    fn poll(self: std::pin::Pin<&mut Self>, cx: &mut task::Context<'_>) -> task::Poll<Self::Output> {
+        let mut shared_state = self.shared_state.lock().unwrap();
+        if shared_state.completed {
+            task::Poll::Ready(())
+        } else {
+            shared_state.waker = Some(cx.waker().clone());
+            task::Poll::Pending
+        }
+    }
+}
+
 #[async_std::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     std::panic::set_hook(Box::new(on_panic));
 
-    let quit: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+    let quit_state = Arc::new(Mutex::new(QuitState {
+        completed: false,
+        waker: None,
+    }));
+    let quit_state_2 = quit_state.clone();
+    let quit = Quit { shared_state: quit_state };
 
     let (player_command_sender, player_command_receiver) = channel();
 
-    run_player_thread(player_command_receiver, quit.clone());
-    run_mpris(player_command_sender, quit.clone()).await?;
+    run_player_thread(player_command_receiver, quit_state_2);
+    run_mpris(player_command_sender, quit).await?;
 
     Ok(())
 }
 
-fn run_player_thread(player_command_receiver: Receiver<Command>, quit: Arc<AtomicBool>) {
+fn run_player_thread(player_command_receiver: Receiver<Command>, quit_state: Arc<Mutex<QuitState>>) {
     thread::spawn(move || {
-        if let Err(err) = run_player(player_command_receiver, quit) {
+        if let Err(err) = run_player(player_command_receiver) {
             eprintln!("error :( {:?}", err);
         }
+
+        let mut quit = quit_state.lock().unwrap();
+        quit.completed = true;
+        quit.waker.take().unwrap().wake();
     });
 }
 
-fn run_player(player_command_receiver: Receiver<Command>, quit: Arc<AtomicBool>) -> Result<(), Box<dyn Error>> {
+fn run_player(player_command_receiver: Receiver<Command>) -> Result<(), Box<dyn Error>> {
     let state = load_state().unwrap_or(State::default());
 
     let mut terminal = set_terminal()?;
     let mut app = App::new(state.last_visited_path, state.queue_items);
-    let state = app.start(&mut terminal, player_command_receiver, quit)?;
+    let state = app.start(&mut terminal, player_command_receiver)?;
 
     save_state(&state)?;
 

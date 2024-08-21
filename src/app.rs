@@ -1,5 +1,5 @@
 use std::{env, io, path::PathBuf, thread, time::Duration, fs::File};
-use std::sync::{Arc, atomic::{AtomicBool, Ordering}, mpsc::Receiver};
+use std::sync::{Arc, mpsc::Receiver};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
@@ -85,9 +85,8 @@ impl<'a> App<'a> {
             .queue_items
             .paths()
             .iter()
-            .map(|i| i.to_str())
-            .filter(|i| i.is_some())
-            .map(|i| i.unwrap().to_string())
+            .filter_map(|i| i.to_str())
+            .map(|i| i.to_string())
             .collect();
 
         State {
@@ -108,6 +107,7 @@ impl<'a> App<'a> {
                     }
                     Err(err) => {
                         eprintln!("error receiving! {}", err);
+                        break;
                     }
                 }
             }
@@ -118,21 +118,16 @@ impl<'a> App<'a> {
         &mut self,
         terminal: &mut Terminal<B>,
         player_command_receiver: Receiver<Command>,
-        quit: Arc<AtomicBool>,
     ) -> io::Result<State> {
-        let cfg = Config::new();
         let tick_rate = Duration::from_secs(1);
         let mut last_tick = std::time::Instant::now();
 
         self.play_pause_recv(player_command_receiver, self.sink.clone());
 
         loop {
-            terminal.draw(|frame| self.render(
-                frame,
-                &cfg,
-            ))?;
+            terminal.draw(|frame| self.render(frame))?;
 
-            self.player_auto_play(); // Up to `tick_rate` lag. A thread may be a better alternative.
+            self.player_auto_play(); // Up to `tick_rate` lag. A sync channel may be a better alternative.
 
             let timeout = tick_rate.saturating_sub(last_tick.elapsed());
 
@@ -143,7 +138,6 @@ impl<'a> App<'a> {
             }
 
             if self.must_quit {
-                quit.store(true, Ordering::Relaxed);
                 break;
             }
 
@@ -333,8 +327,8 @@ impl<'a> App<'a> {
     fn render(
         self: &mut Self,
         frame: &mut Frame,
-        config: &Config,
     ) {
+        let config = Config::new();
         let area = frame.size();
 
         let areas = Layout::default()
@@ -352,16 +346,16 @@ impl<'a> App<'a> {
         let block = Block::default().style(Style::default().bg(config.background()));
         frame.render_widget(block, area);
 
-        ui::render_ui::render_top_bar(frame, config, areas[0], self.active_tab);
+        ui::render_ui::render_top_bar(frame, &config, areas[0], self.active_tab);
 
         match self.active_tab {
-            AppTab::FileBrowser => self.browser.render(frame, &self.queue_items, areas[1], config),
-            AppTab::Help => ui::instructions_tab::instructions_tab(frame, &mut self.control_table, areas[1], config),
+            AppTab::FileBrowser => self.browser.render(frame, &self.queue_items, areas[1], &config),
+            AppTab::Help => ui::instructions_tab::instructions_tab(frame, &mut self.control_table, areas[1], &config),
         };
 
         ui::render_ui::render_playing_gauge(
             frame,
-            config,
+            &config,
             areas[2],
             &self.currently_playing.clone(),
             self.player_sink().get_pos(),

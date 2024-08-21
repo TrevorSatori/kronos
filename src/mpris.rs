@@ -1,14 +1,13 @@
 use std::error::Error;
-use std::sync::{Arc, mpsc::Sender, atomic::{AtomicBool, Ordering}};
+use std::sync::{mpsc::Sender};
 
-use async_std::task;
 use mpris_server;
 
-use crate::Command;
+use crate::{Command, Quit};
 
 pub async fn run_mpris(
     player_command_sender: Sender<Command>,
-    quit: Arc<AtomicBool>,
+    quit: Quit,
 ) -> Result<(), Box<dyn Error>> {
     let player = mpris_server::Player::builder("com.taro-codes.jolteon")
         .can_play(true)
@@ -33,12 +32,7 @@ pub async fn run_mpris(
 
     async_std::task::spawn_local(player.run());
 
-    loop {
-        task::sleep(std::time::Duration::from_secs(1)).await;
-        if quit.load(Ordering::Relaxed) {
-            break;
-        }
-    }
+    quit.await;
 
     Ok(())
 }
