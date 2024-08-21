@@ -10,7 +10,13 @@ pub struct QuitState {
 impl QuitState {
     pub fn complete(&mut self) {
         self.completed = true;
-        self.waker.take().unwrap().wake();
+
+        if let Some(waker) = self.waker.take() {
+            waker.wake();
+        } else {
+            eprintln!("Waker is gone! This is an error");
+        }
+
     }
 }
 
