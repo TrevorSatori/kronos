@@ -15,12 +15,19 @@ use std::panic::PanicInfo;
 use std::sync::{Arc, mpsc::{channel, Receiver}, Mutex};
 use std::{thread};
 
+use futures::{
+    future::FutureExt, // for `.fuse()`
+    pin_mut,
+    select,
+};
+
+
 use crate::{
     app::App,
     state::{load_state, save_state, State},
     mpris::run_mpris,
     term::{reset_terminal, set_terminal},
-    quit_future::{Quit, QuitState},
+    quit_future::{Quit},
 };
 
 pub enum Command {
@@ -34,10 +41,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let (player_command_sender, player_command_receiver) = channel();
 
-    let quit = run_player_thread(player_command_receiver);
-    run_mpris(player_command_sender).await?;
+    let task_player = run_player_thread(player_command_receiver).fuse();
+    let task_mpris = run_mpris(player_command_sender).fuse();
 
-    quit.await;
+    pin_mut!(task_player, task_mpris);
+
+    select! {
+        (r) = task_player => (),
+        (r) = task_mpris => (),
+    }
 
     Ok(())
 }

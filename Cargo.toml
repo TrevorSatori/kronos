@@ -14,3 +14,4 @@ home = "0.5.4"
 ratatui = "0.27.0"
 mpris-server = "0.8.1"
 async-std = {version = "1.12.0", features = ["attributes", "unstable"]}
+futures = "0.3.30"

@@ -29,7 +29,7 @@ pub async fn run_mpris(
         }
     });
 
-    async_std::task::spawn_local(player.run());
+    player.run().await;
 
     Ok(())
 }
