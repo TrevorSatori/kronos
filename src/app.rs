@@ -1,6 +1,6 @@
 use std::{env, io, path::PathBuf, thread, time::Duration, fs::File};
 use std::error::Error;
-use std::sync::{Arc, mpsc::Receiver};
+use std::sync::{Arc, mpsc::Receiver, Mutex};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
@@ -51,10 +51,15 @@ pub struct App<'a> {
     music_output: (OutputStream, OutputStreamHandle),
     sink: Arc<Sink>,
     currently_playing: Option<Song>,
+    player_command_receiver: Arc<Mutex<Receiver<Command>>>,
 }
 
 impl<'a> App<'a> {
-    pub fn new(initial_directory: Option<String>, queue: Vec<String>) -> Self {
+    pub fn new(
+        initial_directory: Option<String>,
+        queue: Vec<String>,
+        player_command_receiver: Receiver<Command>,
+    ) -> Self {
         let current_directory = match &initial_directory {
             Some(s) => PathBuf::from(s),
             None => env::current_dir().unwrap(),
@@ -79,6 +84,7 @@ impl<'a> App<'a> {
             ),
             queue_items: Queue::new(queue),
             control_table: StatefulTable::new(),
+            player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
         }
     }
 
@@ -97,10 +103,13 @@ impl<'a> App<'a> {
         }
     }
 
-    fn play_pause_recv(&self, player_command_receiver: Receiver<Command>, sink: Arc<Sink>) {
+    fn play_pause_recv(&self) {
+        let player_command_receiver = self.player_command_receiver.clone();
+        let sink = self.sink.clone();
+
         thread::spawn(move || {
             loop {
-                match player_command_receiver.recv() {
+                match player_command_receiver.lock().unwrap().recv() {
                     Ok(Command::PlayPause) => {
                         sink.toggle();
                     }
@@ -118,14 +127,13 @@ impl<'a> App<'a> {
 
     pub fn start(
         &mut self,
-        player_command_receiver: Receiver<Command>,
     ) -> Result<State, Box<dyn Error>> {
         let mut terminal = set_terminal()?;
 
         let tick_rate = Duration::from_secs(1);
         let mut last_tick = std::time::Instant::now();
 
-        self.play_pause_recv(player_command_receiver, self.sink.clone());
+        self.play_pause_recv();
 
         loop {
             terminal.draw(|frame| self.render(frame))?;

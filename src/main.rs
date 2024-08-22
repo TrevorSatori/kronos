@@ -12,7 +12,7 @@ mod quit_future;
 use std::error::Error;
 use std::io::stdout;
 use std::panic::PanicInfo;
-use std::sync::{Arc, mpsc::{channel, Receiver}, Mutex};
+use std::sync::{mpsc::{channel, Receiver}};
 use std::{thread};
 
 use futures::{
@@ -26,7 +26,7 @@ use crate::{
     app::App,
     state::{load_state, save_state, State},
     mpris::run_mpris,
-    term::{reset_terminal, set_terminal},
+    term::{reset_terminal},
     quit_future::{Quit},
 };
 
@@ -59,12 +59,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 fn run_player(player_command_receiver: Receiver<Command>) -> Quit {
     let quit = Quit::new();
     let quit_state = quit.state();
+    let state = load_state().unwrap_or(State::default());
 
     thread::spawn(move || {
-        let state = load_state().unwrap_or(State::default());
-        let mut app = App::new(state.last_visited_path, state.queue_items);
+        let mut app = App::new(state.last_visited_path, state.queue_items, player_command_receiver);
 
-        match app.start(player_command_receiver) {
+        match app.start() {
             Ok(state) => save_state(&state).unwrap(),
             Err(err) => eprintln!("error :( {:?}", err),
         }
