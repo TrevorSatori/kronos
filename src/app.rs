@@ -5,7 +5,6 @@ use std::sync::{Arc, mpsc::Receiver, Mutex};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    backend::Backend,
     prelude::Style,
     widgets::Block,
     Frame,
@@ -160,15 +159,11 @@ impl<'a> App<'a> {
         Ok(self.to_state())
     }
 
-    pub fn input_mode(&self) -> InputMode {
-        self.input_mode
-    }
-
-    pub fn set_input_mode(&mut self, in_mode: InputMode) {
+    fn set_input_mode(&mut self, in_mode: InputMode) {
         self.input_mode = in_mode
     }
 
-    pub fn player_sink(&self) -> Arc<Sink> {
+    fn player_sink(&self) -> Arc<Sink> {
         self.sink.clone()
     }
 
@@ -190,14 +185,6 @@ impl<'a> App<'a> {
         });
     }
 
-    pub fn player_current_song(&self) -> Option<Song> {
-        if self.sink.empty() && self.queue_items.is_empty() {
-            None
-        } else {
-            self.currently_playing.clone()
-        }
-    }
-
     pub fn player_auto_play(&mut self) {
         if self.sink.empty() && !self.queue_items.is_empty() {
             let song = self.queue_items.pop();
@@ -205,7 +192,7 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn player_seek_forward(&mut self) {
+    fn player_seek_forward(&mut self) {
         if let Some(song) = &self.currently_playing {
             let target = self
                 .sink
@@ -218,7 +205,7 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn player_seek_backward(&mut self) {
+    fn player_seek_backward(&mut self) {
         let target = self
             .sink
             .get_pos()
@@ -229,7 +216,7 @@ impl<'a> App<'a> {
         });
     }
 
-    pub fn handle_key_event(&mut self, key: KeyEvent) {
+    fn handle_key_event(&mut self, key: KeyEvent) {
         let focus_trapped = self.input_mode == InputMode::Browser && self.browser.filter.is_some();
         let handled = !focus_trapped && self.handle_app_key_event(&key);
 

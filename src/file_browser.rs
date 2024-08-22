@@ -45,7 +45,7 @@ impl Browser {
         } else {
             match path_to_song(&path) {
                 Ok(song) => Some(song),
-                Err(err) => None,
+                Err(_err) => None,
             }
         }
     }

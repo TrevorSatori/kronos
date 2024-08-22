@@ -47,8 +47,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     pin_mut!(task_player, task_mpris);
 
     select! {
-        (r) = task_player => (),
-        (r) = task_mpris => (),
+        _ = task_player => (),
+        _ = task_mpris => (),
     }
 
     reset_terminal(&mut stdout());

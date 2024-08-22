@@ -1,9 +1,10 @@
-use lofty::{Accessor, AudioFile, LoftyError, Probe, TaggedFileExt};
-use std::fs::DirEntry;
 use std::{
+    fs::DirEntry,
     collections::VecDeque,
     path::{Path, PathBuf},
 };
+
+use lofty::{Accessor, AudioFile, LoftyError, Probe, TaggedFileExt};
 
 #[derive(Clone)]
 pub struct Song {
@@ -13,7 +14,7 @@ pub struct Song {
     pub title: Option<String>,
 }
 
-const valid_extensions: [&str; 7] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac"];
+const VALID_EXTENSIONS: [&str; 7] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac"];
 
 pub fn path_to_song(path: &PathBuf) -> Result<Song, LoftyError> {
     let path = Path::new(path);
@@ -84,7 +85,7 @@ fn dir_entry_has_song_extension(dir_entry: &DirEntry) -> bool {
     dir_entry
         .path()
         .extension()
-        .is_some_and(|e| valid_extensions.contains(&e.to_str().unwrap()))
+        .is_some_and(|e| VALID_EXTENSIONS.contains(&e.to_str().unwrap()))
 }
 
 fn dir_entry_is_song(dir_entry: &DirEntry) -> bool {
