@@ -1,6 +1,6 @@
-use std::{env, io, path::PathBuf, thread, time::Duration, fs::File};
 use std::error::Error;
-use std::sync::{Arc, mpsc::Receiver, Mutex};
+use std::sync::{mpsc::Receiver, Arc, Mutex};
+use std::{env, fs::File, io, path::PathBuf, thread, time::Duration};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
@@ -13,18 +13,17 @@ use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 
 use crate::{
     config::Config,
+    file_browser::Browser,
     helpers::{
         gen_funcs::{scan_and_filter_directory, Song},
-        music_handler::{ExtendedSink},
+        music_handler::ExtendedSink,
         queue::Queue,
         stateful_list::StatefulList,
         stateful_table::StatefulTable,
     },
     state::State,
-    file_browser::Browser,
-    ui,
-    Command,
     term::set_terminal,
+    ui, Command,
 };
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -77,10 +76,7 @@ impl<'a> App<'a> {
             music_output,
             sink,
             currently_playing: None,
-            browser: Browser::new(
-                browser_items,
-                current_directory,
-            ),
+            browser: Browser::new(browser_items, current_directory),
             queue_items: Queue::new(queue),
             control_table: StatefulTable::new(),
             player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
@@ -106,27 +102,23 @@ impl<'a> App<'a> {
         let player_command_receiver = self.player_command_receiver.clone();
         let sink = self.sink.clone();
 
-        thread::spawn(move || {
-            loop {
-                match player_command_receiver.lock().unwrap().recv() {
-                    Ok(Command::PlayPause) => {
-                        sink.toggle();
-                    }
-                    Ok(Command::Next) => {
-                        sink.stop();
-                    }
-                    Err(err) => {
-                        eprintln!("error receiving! {}", err);
-                        break;
-                    }
+        thread::spawn(move || loop {
+            match player_command_receiver.lock().unwrap().recv() {
+                Ok(Command::PlayPause) => {
+                    sink.toggle();
+                }
+                Ok(Command::Next) => {
+                    sink.stop();
+                }
+                Err(err) => {
+                    eprintln!("error receiving! {}", err);
+                    break;
                 }
             }
         });
     }
 
-    pub fn start(
-        &mut self,
-    ) -> Result<State, Box<dyn Error>> {
+    pub fn start(&mut self) -> Result<State, Box<dyn Error>> {
         let mut terminal = set_terminal()?;
 
         let tick_rate = Duration::from_secs(1);
@@ -238,12 +230,12 @@ impl<'a> App<'a> {
             KeyCode::Char('1') => {
                 self.active_tab = AppTab::FileBrowser;
                 self.set_input_mode(InputMode::Browser);
-            },
+            }
             KeyCode::Char('2') => {
                 self.active_tab = AppTab::Help;
                 self.set_input_mode(InputMode::HelpControls);
-            },
-            KeyCode::Tab => if self.browser.filter.is_none() {
+            }
+            KeyCode::Tab if self.browser.filter.is_none() => {
                 match self.active_tab {
                     AppTab::FileBrowser => {
                         self.input_mode = match self.input_mode {
@@ -257,15 +249,15 @@ impl<'a> App<'a> {
                             InputMode::Browser => {
                                 self.browser.items.next();
                                 self.queue_items.select_none();
-                            },
+                            }
                             InputMode::Queue => {
                                 self.browser.items.unselect();
                                 self.queue_items.select_next();
-                            },
-                            _ => {},
+                            }
+                            _ => {}
                         };
-                    },
-                    _ => {},
+                    }
+                    _ => {}
                 }
             }
             KeyCode::Right => self.player_seek_forward(),
@@ -274,7 +266,9 @@ impl<'a> App<'a> {
             KeyCode::Char('+') => self.sink.change_volume(0.05),
             KeyCode::Char('p') | KeyCode::Char(' ') => self.sink.toggle(),
             KeyCode::Char('g') => self.sink.stop(),
-            _ => { handled = false; },
+            _ => {
+                handled = false;
+            }
         }
         handled
     }
@@ -322,23 +316,13 @@ impl<'a> App<'a> {
         }
     }
 
-    fn render(
-        self: &mut Self,
-        frame: &mut Frame,
-    ) {
+    fn render(self: &mut Self, frame: &mut Frame) {
         let config = Config::new();
         let area = frame.size();
 
         let areas = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(
-                [
-                    Constraint::Length(2),
-                    Constraint::Min(0),
-                    Constraint::Length(3),
-                ]
-                    .as_ref(),
-            )
+            .constraints([Constraint::Length(2), Constraint::Min(0), Constraint::Length(3)].as_ref())
             .split(area);
 
         let block = Block::default().style(Style::default().bg(config.background()));

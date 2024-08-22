@@ -1,13 +1,11 @@
 use std::error::Error;
-use std::sync::{mpsc::Sender};
+use std::sync::mpsc::Sender;
 
 use mpris_server;
 
-use crate::{Command};
+use crate::Command;
 
-pub async fn run_mpris(
-    player_command_sender: Sender<Command>,
-) -> Result<(), Box<dyn Error>> {
+pub async fn run_mpris(player_command_sender: Sender<Command>) -> Result<(), Box<dyn Error>> {
     let player = mpris_server::Player::builder("com.taro-codes.jolteon")
         .can_play(true)
         .can_pause(true)

@@ -1,11 +1,10 @@
-use std::{path::{Path, PathBuf}};
+use std::path::{Path, PathBuf};
+
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::{
-    helpers::{
-        gen_funcs::{path_to_song, scan_and_filter_directory, Song},
-        stateful_list::StatefulList,
-    },
+use crate::helpers::{
+    gen_funcs::{path_to_song, scan_and_filter_directory, Song},
+    stateful_list::StatefulList,
 };
 
 pub struct Browser {
@@ -16,10 +15,7 @@ pub struct Browser {
 }
 
 impl Browser {
-    pub fn new(
-        items: StatefulList<String>,
-        current_directory: PathBuf,
-    ) -> Self {
+    pub fn new(items: StatefulList<String>, current_directory: PathBuf) -> Self {
         Self {
             items,
             current_directory,
@@ -110,7 +106,7 @@ impl Browser {
     pub fn on_key_event(&mut self, key: KeyEvent) {
         if !self.filter.is_some() {
             self.on_normal_key_event(key);
-        } else  {
+        } else {
             self.on_filter_key_event(key);
         }
     }

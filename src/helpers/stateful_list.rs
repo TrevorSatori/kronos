@@ -157,11 +157,7 @@ impl<T: ToString> StatefulList<T> {
                 return None;
             }
 
-            if self.items[i]
-                .to_string()
-                .to_lowercase()
-                .contains(&s.to_lowercase())
-            {
+            if self.items[i].to_string().to_lowercase().contains(&s.to_lowercase()) {
                 return Some(i);
             }
         }

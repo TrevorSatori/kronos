@@ -55,10 +55,6 @@ pub fn instructions_tab<'a>(f: &mut Frame, control_table: &mut StatefulTable<'a>
                 .fg(cfg.highlight_foreground()),
         )
         // .highlight_symbol(">> ")
-        .widths(&[
-            Constraint::Percentage(50),
-            Constraint::Length(30),
-            Constraint::Min(10),
-        ]);
+        .widths(&[Constraint::Percentage(50), Constraint::Length(30), Constraint::Min(10)]);
     f.render_stateful_widget(table, layout[0], &mut control_table.state);
 }

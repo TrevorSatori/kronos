@@ -1,4 +1,4 @@
-use rodio::{Sink};
+use rodio::Sink;
 
 pub trait ExtendedSink {
     fn toggle(&self);

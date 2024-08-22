@@ -16,7 +16,6 @@ impl QuitState {
         } else {
             eprintln!("Waker is gone! This is an error");
         }
-
     }
 }
 

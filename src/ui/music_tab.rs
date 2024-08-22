@@ -2,12 +2,13 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{ListState, Block, BorderType, Borders, List, ListItem, block::Position},
+    widgets::{block::Position, Block, BorderType, Borders, List, ListItem, ListState},
     Frame,
 };
-use crate::helpers::{queue::Queue, gen_funcs};
+
 use crate::config::Config;
 use crate::file_browser::Browser;
+use crate::helpers::{gen_funcs, queue::Queue};
 
 impl Browser {
     pub fn render(self: &mut Self, frame: &mut Frame, queue_items: &Queue, area: Rect, cfg: &Config) {
@@ -33,10 +34,7 @@ impl Browser {
         let browser_title = match &self.filter {
             Some(filter) => Line::from(vec![
                 Span::styled("  search: ", Style::default()),
-                Span::styled(
-                    filter.clone(),
-                    Style::default().fg(Color::Red),
-                ),
+                Span::styled(filter.clone(), Style::default().fg(Color::Red)),
             ]),
             _ => Line::from(folder_name),
         };
@@ -84,11 +82,7 @@ impl Browser {
     }
 
     pub fn render_file_list(self: &Self, cfg: &Config, frame: &mut Frame, area: Rect) {
-        frame.render_stateful_widget(
-            self.file_list(cfg),
-            area,
-            &mut self.items.state(),
-        );
+        frame.render_stateful_widget(self.file_list(cfg), area, &mut self.items.state());
     }
 }
 
@@ -101,11 +95,7 @@ fn render_queue_list<'a>(frame: &mut Frame, queue_items: &Queue, cfg: &Config, a
 }
 
 fn queue_list<'a>(queue_items: &Queue, cfg: &Config) -> List<'a> {
-    let queue_items: Vec<String> = queue_items
-        .songs()
-        .iter()
-        .map(gen_funcs::song_to_string)
-        .collect();
+    let queue_items: Vec<String> = queue_items.songs().iter().map(gen_funcs::song_to_string).collect();
 
     let queue_list = List::new(queue_items)
         .style(Style::default().fg(cfg.foreground()))
@@ -138,7 +128,7 @@ fn create_areas(area: Rect) -> (Rect, Rect, Rect, Rect) {
                 Constraint::Length(5),
                 Constraint::Percentage(50),
             ]
-                .as_ref(),
+            .as_ref(),
         )
         .split(area_main)
     else {
@@ -148,25 +138,15 @@ fn create_areas(area: Rect) -> (Rect, Rect, Rect, Rect) {
     (area_top, area_main_left, area_main_separator, area_main_right)
 }
 
-
 fn render_separator(frame: &mut Frame, area_main_separator: Rect) {
     let [_separator_left, separator_middle, _separator_right] = *Layout::default()
         .direction(Direction::Horizontal)
-        .constraints(
-            [
-                Constraint::Min(1),
-                Constraint::Length(1),
-                Constraint::Min(1),
-            ]
-                .as_ref(),
-        )
+        .constraints([Constraint::Min(1), Constraint::Length(1), Constraint::Min(1)].as_ref())
         .split(area_main_separator)
     else {
         panic!("Layout.split() failed");
     };
 
-    let vertical_separator = Block::default()
-        .borders(Borders::RIGHT)
-        .border_type(BorderType::Double);
+    let vertical_separator = Block::default().borders(Borders::RIGHT).border_type(BorderType::Double);
     frame.render_widget(vertical_separator, separator_middle);
 }

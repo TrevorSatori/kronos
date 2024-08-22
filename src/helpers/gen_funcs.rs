@@ -1,6 +1,6 @@
 use std::{
-    fs::DirEntry,
     collections::VecDeque,
+    fs::DirEntry,
     path::{Path, PathBuf},
 };
 
@@ -21,9 +21,10 @@ pub fn path_to_song(path: &PathBuf) -> Result<Song, LoftyError> {
     let tagged_file = Probe::open(path)?.read()?;
 
     let (artist, title) = match tagged_file.primary_tag() {
-        Some(primary_tag) => {
-            (primary_tag.artist().map(String::from), primary_tag.title().map(String::from))
-        },
+        Some(primary_tag) => (
+            primary_tag.artist().map(String::from),
+            primary_tag.title().map(String::from),
+        ),
         _ => (None, None),
     };
 
@@ -55,11 +56,7 @@ pub fn scan_and_filter_directory(path: &PathBuf) -> Vec<String> {
         .filter(|entry| dir_entry_is_dir(&entry) || (dir_entry_is_file(&entry) && dir_entry_has_song_extension(&entry)))
         .map(|entry| entry.path())
         .filter(path_is_not_hidden)
-        .filter_map(|path| path
-            .file_name()
-            .and_then(|e| e.to_str())
-            .map(|e| e.to_string())
-        )
+        .filter_map(|path| path.file_name().and_then(|e| e.to_str()).map(|e| e.to_string()))
         .collect();
 
     items.sort_unstable();
@@ -109,10 +106,9 @@ pub fn path_to_song_list(path: &PathBuf) -> Vec<Song> {
             let mut songs = Vec::from(songs);
             songs.sort_unstable_by_key(|i| i.path.clone());
             songs
-        },
+        }
         _ => Vec::new(),
     }
-
 }
 
 pub fn path_list_to_song_list(paths: Vec<PathBuf>) -> (VecDeque<Song>, VecDeque<(PathBuf, LoftyError)>) {
@@ -121,8 +117,12 @@ pub fn path_list_to_song_list(paths: Vec<PathBuf>) -> (VecDeque<Song>, VecDeque<
 
     for path in paths {
         match path_to_song(&path) {
-            Ok(song) => { songs.push_back(song); }
-            Err(err) => { errors.push_back(( path, err )); }
+            Ok(song) => {
+                songs.push_back(song);
+            }
+            Err(err) => {
+                errors.push_back((path, err));
+            }
         };
     }
 

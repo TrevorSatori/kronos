@@ -1,19 +1,19 @@
 mod app;
 mod config;
 mod constants;
-mod helpers;
-mod state;
-mod ui;
-mod mpris;
-mod term;
 mod file_browser;
+mod helpers;
+mod mpris;
 mod quit_future;
+mod state;
+mod term;
+mod ui;
 
 use std::error::Error;
 use std::io::stdout;
 use std::panic::PanicInfo;
-use std::sync::{mpsc::{channel, Receiver}};
-use std::{thread};
+use std::sync::mpsc::{channel, Receiver};
+use std::thread;
 
 use futures::{
     future::FutureExt, // for `.fuse()`
@@ -21,13 +21,12 @@ use futures::{
     select,
 };
 
-
 use crate::{
     app::App,
-    state::{load_state, save_state, State},
     mpris::run_mpris,
-    term::{reset_terminal},
-    quit_future::{Quit},
+    quit_future::Quit,
+    state::{load_state, save_state, State},
+    term::reset_terminal,
 };
 
 pub enum Command {

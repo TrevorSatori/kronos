@@ -5,14 +5,14 @@ use ratatui::{
     prelude::*,
     style::{Modifier, Style},
     text::Span,
-    widgets::{Block, Borders, Tabs, BorderType, Gauge},
+    widgets::{Block, BorderType, Borders, Gauge, Tabs},
     Frame,
 };
 
 use crate::{
     app::AppTab,
     config::Config,
-    constants::{SECONDS_PER_HOUR, SECONDS_PER_MINUTE, MAIN_SECTIONS},
+    constants::{MAIN_SECTIONS, SECONDS_PER_HOUR, SECONDS_PER_MINUTE},
     helpers::gen_funcs::{song_to_string, Song},
 };
 
