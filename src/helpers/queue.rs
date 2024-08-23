@@ -1,6 +1,6 @@
 use std::time::Duration;
-use std::{collections::VecDeque, path::PathBuf, thread};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::{collections::VecDeque, path::PathBuf};
+use std::sync::{mpsc::{channel, Receiver, Sender}, Arc, Mutex, MutexGuard};
 
 use super::gen_funcs::{path_list_to_song_list, path_to_song, path_to_song_list, Song};
 
@@ -8,6 +8,8 @@ pub struct Queue {
     items: Arc<Mutex<VecDeque<Song>>>,
     selected_item_index: Arc<Mutex<Option<usize>>>,
     total_time: Arc<Mutex<Duration>>,
+    tx: Arc<Mutex<Sender<()>>>,
+    rx: Arc<Mutex<Receiver<()>>>,
 }
 
 fn song_list_to_duration(items: &VecDeque<Song>) -> Duration {
@@ -23,10 +25,15 @@ impl Queue {
         }
 
         let total_time = song_list_to_duration(&songs);
+
+        let (tx, rx) = channel();
+
         Self {
             items: Arc::new(Mutex::new(songs)),
             selected_item_index: Arc::new(Mutex::new(None)),
             total_time: Arc::new(Mutex::new(total_time)),
+            tx: Arc::new(Mutex::new(tx)),
+            rx: Arc::new(Mutex::new(rx)),
         }
     }
 
@@ -68,7 +75,10 @@ impl Queue {
         *self.total_time.lock().unwrap() = song_list_to_duration(&songs);
     }
 
+    /// Retrieves the first item of the queue, removing it in the process.
+    /// This function will block if there is no item available, until there is one.
     pub fn pop(&self) -> Song {
+        let rx = self.rx.clone();
         loop {
             let mut items = self.items.lock().unwrap();
             let item = items.pop_front();
@@ -77,7 +87,9 @@ impl Queue {
                 self.refresh_total_time();
                 return l
             }
-            thread::sleep(Duration::from_secs(1)); // todo: channel recv
+            rx.lock().unwrap().recv().unwrap_or_else(|e| {
+               eprintln!("queue.pop() tried to recv and failed.");
+            });
         }
     }
 
@@ -123,6 +135,7 @@ impl Queue {
             }
         }
         self.refresh_total_time();
+        self.tx.clone().lock().unwrap().send(()).unwrap();
     }
 
     pub fn add_front(&self, song: Song) {
