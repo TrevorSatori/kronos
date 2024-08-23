@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::sync::{mpsc::Receiver, Arc, Mutex};
-use std::{env, fs::File, io, path::PathBuf, thread, time::Duration};
+use std::{env, fs::File, io::BufReader, path::PathBuf, thread, time::Duration};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
@@ -168,7 +168,7 @@ impl<'a> App<'a> {
         self.currently_playing = Some(song);
 
         thread::spawn(move || {
-            let file = io::BufReader::new(File::open(path).unwrap());
+            let file = BufReader::new(File::open(path).unwrap());
             let source = Decoder::new(file).unwrap();
 
             sink.append(source);
