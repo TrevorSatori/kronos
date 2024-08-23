@@ -1,5 +1,13 @@
 use std::error::Error;
-use std::sync::{mpsc::Receiver, Arc, Mutex};
+use std::sync::{
+    mpsc::{
+        channel,
+        Sender,
+        Receiver,
+    },
+    Arc,
+    Mutex,
+};
 use std::{env, fs::File, io::BufReader, path::PathBuf, thread, time::Duration};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
@@ -50,6 +58,7 @@ pub struct App<'a> {
     sink: Arc<Sink>,
     currently_playing: Option<Song>,
     player_command_receiver: Arc<Mutex<Receiver<Command>>>,
+    song_ended_tx: Arc<Option<Sender<()>>>,
 }
 
 impl<'a> App<'a> {
@@ -80,6 +89,7 @@ impl<'a> App<'a> {
             queue_items: Queue::new(queue),
             control_table: StatefulTable::new(),
             player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
+            song_ended_tx: Arc::new(None),
         }
     }
 
@@ -125,11 +135,12 @@ impl<'a> App<'a> {
         let mut last_tick = std::time::Instant::now();
 
         self.play_pause_recv();
+        self.player_auto_play_new();
 
         loop {
             terminal.draw(|frame| self.render(frame))?;
 
-            self.player_auto_play(); // Up to `tick_rate` lag. A sync channel may be a better alternative.
+            self.player_auto_play();
 
             let timeout = tick_rate.saturating_sub(last_tick.elapsed());
 
@@ -167,13 +178,39 @@ impl<'a> App<'a> {
 
         self.currently_playing = Some(song);
 
+        let song_ended_tx = self.song_ended_tx.as_ref().clone();
+
         thread::spawn(move || {
             let file = BufReader::new(File::open(path).unwrap());
             let source = Decoder::new(file).unwrap();
 
             sink.append(source);
             sink.sleep_until_end();
-            // TODO: let (tx, rx) = channel(); (see sink.sleep_until_end implementation)
+
+            if let Some(song_ended_tx) = song_ended_tx {
+                song_ended_tx.send(()).unwrap_or_else(|error| {
+                    eprintln!("error sending song ended {:?}", error);
+                });
+            }
+        });
+    }
+
+    pub fn player_auto_play_new(&mut self) {
+        let (song_ended_tx, song_ended_rx) = channel();
+
+        self.song_ended_tx = Arc::new(Some(song_ended_tx));
+
+        thread::spawn(move || {
+            loop {
+                match song_ended_rx.recv() {
+                    Ok(_) => {
+                        eprintln!("song ended!!!");
+                    }
+                    _ => {
+                        eprintln!("there was an error :(");
+                    }
+                }
+            }
         });
     }
 
