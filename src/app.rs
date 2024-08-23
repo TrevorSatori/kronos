@@ -52,11 +52,11 @@ pub struct App<'a> {
     input_mode: InputMode,
     active_tab: AppTab,
     browser: Browser,
-    queue_items: Queue,
+    queue_items: Arc<Queue>,
     control_table: StatefulTable<'a>,
     music_output: (OutputStream, OutputStreamHandle),
     sink: Arc<Sink>,
-    currently_playing: Option<Song>,
+    currently_playing: Arc<Mutex<Option<Song>>>,
     player_command_receiver: Arc<Mutex<Receiver<Command>>>,
     song_ended_tx: Arc<Option<Sender<()>>>,
 }
@@ -84,9 +84,9 @@ impl<'a> App<'a> {
             active_tab: AppTab::FileBrowser,
             music_output,
             sink,
-            currently_playing: None,
+            currently_playing: Arc::new(Mutex::new(None)),
             browser: Browser::new(browser_items, current_directory),
-            queue_items: Queue::new(queue),
+            queue_items: Arc::new(Queue::new(queue)),
             control_table: StatefulTable::new(),
             player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
             song_ended_tx: Arc::new(None),
@@ -135,12 +135,10 @@ impl<'a> App<'a> {
         let mut last_tick = std::time::Instant::now();
 
         self.play_pause_recv();
-        self.player_auto_play_new();
+        self.play();
 
         loop {
             terminal.draw(|frame| self.render(frame))?;
-
-            self.player_auto_play();
 
             let timeout = tick_rate.saturating_sub(last_tick.elapsed());
 
@@ -166,63 +164,43 @@ impl<'a> App<'a> {
         self.input_mode = in_mode
     }
 
-    fn player_sink(&self) -> Arc<Sink> {
-        self.sink.clone()
-    }
-
-    fn player_play(&mut self, song: Song) {
-        self.sink.stop();
-
-        let path = song.path.clone();
+    fn play(&mut self) {
         let sink = self.sink.clone();
-
-        self.currently_playing = Some(song);
-
-        let song_ended_tx = self.song_ended_tx.as_ref().clone();
-
-        thread::spawn(move || {
-            let file = BufReader::new(File::open(path).unwrap());
-            let source = Decoder::new(file).unwrap();
-
-            sink.append(source);
-            sink.sleep_until_end();
-
-            if let Some(song_ended_tx) = song_ended_tx {
-                song_ended_tx.send(()).unwrap_or_else(|error| {
-                    eprintln!("error sending song ended {:?}", error);
-                });
-            }
-        });
-    }
-
-    pub fn player_auto_play_new(&mut self) {
-        let (song_ended_tx, song_ended_rx) = channel();
-
-        self.song_ended_tx = Arc::new(Some(song_ended_tx));
+        let currently_playing = self.currently_playing.clone();
+        let queue_items = self.queue_items.clone();
 
         thread::spawn(move || {
             loop {
-                match song_ended_rx.recv() {
-                    Ok(_) => {
-                        eprintln!("song ended!!!");
+                let song = queue_items.pop();
+                let path = song.path.clone();
+
+                match currently_playing.lock() {
+                    Ok(mut s) => {
+                        eprintln!("s {:?}", s);
+                        *s = Some(song);
                     }
-                    _ => {
-                        eprintln!("there was an error :(");
+                    Err(err) => {
+                        eprintln!("err {:?}", err);
                     }
                 }
+
+                let file = BufReader::new(File::open(path).unwrap());
+                let source = Decoder::new(file).unwrap();
+
+                sink.append(source);
+                sink.sleep_until_end();
+
             }
         });
     }
 
-    pub fn player_auto_play(&mut self) {
-        if self.sink.empty() && !self.queue_items.is_empty() {
-            let song = self.queue_items.pop();
-            self.player_play(song);
-        }
+    fn player_play(&mut self, song: Song) {
+        self.queue_items.add_front(song);
+        self.sink.stop();
     }
 
     fn player_seek_forward(&mut self) {
-        if let Some(song) = &self.currently_playing {
+        if let Some(song) = self.currently_playing.lock().unwrap().as_ref() {
             let target = self
                 .sink
                 .get_pos()
@@ -319,6 +297,7 @@ impl<'a> App<'a> {
             KeyCode::Char('a') if self.browser.filter.is_none() => {
                 self.queue_items.add(self.browser.selected_item());
                 self.browser.items.next();
+                // self.play();
             }
             KeyCode::Enter => {
                 if let Some(song) = self.browser.enter_selection() {
@@ -372,12 +351,14 @@ impl<'a> App<'a> {
             AppTab::Help => ui::instructions_tab::instructions_tab(frame, &mut self.control_table, areas[1], &config),
         };
 
+        let currently_playing = &self.currently_playing.lock().unwrap();
+
         ui::render_ui::render_playing_gauge(
             frame,
             &config,
             areas[2],
-            &self.currently_playing.clone(),
-            self.player_sink().get_pos(),
+            currently_playing,
+            self.sink.get_pos(),
             self.queue_items.total_time(),
             self.queue_items.length(),
         );

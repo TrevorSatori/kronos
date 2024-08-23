@@ -6,7 +6,7 @@ use std::{
 
 use lofty::{Accessor, AudioFile, LoftyError, Probe, TaggedFileExt};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Song {
     pub path: PathBuf,
     pub length: std::time::Duration,

@@ -1,12 +1,13 @@
 use std::time::Duration;
-use std::{collections::VecDeque, path::PathBuf};
+use std::{collections::VecDeque, path::PathBuf, thread};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use super::gen_funcs::{path_list_to_song_list, path_to_song, path_to_song_list, Song};
 
 pub struct Queue {
-    items: VecDeque<Song>,
-    selected_item_index: Option<usize>,
-    total_time: Duration,
+    items: Arc<Mutex<VecDeque<Song>>>,
+    selected_item_index: Arc<Mutex<Option<usize>>>,
+    total_time: Arc<Mutex<Duration>>,
 }
 
 fn song_list_to_duration(items: &VecDeque<Song>) -> Duration {
@@ -23,85 +24,99 @@ impl Queue {
 
         let total_time = song_list_to_duration(&songs);
         Self {
-            items: songs,
-            selected_item_index: None,
-            total_time,
+            items: Arc::new(Mutex::new(songs)),
+            selected_item_index: Arc::new(Mutex::new(None)),
+            total_time: Arc::new(Mutex::new(total_time)),
         }
     }
 
-    pub fn songs(&self) -> &VecDeque<Song> {
-        &self.items
+    pub fn songs(&self) -> MutexGuard<VecDeque<Song>> {
+        self.items.lock().unwrap()
     }
 
     pub fn length(&self) -> usize {
-        self.items.len()
+        self.songs().len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.items.is_empty()
+        self.songs().is_empty()
     }
 
     pub fn paths(&self) -> VecDeque<PathBuf> {
-        self.items.iter().map(|i| i.path.clone()).collect()
+        self.songs().iter().map(|i| i.path.clone()).collect()
     }
 
     pub fn total_time(&self) -> Duration {
-        self.total_time
+        self.total_time.lock().unwrap().clone()
     }
 
     pub fn selected_song_index(&self) -> Option<usize> {
-        if self.items.is_empty() {
+        if self.songs().is_empty() {
             None
         } else {
-            self.selected_item_index
+            self.selected_item_index.clone().lock().unwrap().clone()
         }
     }
 
     pub fn selected_song(&self) -> Option<Song> {
-        self.selected_song_index().map(|i| self.items[i].clone())
+        let songs = self.items.lock().unwrap();
+        self.selected_song_index().map(|i| songs[i].clone())
     }
 
-    fn refresh_total_time(&mut self) {
-        self.total_time = song_list_to_duration(&self.items);
+    fn refresh_total_time(&self) {
+        let songs = self.items.lock().unwrap();
+        *self.total_time.lock().unwrap() = song_list_to_duration(&songs);
     }
 
-    pub fn pop(&mut self) -> Song {
-        let l = self.items.pop_front().unwrap();
-        self.refresh_total_time();
-        l
+    pub fn pop(&self) -> Song {
+        loop {
+            let mut items = self.items.lock().unwrap();
+            let item = items.pop_front();
+            drop(items);
+            if let Some(l) = item {
+                self.refresh_total_time();
+                return l
+            }
+            thread::sleep(Duration::from_secs(1)); // todo: channel recv
+        }
     }
 
-    pub fn select_next(&mut self) {
-        if self.items.is_empty() {
+    pub fn select_next(&self) {
+        if self.songs().is_empty() {
             return;
         };
-        self.selected_item_index = match self.selected_item_index {
-            Some(i) => Some(std::cmp::min(i + 1, self.items.len() - 1)),
+
+        let mut selected_item_index = self.selected_item_index.lock().unwrap();
+        *selected_item_index = match *selected_item_index {
+            Some(i) => Some(std::cmp::min(i + 1, self.songs().len() - 1)),
             None => Some(0),
         }
     }
 
-    pub fn select_previous(&mut self) {
-        if self.items.is_empty() {
+    pub fn select_previous(&self) {
+        if self.songs().is_empty() {
             return;
         };
-        self.selected_item_index = match self.selected_item_index {
+
+        let mut selected_item_index = self.selected_item_index.lock().unwrap();
+        *selected_item_index = match *selected_item_index {
             Some(i) => Some(if i > 0 { i - 1 } else { 0 }),
             None => Some(0),
         }
     }
 
-    pub fn select_none(&mut self) {
-        self.selected_item_index = None;
+    pub fn select_none(&self) {
+        let mut selected_item_index = self.selected_item_index.lock().unwrap();
+        *selected_item_index = None;
     }
 
-    pub fn add(&mut self, path: PathBuf) {
+    pub fn add(&self, path: PathBuf) {
         if path.is_dir() {
             let files = path_to_song_list(&path);
-            self.items.append(&mut VecDeque::from(files));
+            self.songs().append(&mut VecDeque::from(files));
         } else {
             match path_to_song(&path) {
-                Ok(song) => self.items.push_back(song),
+                Ok(song) => self.songs().push_back(song),
                 Err(err) => {
                     eprintln!("Could not add {:?}. Error was {:?}", &path, err);
                 }
@@ -110,17 +125,31 @@ impl Queue {
         self.refresh_total_time();
     }
 
-    pub fn remove_selected(&mut self) {
-        if self.items.is_empty() {
+    pub fn add_front(&self, song: Song) {
+        self.songs().push_front(song);
+        self.refresh_total_time();
+    }
+
+    pub fn remove_selected(&self) {
+        if self.songs().is_empty() {
             return;
         }
-        if let Some(selected_item_index) = self.selected_item_index {
-            self.items.remove(selected_item_index);
 
-            if self.items.is_empty() {
-                self.selected_item_index = None;
-            } else {
-                self.selected_item_index = Some(selected_item_index.min(self.items.len() - 1));
+        let selected_item_index_clone = self.selected_item_index.clone();
+        let mut selected_item_index_option = selected_item_index_clone.lock().unwrap();
+
+        let items_clone = self.items.clone();
+        let mut items = items_clone.lock().unwrap();
+
+        if let Some(selected_item_index) = *selected_item_index_option {
+            {
+                items.remove(selected_item_index);
+
+                *selected_item_index_option = if items.is_empty() {
+                    None
+                } else {
+                    Some(selected_item_index.min(items.len() - 1))
+                }
             }
 
             self.refresh_total_time();
