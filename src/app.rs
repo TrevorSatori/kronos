@@ -108,34 +108,14 @@ impl<'a> App<'a> {
         }
     }
 
-    fn play_pause_recv(&self) {
-        let player_command_receiver = self.player_command_receiver.clone();
-        let sink = self.sink.clone();
-
-        thread::spawn(move || loop {
-            match player_command_receiver.lock().unwrap().recv() {
-                Ok(Command::PlayPause) => {
-                    sink.toggle();
-                }
-                Ok(Command::Next) => {
-                    sink.stop();
-                }
-                Err(err) => {
-                    eprintln!("error receiving! {}", err);
-                    break;
-                }
-            }
-        });
-    }
-
     pub fn start(&mut self) -> Result<State, Box<dyn Error>> {
         let mut terminal = set_terminal()?;
 
         let tick_rate = Duration::from_secs(1);
         let mut last_tick = std::time::Instant::now();
 
-        self.play_pause_recv();
-        self.play();
+        self.spawn_media_key_receiver_thread();
+        self.spawn_player_thread();
 
         loop {
             terminal.draw(|frame| self.render(frame))?;
@@ -160,11 +140,7 @@ impl<'a> App<'a> {
         Ok(self.to_state())
     }
 
-    fn set_input_mode(&mut self, in_mode: InputMode) {
-        self.input_mode = in_mode
-    }
-
-    fn play(&mut self) {
+    fn spawn_player_thread(&self) {
         let sink = self.sink.clone();
         let currently_playing = self.currently_playing.clone();
         let queue_items = self.queue_items.clone();
@@ -192,6 +168,30 @@ impl<'a> App<'a> {
 
             }
         });
+    }
+
+    fn spawn_media_key_receiver_thread(&self) {
+        let player_command_receiver = self.player_command_receiver.clone();
+        let sink = self.sink.clone();
+
+        thread::spawn(move || loop {
+            match player_command_receiver.lock().unwrap().recv() {
+                Ok(Command::PlayPause) => {
+                    sink.toggle();
+                }
+                Ok(Command::Next) => {
+                    sink.stop();
+                }
+                Err(err) => {
+                    eprintln!("error receiving! {}", err);
+                    break;
+                }
+            }
+        });
+    }
+
+    fn set_input_mode(&mut self, in_mode: InputMode) {
+        self.input_mode = in_mode
     }
 
     fn player_play(&mut self, song: Song) {
