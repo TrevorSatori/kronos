@@ -17,7 +17,6 @@ pub struct Song {
 const VALID_EXTENSIONS: [&str; 7] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac"];
 
 pub fn path_to_song(path: &PathBuf) -> Result<Song, LoftyError> {
-    let path = Path::new(path);
     let tagged_file = Probe::open(path)?.read()?;
 
     let (artist, title) = match tagged_file.primary_tag() {
@@ -41,19 +40,19 @@ pub fn song_to_string(song: &Song) -> String {
         if let Some(artist) = &song.artist {
             format!("{artist} - {title}")
         } else {
-            title.into()
+            title.clone()
         }
     } else {
         song.path.file_name().unwrap().to_str().unwrap().to_string()
     }
 }
 
-pub fn scan_and_filter_directory(path: &PathBuf) -> Vec<String> {
+pub fn directory_to_songs_and_folders(path: &PathBuf) -> Vec<String> {
     let entries = path.read_dir().unwrap();
 
     let mut items: Vec<String> = entries
         .filter_map(|e| e.ok())
-        .filter(|entry| dir_entry_is_dir(&entry) || (dir_entry_is_file(&entry) && dir_entry_has_song_extension(&entry)))
+        .filter(|entry| dir_entry_is_dir(&entry) || dir_entry_is_song(&entry))
         .map(|entry| entry.path())
         .filter(path_is_not_hidden)
         .filter_map(|path| path.file_name().and_then(|e| e.to_str()).map(|e| e.to_string()))

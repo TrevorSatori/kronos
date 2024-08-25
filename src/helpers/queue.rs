@@ -2,7 +2,7 @@ use std::time::Duration;
 use std::{collections::VecDeque, path::PathBuf};
 use std::sync::{mpsc::{channel, Receiver, Sender}, Arc, Mutex, MutexGuard};
 
-use super::gen_funcs::{path_list_to_song_list, path_to_song, path_to_song_list, Song};
+use super::song::{path_list_to_song_list, path_to_song, path_to_song_list, Song};
 
 pub struct Queue {
     items: Arc<Mutex<VecDeque<Song>>>,

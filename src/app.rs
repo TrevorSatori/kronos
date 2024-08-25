@@ -21,7 +21,7 @@ use crate::{
     config::Config,
     file_browser::Browser,
     helpers::{
-        gen_funcs::{scan_and_filter_directory},
+        song::{directory_to_songs_and_folders},
         stateful_list::StatefulList,
         stateful_table::StatefulTable,
     },
@@ -66,7 +66,7 @@ impl<'a> App<'a> {
             None => env::current_dir().unwrap(),
         };
 
-        let mut browser_items = StatefulList::with_items(scan_and_filter_directory(&current_directory));
+        let mut browser_items = StatefulList::with_items(directory_to_songs_and_folders(&current_directory));
         browser_items.select(0);
 
         let music_output = OutputStream::try_default().unwrap();
@@ -287,8 +287,7 @@ impl<'a> App<'a> {
             AppTab::Help => ui::instructions_tab::instructions_tab(frame, &mut self.control_table, areas[1], &config),
         };
 
-
-        let currently_playing = self.player.currently_playing().clone();
+        let currently_playing = self.player.currently_playing();
         let currently_playing = currently_playing.lock().unwrap();
 
         ui::render_ui::render_playing_gauge(

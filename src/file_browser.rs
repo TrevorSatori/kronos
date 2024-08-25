@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::helpers::{
-    gen_funcs::{path_to_song, scan_and_filter_directory, Song},
+    song::{path_to_song, directory_to_songs_and_folders, Song},
     stateful_list::StatefulList,
 };
 
@@ -52,14 +52,14 @@ impl Browser {
         if path.is_dir() {
             self.current_directory = path.clone();
             self.last_offset = self.items.offset;
-            self.items = StatefulList::with_items(scan_and_filter_directory(&path));
+            self.items = StatefulList::with_items(directory_to_songs_and_folders(&path));
             self.items.next();
         }
     }
 
     pub fn navigate_up(&mut self) {
         let parent = self.current_directory.as_path().parent().unwrap().to_path_buf();
-        self.items = StatefulList::with_items(scan_and_filter_directory(&parent));
+        self.items = StatefulList::with_items(directory_to_songs_and_folders(&parent));
         self.items.select_by_path(&self.current_directory);
         self.items.offset = self.last_offset;
         self.current_directory = parent;

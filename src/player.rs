@@ -8,7 +8,7 @@ use rodio::{Decoder, OutputStreamHandle, Sink};
 
 use crate::{
     helpers::{
-        gen_funcs::{Song},
+        song::{Song},
         queue::Queue,
     },
 };
