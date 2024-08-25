@@ -14,7 +14,7 @@ pub struct Song {
     pub title: Option<String>,
 }
 
-const VALID_EXTENSIONS: [&str; 7] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac"];
+const VALID_EXTENSIONS: [&str; 8] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac", "cue"];
 
 pub fn path_to_song(path: &PathBuf) -> Result<Song, LoftyError> {
     let tagged_file = Probe::open(path)?.read()?;
@@ -48,6 +48,7 @@ pub fn song_to_string(song: &Song) -> String { // TODO: this is a UI responsibil
 }
 
 pub fn directory_to_songs_and_folders(path: &PathBuf) -> Vec<String> {
+    // TODO: .cue
     let entries = path.read_dir().unwrap();
 
     let mut items: Vec<String> = entries

@@ -113,7 +113,7 @@ impl<'a> App<'a> {
         self.spawn_media_key_receiver_thread();
         self.player.spawn_player_thread();
 
-        loop {
+        while !self.must_quit {
             terminal.draw(|frame| self.render(frame))?;
 
             let timeout = tick_rate.saturating_sub(last_tick.elapsed());
@@ -122,10 +122,6 @@ impl<'a> App<'a> {
                 if let Event::Key(key) = event::read()? {
                     self.handle_key_event(key);
                 }
-            }
-
-            if self.must_quit {
-                break;
             }
 
             if last_tick.elapsed() >= tick_rate {

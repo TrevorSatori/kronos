@@ -9,6 +9,7 @@ mod state;
 mod term;
 mod ui;
 mod player;
+mod cue;
 
 use std::error::Error;
 use std::io::stdout;
