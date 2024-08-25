@@ -9,7 +9,6 @@ use rodio::{Decoder, OutputStreamHandle, Sink};
 use crate::{
     helpers::{
         gen_funcs::{Song},
-        music_handler::ExtendedSink,
         queue::Queue,
     },
 };
@@ -83,7 +82,11 @@ impl Player {
     }
 
     pub fn toggle(&self) {
-        self.sink.toggle();
+        if self.sink.is_paused() {
+            self.sink.play()
+        } else {
+            self.sink.pause()
+        }
     }
 
     pub fn stop(&self) {

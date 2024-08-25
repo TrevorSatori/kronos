@@ -22,7 +22,6 @@ use crate::{
     file_browser::Browser,
     helpers::{
         gen_funcs::{scan_and_filter_directory},
-        music_handler::ExtendedSink,
         stateful_list::StatefulList,
         stateful_table::StatefulTable,
     },
