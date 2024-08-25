@@ -296,7 +296,7 @@ impl<'a> App<'a> {
             &config,
             areas[2],
             &currently_playing,
-            self.player.sink().get_pos(),
+            self.player.get_pos(),
             self.player.queue().total_time(),
             self.player.queue().length(),
         );

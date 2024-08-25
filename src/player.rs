@@ -13,7 +13,6 @@ use crate::{
     },
 };
 
-
 pub struct Player {
     sink: Arc<Sink>,
     currently_playing: Arc<Mutex<Option<Song>>>,
@@ -38,8 +37,8 @@ impl Player {
         self.queue_items.clone()
     }
 
-    pub fn sink(&self) -> Arc<Sink> {
-        self.sink.clone()
+    pub fn get_pos(&self) -> Duration {
+        self.sink.get_pos()
     }
 
     pub fn currently_playing(&self) -> Arc<Mutex<Option<Song>>> {
