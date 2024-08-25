@@ -35,7 +35,7 @@ pub fn path_to_song(path: &PathBuf) -> Result<Song, LoftyError> {
     })
 }
 
-pub fn song_to_string(song: &Song) -> String {
+pub fn song_to_string(song: &Song) -> String { // TODO: this is a UI responsibility
     if let Some(title) = &song.title {
         if let Some(artist) = &song.artist {
             format!("{artist} - {title}")
@@ -62,33 +62,7 @@ pub fn directory_to_songs_and_folders(path: &PathBuf) -> Vec<String> {
     items
 }
 
-fn dir_entry_is_file(dir_entry: &DirEntry) -> bool {
-    dir_entry.file_type().is_ok_and(|ft| ft.is_file())
-}
-
-fn dir_entry_is_dir(dir_entry: &DirEntry) -> bool {
-    dir_entry.file_type().is_ok_and(|ft| ft.is_dir())
-}
-
-fn path_is_not_hidden(path: &PathBuf) -> bool {
-    path.file_name()
-        .and_then(|e| e.to_str())
-        .map(|e| e.to_string())
-        .is_some_and(|d| !d.starts_with('.'))
-}
-
-fn dir_entry_has_song_extension(dir_entry: &DirEntry) -> bool {
-    dir_entry
-        .path()
-        .extension()
-        .is_some_and(|e| VALID_EXTENSIONS.contains(&e.to_str().unwrap()))
-}
-
-fn dir_entry_is_song(dir_entry: &DirEntry) -> bool {
-    dir_entry_is_file(dir_entry) && dir_entry_has_song_extension(dir_entry)
-}
-
-pub fn path_to_song_list(path: &PathBuf) -> Vec<Song> {
+pub fn directory_to_song_list(path: &Path) -> Vec<Song> {
     match path.read_dir() {
         Ok(read_dir) => {
             let paths = read_dir
@@ -126,4 +100,30 @@ pub fn path_list_to_song_list(paths: Vec<PathBuf>) -> (VecDeque<Song>, VecDeque<
     }
 
     (songs, errors)
+}
+
+fn dir_entry_is_file(dir_entry: &DirEntry) -> bool {
+    dir_entry.file_type().is_ok_and(|ft| ft.is_file())
+}
+
+fn dir_entry_is_dir(dir_entry: &DirEntry) -> bool {
+    dir_entry.file_type().is_ok_and(|ft| ft.is_dir())
+}
+
+fn path_is_not_hidden(path: &PathBuf) -> bool {
+    path.file_name()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_string())
+        .is_some_and(|d| !d.starts_with('.'))
+}
+
+fn dir_entry_has_song_extension(dir_entry: &DirEntry) -> bool {
+    dir_entry
+        .path()
+        .extension()
+        .is_some_and(|e| VALID_EXTENSIONS.contains(&e.to_str().unwrap()))
+}
+
+fn dir_entry_is_song(dir_entry: &DirEntry) -> bool {
+    dir_entry_is_file(dir_entry) && dir_entry_has_song_extension(dir_entry)
 }

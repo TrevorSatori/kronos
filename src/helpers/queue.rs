@@ -2,7 +2,7 @@ use std::time::Duration;
 use std::{collections::VecDeque, path::PathBuf};
 use std::sync::{mpsc::{channel, Receiver, Sender}, Arc, Mutex, MutexGuard};
 
-use super::song::{path_list_to_song_list, path_to_song, path_to_song_list, Song};
+use super::song::{path_list_to_song_list, path_to_song, directory_to_song_list, Song};
 
 pub struct Queue {
     items: Arc<Mutex<VecDeque<Song>>>,
@@ -124,7 +124,7 @@ impl Queue {
 
     pub fn add(&self, path: PathBuf) {
         if path.is_dir() {
-            let files = path_to_song_list(&path);
+            let files = directory_to_song_list(&path);
             self.songs().append(&mut VecDeque::from(files));
         } else {
             match path_to_song(&path) {
