@@ -1,14 +1,12 @@
 use std::error::Error;
 use std::sync::{
     mpsc::{
-        channel,
-        Sender,
         Receiver,
     },
     Arc,
     Mutex,
 };
-use std::{env, fs::File, io::BufReader, path::PathBuf, thread, time::Duration};
+use std::{env, path::PathBuf, thread, time::Duration};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
@@ -17,21 +15,21 @@ use ratatui::{
     widgets::Block,
     Frame,
 };
-use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
+use rodio::OutputStream;
 
 use crate::{
     config::Config,
     file_browser::Browser,
     helpers::{
-        gen_funcs::{scan_and_filter_directory, Song},
+        gen_funcs::{scan_and_filter_directory},
         music_handler::ExtendedSink,
-        queue::Queue,
         stateful_list::StatefulList,
         stateful_table::StatefulTable,
     },
     state::State,
     term::set_terminal,
     ui, Command,
+    player::Player,
 };
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -52,13 +50,10 @@ pub struct App<'a> {
     input_mode: InputMode,
     active_tab: AppTab,
     browser: Browser,
-    queue_items: Arc<Queue>,
     control_table: StatefulTable<'a>,
-    music_output: (OutputStream, OutputStreamHandle),
-    sink: Arc<Sink>,
-    currently_playing: Arc<Mutex<Option<Song>>>,
     player_command_receiver: Arc<Mutex<Receiver<Command>>>,
-    song_ended_tx: Arc<Option<Sender<()>>>,
+    player: Arc<Player>,
+    music_output: OutputStream,
 }
 
 impl<'a> App<'a> {
@@ -76,26 +71,28 @@ impl<'a> App<'a> {
         browser_items.select(0);
 
         let music_output = OutputStream::try_default().unwrap();
-        let sink = Arc::new(Sink::try_new(&music_output.1).unwrap());
+        // music_output.0 can be neither dropped nor shared between threads.
+        // The underlying library is not thread-safe.
+        // We could do this to prevent it from ever being dropped, but it's overkill and bug-prone.
+        // std::mem::forget(music_output.0);
 
         Self {
             must_quit: false,
             input_mode: InputMode::Browser,
             active_tab: AppTab::FileBrowser,
-            music_output,
-            sink,
-            currently_playing: Arc::new(Mutex::new(None)),
             browser: Browser::new(browser_items, current_directory),
-            queue_items: Arc::new(Queue::new(queue)),
             control_table: StatefulTable::new(),
             player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
-            song_ended_tx: Arc::new(None),
+            player: Arc::new(Player::new(queue, &music_output.1)),
+            music_output: music_output.0,
         }
     }
 
     fn to_state(&self) -> State {
-        let queue_items = self
-            .queue_items
+        let player = self.player.clone();
+
+        let queue_items = player
+            .queue()
             .paths()
             .iter()
             .filter_map(|i| i.to_str())
@@ -115,7 +112,7 @@ impl<'a> App<'a> {
         let mut last_tick = std::time::Instant::now();
 
         self.spawn_media_key_receiver_thread();
-        self.spawn_player_thread();
+        self.player.spawn_player_thread();
 
         loop {
             terminal.draw(|frame| self.render(frame))?;
@@ -140,47 +137,17 @@ impl<'a> App<'a> {
         Ok(self.to_state())
     }
 
-    fn spawn_player_thread(&self) {
-        let sink = self.sink.clone();
-        let currently_playing = self.currently_playing.clone();
-        let queue_items = self.queue_items.clone();
-
-        thread::spawn(move || {
-            loop {
-                let song = queue_items.pop();
-                let path = song.path.clone();
-
-                match currently_playing.lock() {
-                    Ok(mut s) => {
-                        eprintln!("s {:?}", s);
-                        *s = Some(song);
-                    }
-                    Err(err) => {
-                        eprintln!("err {:?}", err);
-                    }
-                }
-
-                let file = BufReader::new(File::open(path).unwrap());
-                let source = Decoder::new(file).unwrap();
-
-                sink.append(source);
-                sink.sleep_until_end();
-
-            }
-        });
-    }
-
     fn spawn_media_key_receiver_thread(&self) {
         let player_command_receiver = self.player_command_receiver.clone();
-        let sink = self.sink.clone();
+        let player = self.player.clone();
 
         thread::spawn(move || loop {
             match player_command_receiver.lock().unwrap().recv() {
                 Ok(Command::PlayPause) => {
-                    sink.toggle();
+                    player.toggle();
                 }
                 Ok(Command::Next) => {
-                    sink.stop();
+                    player.stop();
                 }
                 Err(err) => {
                     eprintln!("error receiving! {}", err);
@@ -192,35 +159,6 @@ impl<'a> App<'a> {
 
     fn set_input_mode(&mut self, in_mode: InputMode) {
         self.input_mode = in_mode
-    }
-
-    fn player_play(&mut self, song: Song) {
-        self.queue_items.add_front(song);
-        self.sink.stop();
-    }
-
-    fn player_seek_forward(&mut self) {
-        if let Some(song) = self.currently_playing.lock().unwrap().as_ref() {
-            let target = self
-                .sink
-                .get_pos()
-                .saturating_add(Duration::from_secs(5))
-                .min(song.length);
-            self.sink.try_seek(target).unwrap_or_else(|e| {
-                eprintln!("could not seek {:?}", e);
-            });
-        }
-    }
-
-    fn player_seek_backward(&mut self) {
-        let target = self
-            .sink
-            .get_pos()
-            .saturating_sub(Duration::from_secs(5))
-            .max(Duration::from_secs(0));
-        self.sink.try_seek(target).unwrap_or_else(|e| {
-            eprintln!("could not seek {:?}", e);
-        });
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) {
@@ -263,11 +201,11 @@ impl<'a> App<'a> {
                         match self.input_mode {
                             InputMode::Browser => {
                                 self.browser.items.next();
-                                self.queue_items.select_none();
+                                self.player.queue().select_none();
                             }
                             InputMode::Queue => {
                                 self.browser.items.unselect();
-                                self.queue_items.select_next();
+                                self.player.queue().select_next();
                             }
                             _ => {}
                         };
@@ -275,12 +213,12 @@ impl<'a> App<'a> {
                     _ => {}
                 }
             }
-            KeyCode::Right => self.player_seek_forward(),
-            KeyCode::Left => self.player_seek_backward(),
-            KeyCode::Char('-') => self.sink.change_volume(-0.05),
-            KeyCode::Char('+') => self.sink.change_volume(0.05),
-            KeyCode::Char('p') | KeyCode::Char(' ') => self.sink.toggle(),
-            KeyCode::Char('g') => self.sink.stop(),
+            KeyCode::Right => self.player.seek_forward(),
+            KeyCode::Left => self.player.seek_backward(),
+            KeyCode::Char('-') => self.player.change_volume(-0.05),
+            KeyCode::Char('+') => self.player.change_volume(0.05),
+            KeyCode::Char('p') | KeyCode::Char(' ') => self.player.toggle(),
+            KeyCode::Char('g') => self.player.stop(),
             _ => {
                 handled = false;
             }
@@ -291,17 +229,16 @@ impl<'a> App<'a> {
     fn handle_browser_key_events(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Enter if key.modifiers == KeyModifiers::ALT => {
-                self.queue_items.add(self.browser.selected_item());
+                self.player.queue().add(self.browser.selected_item());
                 self.browser.items.next();
             }
             KeyCode::Char('a') if self.browser.filter.is_none() => {
-                self.queue_items.add(self.browser.selected_item());
+                self.player.queue().add(self.browser.selected_item());
                 self.browser.items.next();
-                // self.play();
             }
             KeyCode::Enter => {
                 if let Some(song) = self.browser.enter_selection() {
-                    self.player_play(song);
+                    self.player.play_now(song);
                 }
             }
             _ => {}
@@ -313,13 +250,13 @@ impl<'a> App<'a> {
     fn handle_queue_key_events(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Enter => {
-                if let Some(song) = self.queue_items.selected_song() {
-                    self.player_play(song);
+                if let Some(song) = self.player.queue().selected_song() {
+                    self.player.play_now(song);
                 };
             }
-            KeyCode::Down | KeyCode::Char('j') => self.queue_items.select_next(),
-            KeyCode::Up | KeyCode::Char('k') => self.queue_items.select_previous(),
-            KeyCode::Delete => self.queue_items.remove_selected(),
+            KeyCode::Down | KeyCode::Char('j') => self.player.queue().select_next(),
+            KeyCode::Up | KeyCode::Char('k') => self.player.queue().select_previous(),
+            KeyCode::Delete => self.player.queue().remove_selected(),
             _ => {}
         }
     }
@@ -347,20 +284,22 @@ impl<'a> App<'a> {
         ui::render_ui::render_top_bar(frame, &config, areas[0], self.active_tab);
 
         match self.active_tab {
-            AppTab::FileBrowser => self.browser.render(frame, &self.queue_items, areas[1], &config),
+            AppTab::FileBrowser => self.browser.render(frame, &self.player.queue(), areas[1], &config),
             AppTab::Help => ui::instructions_tab::instructions_tab(frame, &mut self.control_table, areas[1], &config),
         };
 
-        let currently_playing = &self.currently_playing.lock().unwrap();
+
+        let currently_playing = self.player.currently_playing().clone();
+        let currently_playing = currently_playing.lock().unwrap();
 
         ui::render_ui::render_playing_gauge(
             frame,
             &config,
             areas[2],
-            currently_playing,
-            self.sink.get_pos(),
-            self.queue_items.total_time(),
-            self.queue_items.length(),
+            &currently_playing,
+            self.player.sink().get_pos(),
+            self.player.queue().total_time(),
+            self.player.queue().length(),
         );
     }
 }

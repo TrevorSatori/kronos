@@ -8,6 +8,7 @@ mod quit_future;
 mod state;
 mod term;
 mod ui;
+mod player;
 
 use std::error::Error;
 use std::io::stdout;
