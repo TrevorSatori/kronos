@@ -61,9 +61,9 @@ impl Player {
                         *s = Some(song);
                     }
                     Err(err) => {
-                        eprintln!("err {:?}", err);
+                        eprintln!("spawn_player_thread: currently_playing.lock() returned an error! {:?}", err);
                     }
-                }
+                };
 
                 let file = BufReader::new(File::open(path).unwrap());
                 let source = Decoder::new(file).unwrap();
@@ -71,6 +71,15 @@ impl Player {
                 sink.append(source);
                 sink.sleep_until_end();
 
+                match currently_playing.lock() {
+                    Ok(mut s) => {
+                        eprintln!("s {:?}", s);
+                        *s = None;
+                    }
+                    Err(err) => {
+                        eprintln!("spawn_player_thread: currently_playing.lock() returned an error! {:?}", err);
+                    }
+                };
             }
         });
     }
