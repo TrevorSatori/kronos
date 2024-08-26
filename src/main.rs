@@ -38,7 +38,7 @@ pub enum Command {
 
 #[async_std::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    std::panic::set_hook(Box::new(on_panic));
+    set_panic_hook();
 
     let (player_command_sender, player_command_receiver) = channel();
 
@@ -76,22 +76,12 @@ fn run_player(player_command_receiver: Receiver<Command>) -> Quit {
     quit
 }
 
-/// If our app panics after entering raw mode and before leaving it,
-/// the terminal that was running our app will be left in raw mode.
-/// Raw mode seems to be a concept of the standard C library and not terminal emulators themselves.
-/// Crossterm calls `cfmakeraw`, which does a bunch of things.
-///
-/// This hook should take care of reverting it the terminal back to how it was if the app panics,
-/// but if we're still left with a somewhat unusable terminal for whatever reason,
-/// `reset` or `stty isig icanon iexten opost ixon icrnl` should fix it.
-///
-/// See `man cfmakeraw` and `man stty`.
-fn on_panic(info: &PanicInfo) {
-    // We don't have access to our instances of `stdout` and/or `backend` here,
-    // but referencing `io::stdout()` every time seems to work.
-    // I guess that could only fail if the stdout of the process changes while
-    // the process is running... but that is an edge case bug I can live with.
-    reset_terminal(&mut stdout());
+fn set_panic_hook() {
+    let original_hook = std::panic::take_hook();
 
-    eprintln!("{info}");
+    std::panic::set_hook(Box::new(move |panic_info| {
+        // intentionally ignore errors here since we're already in a panic
+        let _ = reset_terminal(&mut stdout());
+        original_hook(panic_info);
+    }));
 }
