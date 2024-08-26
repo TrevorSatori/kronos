@@ -141,6 +141,7 @@ impl Queue {
     pub fn add_front(&self, song: Song) {
         self.songs().push_front(song);
         self.refresh_total_time();
+        self.tx.clone().lock().unwrap().send(()).unwrap();
     }
 
     pub fn remove_selected(&self) {
