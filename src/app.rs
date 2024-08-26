@@ -152,10 +152,6 @@ impl<'a> App<'a> {
         });
     }
 
-    fn set_input_mode(&mut self, in_mode: InputMode) {
-        self.input_mode = in_mode
-    }
-
     fn handle_key_event(&mut self, key: KeyEvent) {
         let focus_trapped = self.input_mode == InputMode::Browser && self.browser.filter.is_some();
         let handled = !focus_trapped && self.handle_app_key_event(&key);
@@ -177,11 +173,11 @@ impl<'a> App<'a> {
             }
             KeyCode::Char('1') => {
                 self.active_tab = AppTab::FileBrowser;
-                self.set_input_mode(InputMode::Browser);
+                self.input_mode = InputMode::Browser;
             }
             KeyCode::Char('2') => {
                 self.active_tab = AppTab::Help;
-                self.set_input_mode(InputMode::HelpControls);
+                self.input_mode = InputMode::HelpControls;
             }
             KeyCode::Tab if self.browser.filter.is_none() => {
                 match self.active_tab {
