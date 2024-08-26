@@ -93,34 +93,59 @@ pub fn render_playing_gauge(
         frame.render_widget(playing_file, area_top);
     }
 
-    let playing_gauge_label_current_song = match current_song {
-        Some(song) => format!(
+    let playing_song_label = current_song.as_ref().map(|song|
+        format!(
             "{time_played} / {current_song_length}",
             time_played = duration_to_string(current_song_position),
             current_song_length = duration_to_string(song.length),
-        ),
-        _ => "".to_string(),
+        ));
+
+    let songs = if queue_song_count == 1 {
+        "song"
+    } else {
+        "songs"
     };
 
-    let playing_gauge_label = format!(
-        "{playing_gauge_label_current_song} — {total_time}, {queue_items} songs",
-        total_time = duration_to_string(queue_total_time),
-        queue_items = queue_song_count,
-    );
-
-    let song_progress = match current_song {
-        Some(song) => f64::clamp(
-            current_song_position.as_secs_f64() / song.length.as_secs_f64(),
-            0.0,
-            1.0,
-        ),
-        _ => 0.0,
+    let queue_label = if queue_song_count > 0 {
+        Some(format!(
+            "{queue_items} {songs} / {total_time} in queue",
+            total_time = duration_to_string(queue_total_time),
+            queue_items = queue_song_count,
+        ))
+    } else {
+        None
     };
 
-    let playing_gauge = Gauge::default()
-        .style(Style::default().fg(config.foreground()))
-        .label(playing_gauge_label)
-        .gauge_style(Style::default().fg(config.highlight_background()))
-        .ratio(song_progress);
-    frame.render_widget(playing_gauge, area_bottom);
+    let playing_gauge_label = match (playing_song_label, queue_label) {
+        (Some(playing_song_label), Some(queue_label)) => {
+            format!("{playing_song_label}  |  {queue_label}")
+        }
+        (None, Some(queue_label)) => {
+            format!("{queue_label}")
+        }
+        (Some(playing_song_label), None) => {
+            format!("{playing_song_label}")
+        }
+        _ => "".to_string()
+    };
+
+    if playing_gauge_label.len() > 0 {
+        let song_progress = match current_song {
+            Some(song) => f64::clamp(
+                current_song_position.as_secs_f64() / song.length.as_secs_f64(),
+                0.0,
+                1.0,
+            ),
+            _ => 0.0,
+        };
+
+        let playing_gauge = Gauge::default()
+            .style(Style::default().fg(config.foreground()))
+            .label(playing_gauge_label)
+            .gauge_style(Style::default().fg(config.highlight_background()))
+            .ratio(song_progress);
+        frame.render_widget(playing_gauge, area_bottom);
+    }
+
+
 }
