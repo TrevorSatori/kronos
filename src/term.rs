@@ -3,6 +3,7 @@ use std::io::stdout;
 
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
+    cursor::Show,
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -18,7 +19,7 @@ pub fn set_terminal() -> Result<Terminal<CrosstermBackend<std::io::Stdout>>, imp
 }
 
 pub fn reset_terminal(writer: &mut impl std::io::Write) {
-    execute!(writer, LeaveAlternateScreen, DisableMouseCapture).unwrap_or_else(|e| {
+    execute!(writer, LeaveAlternateScreen, DisableMouseCapture, Show).unwrap_or_else(|e| {
         eprintln!("tried to execute(...) but couldn't :( {e}");
     });
 
