@@ -37,6 +37,10 @@ impl Queue {
         }
     }
 
+    fn notify_queue_change(&self) {
+        self.tx.clone().lock().unwrap().send(()).unwrap();
+    }
+
     pub fn songs(&self) -> MutexGuard<VecDeque<Song>> {
         self.items.lock().unwrap()
     }
@@ -135,13 +139,13 @@ impl Queue {
             }
         }
         self.refresh_total_time();
-        self.tx.clone().lock().unwrap().send(()).unwrap();
+        self.notify_queue_change();
     }
 
     pub fn add_front(&self, song: Song) {
         self.songs().push_front(song);
         self.refresh_total_time();
-        self.tx.clone().lock().unwrap().send(()).unwrap();
+        self.notify_queue_change();
     }
 
     pub fn remove_selected(&self) {
