@@ -3,6 +3,12 @@ name = "jolteon"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+panic = 'abort'
+
+[profile.dev]
+panic = 'abort'
+
 [dependencies]
 crossterm = {  version = "0.28.1", features = ["event-stream"] }
 glob = "0.3.1"
