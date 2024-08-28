@@ -7,13 +7,11 @@ A Terminal Music Player For Offline Listening
 
 # Table of contents
 1. [About](#About)
-2. [Specification](#Specifications)
-3. [Install](#Installation)
-    1. [Arch](#Arch)
-    2. [Binary](#Binary)
-    2. [Build From Source](#Source)
-4. [Customization](#Customization)
-5. [Contribute](#Contribute)
+1. [Installation](#installation)
+1. [Features](#Features)
+1. [Supported Audio Formats](#supported-audio-formats)
+1. [Customization](#customization)
+1. [Philosophy](#philosophy)
 
 ## About 
 
@@ -50,7 +48,7 @@ cd jolteon
 cargo run --release
 ```
 
-###  Public Repositories
+### Public Repositories
 
 Won't be publishing this to `apt`, `yum`, etc. any time soon.
 
@@ -62,6 +60,7 @@ Since this started as a fork of Kronos, I'll skip the features it supports.
 
 Some features I've added to Jolteon that weren't available in Kronos:
 - Media keys Play/Pause support via MPRIS in Linux
+- .cue file support (WIP)
 - File Browser: 
   - Search (Ctrl+F)
   - Selected directory is saved whenever a folder is entered, so, when navigating upwards, that folder stays selected, rather than selecting the first item of the list.
@@ -76,7 +75,6 @@ Some features I've added to Jolteon that weren't available in Kronos:
 - UI improvements (according to my own personal preference). See screenshots.
 - Performance improvements. Removed some redundant disk access.
 - Panic handler to restore the terminal if/when the application crashes, rather than leaving it in a rather unusable state.
-  - This doesn't seem to always work, for some reason. If your terminal gets broken, try `reset` or `stty isig icanon iexten opost ixon icrnl`.
 
 I've also extensively refactored the code base:
 - Migrated from Tui to Ratatui
@@ -162,4 +160,3 @@ I've been writing software for 20+ years.
 ## Contribute
 
 In general, I won't accept contributions, because I don't have enough time or Rust knowledge to properly do code review. 
-
