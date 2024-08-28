@@ -49,10 +49,6 @@ impl Queue {
         self.songs().len()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.songs().is_empty()
-    }
-
     pub fn paths(&self) -> VecDeque<PathBuf> {
         self.songs().iter().map(|i| i.path.clone()).collect()
     }
@@ -92,7 +88,7 @@ impl Queue {
                 return l
             }
             rx.lock().unwrap().recv().unwrap_or_else(|e| {
-               eprintln!("queue.pop() tried to recv and failed.");
+               eprintln!("queue.pop() tried to recv and failed. {:#?}", e);
             });
         }
     }

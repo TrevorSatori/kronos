@@ -13,7 +13,6 @@ mod cue;
 
 use std::error::Error;
 use std::io::stdout;
-use std::panic::PanicInfo;
 use std::sync::mpsc::{channel, Receiver};
 use std::thread;
 

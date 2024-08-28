@@ -1,10 +1,13 @@
 use std::path::{Path, PathBuf};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use crate::cue::{CueLine, CueSheet};
-use crate::helpers::{
-    song::{path_to_song, directory_to_songs_and_folders, Song},
-    stateful_list::StatefulList,
+
+use crate::{
+    cue::cue_sheet::CueSheet,
+    helpers::{
+        song::{path_to_song, directory_to_songs_and_folders, Song},
+        stateful_list::StatefulList,
+    }
 };
 
 pub struct Browser {
@@ -42,8 +45,6 @@ impl Browser {
             if path.extension().is_some_and(|e| e == "cue") {
                 let cue = CueSheet::from_file(&path);
                 eprintln!("cue {:#?}", cue);
-                // let cue_lines = CueLine::from_file(&path);
-                // eprintln!("cue {:#?}", cue_lines);
                 None
             } else {
                 match path_to_song(&path) {

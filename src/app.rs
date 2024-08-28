@@ -52,6 +52,7 @@ pub struct App<'a> {
     control_table: StatefulTable<'a>,
     player_command_receiver: Arc<Mutex<Receiver<Command>>>,
     player: Arc<Player>,
+    #[allow(dead_code)]
     music_output: OutputStream,
 }
 
