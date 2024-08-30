@@ -4,10 +4,10 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use log::error;
 
 use crate::{
-    cue::cue_sheet::CueSheet,
-    structs::song::{directory_to_songs_and_folders, path_to_song, Song}
+    cue::CueSheet,
+    structs::song::{directory_to_songs_and_folders, path_to_song, Song},
+    ui::stateful_list::StatefulList,
 };
-use crate::ui::stateful_list::StatefulList;
 
 pub struct Browser {
     pub items: StatefulList<String>,
