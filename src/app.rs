@@ -9,7 +9,7 @@ use std::{env, path::PathBuf, thread, time::Duration};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use log::error;
 use ratatui::{
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Layout},
     prelude::Style,
     widgets::Block,
     Frame,
@@ -255,20 +255,17 @@ impl<'a> App<'a> {
         }
     }
 
-    fn render(self: &mut Self, frame: &mut Frame) {
+    fn render(&mut self, frame: &mut Frame) {
         let config = Config::new();
-        let area = frame.size();
-
-        let [area_top, area_center, area_bottom] = *Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Length(2), Constraint::Min(0), Constraint::Length(3)].as_ref())
-            .split(area)
-        else {
-            panic!("NOOO");
-        };
 
         let block = Block::default().style(Style::default().bg(config.background()));
-        frame.render_widget(block, area);
+        frame.render_widget(block, frame.size());
+
+        let [area_top, area_center, area_bottom] = Layout
+            ::vertical([
+                Constraint::Length(2), Constraint::Min(0), Constraint::Length(3)
+            ])
+            .areas(frame.size());
 
         ui::render_top_bar(frame, &config, area_top, self.active_tab);
 
