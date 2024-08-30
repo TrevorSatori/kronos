@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     set_panic_hook();
 
     let _logger = Logger::try_with_str("trace")?
-        .log_to_file(FileSpec::default())
+        .log_to_file(FileSpec::default().suppress_timestamp())
         .write_mode(WriteMode::BufferAndFlush)
         .start()?;
 
