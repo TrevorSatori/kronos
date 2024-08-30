@@ -1,5 +1,7 @@
-pub mod instructions_tab;
+mod ui;
 pub mod music_tab;
-pub mod render_ui;
 pub mod stateful_list;
-pub mod stateful_table;
+mod help_tab;
+
+pub use ui::*;
+pub use help_tab::*;

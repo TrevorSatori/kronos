@@ -17,7 +17,10 @@ pub struct Browser {
 }
 
 impl Browser {
-    pub fn new(items: StatefulList<String>, current_directory: PathBuf) -> Self {
+    pub fn new(current_directory: PathBuf) -> Self {
+        let mut items = StatefulList::with_items(directory_to_songs_and_folders(&current_directory));
+        items.select(0);
+
         Self {
             items,
             current_directory,

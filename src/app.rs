@@ -19,14 +19,12 @@ use rodio::OutputStream;
 use crate::{
     config::Config,
     file_browser::Browser,
-    structs::song::directory_to_songs_and_folders,
     player::Player,
     state::State,
-    term::set_terminal, ui,
+    term::set_terminal,
+    ui,
     Command,
 };
-use crate::ui::stateful_list::StatefulList;
-use crate::ui::stateful_table::StatefulTable;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum InputMode {
@@ -46,7 +44,7 @@ pub struct App<'a> {
     input_mode: InputMode,
     active_tab: AppTab,
     browser: Browser,
-    control_table: StatefulTable<'a>,
+    help_tab: ui::HelpTab<'a>,
     player_command_receiver: Arc<Mutex<Receiver<Command>>>,
     player: Arc<Player>,
     #[allow(dead_code)]
@@ -64,21 +62,20 @@ impl<'a> App<'a> {
             None => env::current_dir().unwrap(),
         };
 
-        let mut browser_items = StatefulList::with_items(directory_to_songs_and_folders(&current_directory));
-        browser_items.select(0);
-
         let music_output = OutputStream::try_default().unwrap();
         // music_output.0 can be neither dropped nor shared between threads.
         // The underlying library is not thread-safe.
         // We could do this to prevent it from ever being dropped, but it's overkill and bug-prone.
         // std::mem::forget(music_output.0);
 
+        let config = Config::new();
+
         Self {
             must_quit: false,
             input_mode: InputMode::Browser,
             active_tab: AppTab::FileBrowser,
-            browser: Browser::new(browser_items, current_directory),
-            control_table: StatefulTable::new(),
+            browser: Browser::new(current_directory),
+            help_tab: ui::HelpTab::new(config),
             player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
             player: Arc::new(Player::new(queue, &music_output.1)),
             music_output: music_output.0,
@@ -252,8 +249,8 @@ impl<'a> App<'a> {
 
     fn handle_help_key_events(&mut self, key: KeyEvent) {
         match key.code {
-            KeyCode::Down | KeyCode::Char('j') => self.control_table.next(),
-            KeyCode::Up | KeyCode::Char('k') => self.control_table.previous(),
+            KeyCode::Down | KeyCode::Char('j') => self.help_tab.next(),
+            KeyCode::Up | KeyCode::Char('k') => self.help_tab.previous(),
             _ => {}
         }
     }
@@ -262,28 +259,31 @@ impl<'a> App<'a> {
         let config = Config::new();
         let area = frame.size();
 
-        let areas = Layout::default()
+        let [area_top, area_center, area_bottom] = *Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Length(2), Constraint::Min(0), Constraint::Length(3)].as_ref())
-            .split(area);
+            .split(area)
+        else {
+            panic!("NOOO");
+        };
 
         let block = Block::default().style(Style::default().bg(config.background()));
         frame.render_widget(block, area);
 
-        ui::render_ui::render_top_bar(frame, &config, areas[0], self.active_tab);
+        ui::render_top_bar(frame, &config, area_top, self.active_tab);
 
         match self.active_tab {
-            AppTab::FileBrowser => self.browser.render(frame, &self.player.queue(), areas[1], &config),
-            AppTab::Help => ui::instructions_tab::instructions_tab(frame, &mut self.control_table, areas[1], &config),
+            AppTab::FileBrowser => self.browser.render(frame, &self.player.queue(), area_center, &config),
+            AppTab::Help => self.help_tab.render(frame, area_center),
         };
 
         let currently_playing = self.player.currently_playing();
         let currently_playing = currently_playing.lock().unwrap();
 
-        ui::render_ui::render_playing_gauge(
+        ui::render_playing_gauge(
             frame,
             &config,
-            areas[2],
+            area_bottom,
             &currently_playing,
             self.player.get_pos(),
             self.player.queue().total_time(),
