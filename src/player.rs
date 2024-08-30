@@ -8,7 +8,7 @@ use log::{debug, error};
 use rodio::{Decoder, OutputStreamHandle, Sink};
 
 use crate::{
-    helpers::{
+    structs::{
         song::{Song},
         queue::Queue,
     },

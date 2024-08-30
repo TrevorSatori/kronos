@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::config::Config;
 use crate::file_browser::Browser;
-use crate::helpers::{song, queue::Queue};
+use crate::structs::{song, queue::Queue};
 
 impl Browser {
     pub fn render(self: &mut Self, frame: &mut Frame, queue_items: &Queue, area: Rect, cfg: &Config) {

@@ -2,7 +2,8 @@ mod app;
 mod config;
 mod constants;
 mod file_browser;
-mod helpers;
+mod structs;
+mod extensions;
 mod mpris;
 mod quit_future;
 mod state;
@@ -22,7 +23,7 @@ use futures::{
     select,
 };
 use flexi_logger::{FileSpec, Logger, WriteMode};
-use log::{debug, error, info, warn};
+use log::{debug, error, info};
 
 use crate::{
     app::App,
@@ -39,6 +40,8 @@ pub enum Command {
 
 #[async_std::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    debug!("ola q ase");
+
     set_panic_hook();
 
     let _logger = Logger::try_with_str("trace")?
@@ -57,7 +60,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     pin_mut!(task_player, task_mpris);
 
-    debug!("Awaiting mpris and player");
+    debug!("Awaiting mpris and player tasks");
     select! {
         _ = task_player => (),
         _ = task_mpris => (),
@@ -90,6 +93,7 @@ fn run_player(player_command_receiver: Receiver<Command>) -> Quit {
 }
 
 fn set_panic_hook() {
+    debug!("set_panic_hook");
     let original_hook = std::panic::take_hook();
 
     std::panic::set_hook(Box::new(move |panic_info| {

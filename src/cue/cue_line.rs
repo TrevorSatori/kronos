@@ -5,7 +5,7 @@ use std::path::Path;
 
 use log::error;
 
-use crate::helpers::str_extras::StringExtras;
+use crate::extensions::string::StringExtensions;
 
 #[derive(Eq, PartialEq)]
 pub struct CueLine {

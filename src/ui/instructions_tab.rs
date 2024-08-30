@@ -6,7 +6,7 @@ use ratatui::{
 };
 
 use crate::config::Config;
-use crate::helpers::stateful_table::StatefulTable;
+use crate::ui::stateful_table::StatefulTable;
 
 pub fn instructions_tab<'a>(f: &mut Frame, control_table: &mut StatefulTable<'a>, area: Rect, cfg: &Config) {
     let layout = Layout::default()

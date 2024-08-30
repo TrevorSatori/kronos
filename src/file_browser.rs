@@ -5,11 +5,9 @@ use log::error;
 
 use crate::{
     cue::cue_sheet::CueSheet,
-    helpers::{
-        song::{path_to_song, directory_to_songs_and_folders, Song},
-        stateful_list::StatefulList,
-    }
+    structs::song::{directory_to_songs_and_folders, path_to_song, Song}
 };
+use crate::ui::stateful_list::StatefulList;
 
 pub struct Browser {
     pub items: StatefulList<String>,

@@ -1,12 +1,10 @@
-use std::fmt::{Debug, Display};
-
-pub trait StringExtras {
+pub trait StringExtensions {
     fn count_leading_whitespace(&self) -> usize;
     fn trim_leading_whitespace(&self) -> &str;
     fn strip_quotes(&self) -> &str;
 }
 
-impl StringExtras for String {
+impl StringExtensions for String {
     fn count_leading_whitespace(&self) -> usize {
         let mut indentation = 0;
 

@@ -1,8 +1,6 @@
 use std::error::Error;
 use std::sync::{
-    mpsc::{
-        Receiver,
-    },
+    mpsc::Receiver,
     Arc,
     Mutex,
 };
@@ -21,16 +19,14 @@ use rodio::OutputStream;
 use crate::{
     config::Config,
     file_browser::Browser,
-    helpers::{
-        song::{directory_to_songs_and_folders},
-        stateful_list::StatefulList,
-        stateful_table::StatefulTable,
-    },
-    state::State,
-    term::set_terminal,
-    ui, Command,
+    structs::song::directory_to_songs_and_folders,
     player::Player,
+    state::State,
+    term::set_terminal, ui,
+    Command,
 };
+use crate::ui::stateful_list::StatefulList;
+use crate::ui::stateful_table::StatefulTable;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum InputMode {
