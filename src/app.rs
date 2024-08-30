@@ -41,6 +41,7 @@ pub enum AppTab {
 
 pub struct App<'a> {
     must_quit: bool,
+    config: Config,
     input_mode: InputMode,
     active_tab: AppTab,
     browser: Browser,
@@ -72,6 +73,7 @@ impl<'a> App<'a> {
 
         Self {
             must_quit: false,
+            config,
             input_mode: InputMode::Browser,
             active_tab: AppTab::FileBrowser,
             browser: Browser::new(current_directory),
@@ -256,9 +258,7 @@ impl<'a> App<'a> {
     }
 
     fn render(&mut self, frame: &mut Frame) {
-        let config = Config::new();
-
-        let block = Block::default().style(Style::default().bg(config.background()));
+        let block = Block::default().style(Style::default().bg(self.config.background()));
         frame.render_widget(block, frame.size());
 
         let [area_top, area_center, area_bottom] = Layout
@@ -267,10 +267,10 @@ impl<'a> App<'a> {
             ])
             .areas(frame.size());
 
-        ui::render_top_bar(frame, &config, area_top, self.active_tab);
+        ui::render_top_bar(frame, &self.config, area_top, self.active_tab);
 
         match self.active_tab {
-            AppTab::FileBrowser => self.browser.render(frame, &self.player.queue(), area_center, &config),
+            AppTab::FileBrowser => self.browser.render(frame, &self.player.queue(), area_center, &self.config),
             AppTab::Help => self.help_tab.render(frame, area_center),
         };
 
@@ -279,7 +279,7 @@ impl<'a> App<'a> {
 
         ui::render_playing_gauge(
             frame,
-            &config,
+            &self.config,
             area_bottom,
             &currently_playing,
             self.player.get_pos(),

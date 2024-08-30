@@ -35,21 +35,21 @@ struct ConfigToml {
     theme: ThemeToml,
 }
 
-#[derive(Debug)]
-struct Theme {
-    foreground: Color,
-    background: Color,
-    highlight_foreground: Color,
-    highlight_background: Color,
+#[derive(Debug, Copy, Clone)]
+pub struct Theme {
+    pub foreground: Color,
+    pub background: Color,
+    pub highlight_foreground: Color,
+    pub highlight_background: Color,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Config {
-    theme: Theme,
+    pub theme: Theme,
 }
 
 fn load_config_string() -> Option<(PathBuf, String)> {
-    let config_paths = [home::home_dir().unwrap().as_path().join(".config/jolteon/config.toml")];
+    let config_paths = [home::home_dir()?.as_path().join(".config/jolteon/config.toml")];
 
     for config in config_paths {
         let result: Result<String, std::io::Error> = fs::read_to_string(&config);

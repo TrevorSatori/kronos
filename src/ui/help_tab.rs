@@ -76,10 +76,10 @@ impl<'a> HelpTab<'a> {
         let header = self
             .header
             .iter()
-            .map(|h| Cell::from(*h).style(Style::default().fg(self.config.highlight_foreground())));
+            .map(|h| Cell::from(*h).style(Style::default().fg(self.config.theme.highlight_foreground)));
 
         let header = Row::new(header)
-            .style(Style::default().bg(self.config.background()).fg(self.config.foreground()))
+            .style(Style::default().bg(self.config.theme.background).fg(self.config.theme.foreground))
             .height(1)
             .bottom_margin(0);
 
@@ -105,12 +105,12 @@ impl<'a> HelpTab<'a> {
                     .title_alignment(Alignment::Center)
                     .border_type(BorderType::Plain),
             )
-            .style(Style::default().fg(self.config.foreground()).bg(self.config.background()))
+            .style(Style::default().fg(self.config.theme.foreground).bg(self.config.theme.background))
             .highlight_style(
                 Style::default()
                     .add_modifier(Modifier::BOLD)
-                    .bg(self.config.highlight_background())
-                    .fg(self.config.highlight_foreground()),
+                    .bg(self.config.theme.highlight_background)
+                    .fg(self.config.theme.highlight_foreground),
             )
             .widths(&[Constraint::Percentage(50), Constraint::Length(30), Constraint::Min(10)]);
         f.render_stateful_widget(&table, layout[0], &mut self.state);
