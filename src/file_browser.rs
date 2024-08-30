@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use log::error;
 
 use crate::{
     cue::cue_sheet::CueSheet,
@@ -44,7 +45,7 @@ impl Browser {
         } else {
             if path.extension().is_some_and(|e| e == "cue") {
                 let cue = CueSheet::from_file(&path);
-                eprintln!("cue {:#?}", cue);
+                error!("cue {:#?}", cue);
                 None
             } else {
                 match path_to_song(&path) {

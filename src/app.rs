@@ -9,6 +9,7 @@ use std::sync::{
 use std::{env, path::PathBuf, thread, time::Duration};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
+use log::error;
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     prelude::Style,
@@ -146,7 +147,7 @@ impl<'a> App<'a> {
                     player.stop();
                 }
                 Err(err) => {
-                    eprintln!("error receiving! {}", err);
+                    error!("error receiving! {}", err);
                     break;
                 }
             }

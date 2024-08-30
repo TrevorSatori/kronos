@@ -2,6 +2,9 @@ use std::fmt::{Debug, Display, Formatter};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
+
+use log::error;
+
 use crate::helpers::str_extras::StringExtras;
 
 #[derive(Eq, PartialEq)]
@@ -33,7 +36,7 @@ impl CueLine {
             let key_value = line.trim_leading_whitespace();
 
             let Some((key, value)) = key_value.split_once(char::is_whitespace) else {
-                eprintln!("lines should be key value {:?}", line);
+                error!("lines should be key value {:?}", line);
                 continue;
             };
 

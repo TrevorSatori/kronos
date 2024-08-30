@@ -7,6 +7,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use log::error;
 use ratatui::{backend::CrosstermBackend, Terminal};
 
 pub fn set_terminal() -> Result<Terminal<CrosstermBackend<std::io::Stdout>>, impl Error> {
@@ -20,10 +21,10 @@ pub fn set_terminal() -> Result<Terminal<CrosstermBackend<std::io::Stdout>>, imp
 
 pub fn reset_terminal(writer: &mut impl std::io::Write) {
     execute!(writer, LeaveAlternateScreen, DisableMouseCapture, Show).unwrap_or_else(|e| {
-        eprintln!("tried to execute(...) but couldn't :( {e}");
+        error!("tried to execute(...) but couldn't :( {e}");
     });
 
     disable_raw_mode().unwrap_or_else(|e| {
-        eprintln!("tried to disable_raw_mode but couldn't :( {e}");
+        error!("tried to disable_raw_mode but couldn't :( {e}");
     });
 }

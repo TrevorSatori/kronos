@@ -21,6 +21,8 @@ use futures::{
     pin_mut,
     select,
 };
+use flexi_logger::{FileSpec, Logger, WriteMode};
+use log::{debug, error, info, warn};
 
 use crate::{
     app::App,
@@ -39,20 +41,32 @@ pub enum Command {
 async fn main() -> Result<(), Box<dyn Error>> {
     set_panic_hook();
 
+    let _logger = Logger::try_with_str("trace")?
+        .log_to_file(FileSpec::default())
+        .write_mode(WriteMode::BufferAndFlush)
+        .start()?;
+
+    info!("Starting");
+
     let (player_command_sender, player_command_receiver) = channel();
+
+    debug!("Starting mpris and player");
 
     let task_player = run_player(player_command_receiver).fuse();
     let task_mpris = run_mpris(player_command_sender).fuse();
 
     pin_mut!(task_player, task_mpris);
 
+    debug!("Awaiting mpris and player");
     select! {
         _ = task_player => (),
         _ = task_mpris => (),
     }
 
+    debug!("Resetting terminal");
     reset_terminal(&mut stdout());
 
+    debug!("kthxbye");
     Ok(())
 }
 
@@ -66,7 +80,7 @@ fn run_player(player_command_receiver: Receiver<Command>) -> Quit {
 
         match app.start() {
             Ok(state) => save_state(&state).unwrap(),
-            Err(err) => eprintln!("error :( {:?}", err),
+            Err(err) => error!("error :( {:?}", err),
         }
 
         quit_state.lock().unwrap().complete();

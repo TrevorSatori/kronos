@@ -2,6 +2,8 @@ use std::future::Future;
 use std::sync::{Arc, Mutex};
 use std::task;
 
+use log::error;
+
 pub struct QuitState {
     completed: bool,
     waker: Option<task::Waker>,
@@ -14,7 +16,7 @@ impl QuitState {
         if let Some(waker) = self.waker.take() {
             waker.wake();
         } else {
-            eprintln!("Waker is gone! This is an error");
+            error!("Waker is gone!");
         }
     }
 }

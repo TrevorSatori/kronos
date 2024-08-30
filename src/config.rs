@@ -1,8 +1,10 @@
-use ratatui::style::Color;
-use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
+
+use ratatui::style::Color;
+use serde::{Deserialize, Serialize};
+use log::error;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ThemeToml {
@@ -67,7 +69,7 @@ fn load_config_toml() -> ConfigToml {
         Some((path, content)) => match toml::from_str(&content) {
             Ok(toml) => Some(toml),
             Err(err) => {
-                eprintln!(
+                error!(
                     "Could not parse {:?} as toml. Will use default values. Error was: \n{:?}",
                     path, err
                 );

@@ -2,6 +2,8 @@ use std::time::Duration;
 use std::{collections::VecDeque, path::PathBuf};
 use std::sync::{mpsc::{channel, Receiver, Sender}, Arc, Mutex, MutexGuard};
 
+use log::error;
+
 use super::song::{path_list_to_song_list, path_to_song, directory_to_song_list, Song};
 
 pub struct Queue {
@@ -21,7 +23,7 @@ impl Queue {
         let (songs, errors) = path_list_to_song_list(queue.iter().map(PathBuf::from).collect());
 
         if !errors.is_empty() {
-            eprintln!("Failed to load some songs.\n{:?}", errors);
+            error!("Failed to load some songs.\n{:?}", errors);
         }
 
         let total_time = song_list_to_duration(&songs);
@@ -88,7 +90,7 @@ impl Queue {
                 return l
             }
             rx.lock().unwrap().recv().unwrap_or_else(|e| {
-               eprintln!("queue.pop() tried to recv and failed. {:#?}", e);
+               error!("queue.pop() tried to recv and failed. {:#?}", e);
             });
         }
     }
@@ -130,7 +132,7 @@ impl Queue {
             match path_to_song(&path) {
                 Ok(song) => self.songs().push_back(song),
                 Err(err) => {
-                    eprintln!("Could not add {:?}. Error was {:?}", &path, err);
+                    error!("Could not add {:?}. Error was {:?}", &path, err);
                 }
             }
         }

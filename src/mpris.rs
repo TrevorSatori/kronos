@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::sync::mpsc::Sender;
 
+use log::error;
 use mpris_server;
 
 use crate::Command;
@@ -16,14 +17,14 @@ pub async fn run_mpris(player_command_sender: Sender<Command>) -> Result<(), Box
     let play_pause = player_command_sender.clone();
     player.connect_play_pause(move |_player| {
         if let Err(err) = play_pause.send(Command::PlayPause) {
-            eprintln!("Failed to send play_pause! {:?}", err);
+            error!("Failed to send play_pause! {:?}", err);
         }
     });
 
     let next = player_command_sender.clone();
     player.connect_next(move |_player| {
         if let Err(err) = next.send(Command::Next) {
-            eprintln!("Failed to send next! {:?}", err);
+            error!("Failed to send next! {:?}", err);
         }
     });
 

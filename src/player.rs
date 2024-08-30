@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
+use log::{debug, error};
 use rodio::{Decoder, OutputStreamHandle, Sink};
 
 use crate::{
@@ -57,11 +58,11 @@ impl Player {
 
                 match currently_playing.lock() {
                     Ok(mut s) => {
-                        eprintln!("s {:?}", s);
+                        debug!("s {:?}", s);
                         *s = Some(song);
                     }
                     Err(err) => {
-                        eprintln!("spawn_player_thread: currently_playing.lock() returned an error! {:?}", err);
+                        error!("spawn_player_thread: currently_playing.lock() returned an error! {:?}", err);
                     }
                 };
 
@@ -73,11 +74,11 @@ impl Player {
 
                 match currently_playing.lock() {
                     Ok(mut s) => {
-                        eprintln!("s {:?}", s);
+                        debug!("s {:?}", s);
                         *s = None;
                     }
                     Err(err) => {
-                        eprintln!("spawn_player_thread: currently_playing.lock() returned an error! {:?}", err);
+                        error!("spawn_player_thread: currently_playing.lock() returned an error! {:?}", err);
                     }
                 };
             }
@@ -119,7 +120,7 @@ impl Player {
                 .saturating_add(Duration::from_secs(5))
                 .min(song.length);
             self.sink.try_seek(target).unwrap_or_else(|e| {
-                eprintln!("could not seek {:?}", e);
+                error!("could not seek {:?}", e);
             });
         }
     }
@@ -131,7 +132,7 @@ impl Player {
             .saturating_sub(Duration::from_secs(5))
             .max(Duration::from_secs(0));
         self.sink.try_seek(target).unwrap_or_else(|e| {
-            eprintln!("could not seek {:?}", e);
+            error!("could not seek {:?}", e);
         });
     }
 }

@@ -5,6 +5,7 @@ use std::{
 };
 
 use lofty::{Accessor, AudioFile, LoftyError, Probe, TaggedFileExt};
+use log::error;
 
 #[derive(Clone, Debug)]
 pub struct Song {
@@ -74,7 +75,7 @@ pub fn directory_to_song_list(path: &Path) -> Vec<Song> {
             let (songs, errors) = path_list_to_song_list(paths);
 
             if !errors.is_empty() {
-                eprintln!("Could not add some songs: {:?}", errors);
+                error!("Could not add some songs: {:?}", errors);
             }
 
             let mut songs = Vec::from(songs);
