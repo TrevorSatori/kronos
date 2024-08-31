@@ -1,4 +1,6 @@
+use std::fmt::{Formatter, Pointer};
 use std::fs;
+use std::ops::Deref;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -6,46 +8,35 @@ use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
 use log::error;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct ThemeToml {
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+pub struct Config {
     #[serde(default)]
-    foreground: String,
-    #[serde(default)]
-    background: String,
-    #[serde(default)]
-    highlight_foreground: String,
-    #[serde(default)]
-    highlight_background: String,
+    pub theme: Theme,
 }
 
-impl Default for ThemeToml {
-    fn default() -> Self {
-        Self {
-            foreground: "".to_string(),
-            background: "".to_string(),
-            highlight_foreground: "".to_string(),
-            highlight_background: "".to_string(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct ConfigToml {
-    #[serde(default)]
-    theme: ThemeToml,
-}
-
-#[derive(Debug, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct Theme {
+    #[serde(default)]
     pub foreground: Color,
+    #[serde(default)]
     pub background: Color,
+    #[serde(default)]
     pub highlight_foreground: Color,
+    #[serde(default)]
     pub highlight_background: Color,
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct Config {
-    pub theme: Theme,
+impl Default for Theme {
+    // let color1 = Color::from_hsl(29.0, 54.0, 61.0);
+    // let color2 = Color::from_hsl(39.0, 67.0, 69.0);
+    fn default() -> Self {
+        Self {
+            foreground: Color::from_hsl(29.0, 54.0, 61.0),
+            background: Color::Black,
+            highlight_foreground: Color::Black,
+            highlight_background: Color::from_hsl(29.0, 54.0, 61.0),
+        }
+    }
 }
 
 fn load_config_string() -> Option<(PathBuf, String)> {
@@ -62,7 +53,7 @@ fn load_config_string() -> Option<(PathBuf, String)> {
     None
 }
 
-fn load_config_toml() -> ConfigToml {
+fn load_config_toml() -> Config {
     let config_string = load_config_string();
 
     let config_toml_option = match config_string {
@@ -79,8 +70,8 @@ fn load_config_toml() -> ConfigToml {
         None => None,
     };
 
-    config_toml_option.unwrap_or(ConfigToml {
-        theme: ThemeToml::default(),
+    config_toml_option.unwrap_or(Config {
+        theme: Theme::default(),
     })
 }
 
@@ -88,17 +79,7 @@ impl Config {
     pub fn new() -> Self {
         let config_toml = load_config_toml();
 
-        let color1 = Color::from_hsl(29.0, 54.0, 61.0);
-        // let color2 = Color::from_hsl(39.0, 67.0, 69.0);
-
-        let theme = Theme {
-            foreground: Color::from_str(&config_toml.theme.foreground).unwrap_or(color1),
-            background: Color::from_str(&config_toml.theme.background).unwrap_or(Color::Black),
-            highlight_foreground: Color::from_str(&config_toml.theme.highlight_foreground).unwrap_or(Color::Black),
-            highlight_background: Color::from_str(&config_toml.theme.highlight_background).unwrap_or(color1),
-        };
-
-        Self { theme }
+        Self { theme: config_toml.theme }
     }
 
     pub fn foreground(&self) -> Color {
