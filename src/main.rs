@@ -11,6 +11,7 @@ mod term;
 mod ui;
 mod player;
 mod cue;
+mod toml;
 
 use std::error::Error;
 use std::io::stdout;

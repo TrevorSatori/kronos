@@ -1,100 +1,55 @@
-use std::fmt::{Formatter, Pointer};
-use std::fs;
-use std::ops::Deref;
-use std::path::PathBuf;
-use std::str::FromStr;
-
 use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
 use log::error;
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+use crate::toml::read_toml_file;
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Default)]
 pub struct Config {
     #[serde(default)]
     pub theme: Theme,
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Default)]
 pub struct Theme {
-    #[serde(default)]
+    #[serde(default = "default_foreground")]
     pub foreground: Color,
-    #[serde(default)]
+
+    #[serde(default = "default_background")]
     pub background: Color,
-    #[serde(default)]
+
+    #[serde(default = "default_highlight_foreground")]
     pub highlight_foreground: Color,
-    #[serde(default)]
+
+    #[serde(default = "default_highlight_background")]
     pub highlight_background: Color,
+
+    #[serde(default = "default_search")]
+    pub search: Color,
+
+    #[serde(default = "default_top_bar_background")]
+    pub top_bar_background: Color,
+
+    #[serde(default = "default_top_bar_highlight")]
+    pub top_bar_highlight: Color,
 }
 
-impl Default for Theme {
-    // let color1 = Color::from_hsl(29.0, 54.0, 61.0);
-    // let color2 = Color::from_hsl(39.0, 67.0, 69.0);
-    fn default() -> Self {
-        Self {
-            foreground: Color::from_hsl(29.0, 54.0, 61.0),
-            background: Color::Black,
-            highlight_foreground: Color::Black,
-            highlight_background: Color::from_hsl(29.0, 54.0, 61.0),
-        }
-    }
-}
-
-fn load_config_string() -> Option<(PathBuf, String)> {
-    let config_paths = [home::home_dir()?.as_path().join(".config/jolteon/config.toml")];
-
-    for config in config_paths {
-        let result: Result<String, std::io::Error> = fs::read_to_string(&config);
-
-        if let Ok(file_content) = result {
-            return Some((config, file_content));
-        }
-    }
-
-    None
-}
-
-fn load_config_toml() -> Config {
-    let config_string = load_config_string();
-
-    let config_toml_option = match config_string {
-        Some((path, content)) => match toml::from_str(&content) {
-            Ok(toml) => Some(toml),
-            Err(err) => {
-                error!(
-                    "Could not parse {:?} as toml. Will use default values. Error was: \n{:?}",
-                    path, err
-                );
-                None
-            }
-        },
-        None => None,
-    };
-
-    config_toml_option.unwrap_or(Config {
-        theme: Theme::default(),
-    })
-}
+fn default_foreground() -> Color { Color::from_hsl(29.0, 54.0, 61.0) }
+fn default_background() -> Color { Color::Black }
+fn default_highlight_foreground() -> Color { Color::Black }
+fn default_highlight_background() -> Color { Color::from_hsl(29.0, 54.0, 61.0) }
+fn default_search() -> Color { Color::Red }
+fn default_top_bar_background() -> Color { Color::from_hsl(29.0, 34.0, 20.0) }
+fn default_top_bar_highlight() -> Color { Color::from_hsl(39.0, 67.0, 69.0) }
 
 impl Config {
-    pub fn new() -> Self {
-        let config_toml = load_config_toml();
-
-        Self { theme: config_toml.theme }
-    }
-
-    pub fn foreground(&self) -> Color {
-        self.theme.foreground
-    }
-
-    pub fn background(&self) -> Color {
-        self.theme.background
-    }
-
-    pub fn highlight_foreground(&self) -> Color {
-        self.theme.highlight_foreground
-    }
-
-    pub fn highlight_background(&self) -> Color {
-        self.theme.highlight_background
+    pub fn from_file() -> Self {
+        read_toml_file("config").unwrap_or_else(|err| {
+            error!(
+                "Could not parse config file as toml. Will use default values. Error was: \n{:?}",
+                err
+            );
+            Config::default()
+        })
     }
 }

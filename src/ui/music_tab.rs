@@ -34,7 +34,7 @@ impl Browser {
         let browser_title = match &self.filter {
             Some(filter) => Line::from(vec![
                 Span::styled("  search: ", Style::default()),
-                Span::styled(filter.clone(), Style::default().fg(Color::Red)),
+                Span::styled(filter.clone(), Style::default().fg(cfg.theme.search)),
             ]),
             _ => Line::from(folder_name),
         };
@@ -44,7 +44,7 @@ impl Browser {
             .title(browser_title)
             .title_alignment(Alignment::Left)
             .title_position(Position::Top)
-            .title_style(Style::new().bg(cfg.background()).fg(cfg.foreground()));
+            .title_style(Style::new().bg(cfg.theme.background).fg(cfg.theme.foreground));
 
         top_bar
     }
@@ -60,7 +60,7 @@ impl Browser {
             .iter()
             .map(|i| {
                 let fg = match self.filter.as_ref() {
-                    Some(s) if (i.to_lowercase().contains(&s.to_lowercase())) => Color::Red,
+                    Some(s) if (i.to_lowercase().contains(&s.to_lowercase())) => cfg.theme.search,
                     _ => Color::Reset,
                 };
                 ListItem::new(Text::from(i.to_owned())).style(Style::default().fg(fg))
@@ -68,11 +68,11 @@ impl Browser {
             .collect();
 
         let browser_list = List::new(browser_items)
-            .style(Style::default().fg(cfg.foreground()))
+            .style(Style::default().fg(cfg.theme.foreground))
             .highlight_style(
                 Style::default()
-                    .bg(cfg.highlight_background())
-                    .fg(cfg.highlight_foreground())
+                    .bg(cfg.theme.highlight_background)
+                    .fg(cfg.theme.highlight_foreground)
                     .add_modifier(Modifier::BOLD),
             )
             .scroll_padding(0)
@@ -98,11 +98,11 @@ fn queue_list<'a>(queue_items: &Queue, cfg: &Config) -> List<'a> {
     let queue_items: Vec<String> = queue_items.songs().iter().map(song::song_to_string).collect();
 
     let queue_list = List::new(queue_items)
-        .style(Style::default().fg(cfg.foreground()))
+        .style(Style::default().fg(cfg.theme.foreground))
         .highlight_style(
             Style::default()
-                .bg(cfg.highlight_background())
-                .fg(cfg.highlight_foreground())
+                .bg(cfg.theme.highlight_background)
+                .fg(cfg.theme.highlight_foreground)
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol("");

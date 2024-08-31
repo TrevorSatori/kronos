@@ -69,7 +69,7 @@ impl<'a> App<'a> {
         // We could do this to prevent it from ever being dropped, but it's overkill and bug-prone.
         // std::mem::forget(music_output.0);
 
-        let config = Config::new();
+        let config = Config::from_file();
 
         Self {
             must_quit: false,
@@ -258,7 +258,7 @@ impl<'a> App<'a> {
     }
 
     fn render(&mut self, frame: &mut Frame) {
-        let block = Block::default().style(Style::default().bg(self.config.background()));
+        let block = Block::default().style(Style::default().bg(self.config.theme.background));
         frame.render_widget(block, frame.size());
 
         let [area_top, area_center, area_bottom] = Layout

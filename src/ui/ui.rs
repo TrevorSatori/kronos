@@ -40,7 +40,7 @@ pub fn render_top_bar(frame: &mut Frame, config: &Config, area: Rect, active_tab
         .map(|t| {
             Line::from(Span::styled(
                 t.to_string(),
-                Style::default().fg(config.foreground()),
+                Style::default().fg(config.theme.foreground),
             ))
         })
         .collect();
@@ -50,18 +50,18 @@ pub fn render_top_bar(frame: &mut Frame, config: &Config, area: Rect, active_tab
             Block::default()
                 .borders(Borders::BOTTOM)
                 .border_type(BorderType::Plain)
-                .border_style(Style::default().fg(config.background()).bg(config.background())),
+                .border_style(Style::default().fg(config.theme.background).bg(config.theme.background)),
         )
         .select(active_tab as usize)
         .style(
             Style::default()
-                .fg(config.foreground())
-                .bg(Color::from_hsl(29.0, 34.0, 20.0)),
+                .fg(config.theme.foreground)
+                .bg(config.theme.top_bar_background),
         )
         .highlight_style(
             Style::default()
                 .add_modifier(Modifier::BOLD)
-                .fg(Color::from_hsl(39.0, 67.0, 69.0)), // .bg(cfg.highlight_background()),
+                .fg(config.theme.top_bar_highlight),
         );
     frame.render_widget(tabs, area);
 }
@@ -85,7 +85,7 @@ pub fn render_playing_gauge(
 
     if let Some(current_song) = current_song {
         let playing_file = Block::default()
-            .style(Style::default().fg(config.foreground()))
+            .style(Style::default().fg(config.theme.foreground))
             .title(song_to_string(&current_song))
             .borders(Borders::NONE)
             .title_alignment(Alignment::Center)
@@ -140,9 +140,9 @@ pub fn render_playing_gauge(
         };
 
         let playing_gauge = Gauge::default()
-            .style(Style::default().fg(config.foreground()))
+            .style(Style::default().fg(config.theme.foreground))
             .label(playing_gauge_label)
-            .gauge_style(Style::default().fg(config.highlight_background()))
+            .gauge_style(Style::default().fg(config.theme.highlight_background))
             .ratio(song_progress);
         frame.render_widget(playing_gauge, area_bottom);
     }
