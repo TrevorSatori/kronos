@@ -46,7 +46,7 @@ impl Config {
     pub fn from_file() -> Self {
         read_toml_file("config").unwrap_or_else(|err| {
             error!(
-                "Could not parse config file as toml. Will use default values. Error was: \n{:?}",
+                "Error loading config. Will use default values. Error was: \n{:?}",
                 err
             );
             Config::default()
