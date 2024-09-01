@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use std::io::{self};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use crate::cue::cue_line::CueLine;
 use crate::cue::cue_line_node::CueLineNode;
@@ -8,6 +9,7 @@ use crate::cue::cue_sheet_item::CueSheetItem;
 
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct CueSheet {
+    cue_sheet_file_path: PathBuf,
     unknown: Vec<String>,
     comments: Vec<String>,
     performer: Option<String>,
@@ -15,7 +17,7 @@ pub struct CueSheet {
     file: Option<CueFile>,
 }
 
-#[derive(Debug, PartialEq, Eq, Default)]
+#[derive(Debug, PartialEq, Eq, Default, Clone)]
 pub struct CueFile {
     name: String,
     tracks: Vec<Track>,
@@ -38,9 +40,19 @@ impl CueFile {
             tracks,
         }
     }
+
+    pub fn name(&self) -> String {
+        let name = self.name.clone();
+        let name_parts: Vec<&str> = name.split('"').filter(|s| !s.is_empty()).collect();
+        name_parts[0].to_string()
+    }
+
+    pub fn tracks(&self) -> Vec<Track> {
+        self.tracks.clone()
+    }
 }
 
-#[derive(Debug, PartialEq, Eq, Default)]
+#[derive(Debug, PartialEq, Eq, Default, Clone)]
 pub struct Track {
     index: String,
     // type: String (could be enum. always "audio" for now)
@@ -65,9 +77,40 @@ impl Track {
 
         track
     }
+
+    pub fn title(&self) -> String {
+        self.title.clone()
+    }
+
+    pub fn performer(&self) -> Option<String> {
+        self.performer.clone()
+    }
+
+    pub fn start_time(&self) -> Duration {
+        let start_time = self.start_time.clone();
+        let start_time_parts: Vec<&str> = start_time.split_whitespace().filter(|s| !s.is_empty()).collect();
+        let start_time_parts = start_time_parts[1].to_string();
+        let mut time_parts: Vec<&str> = start_time_parts.split(':').collect();
+        // MINUTES:SECONDS:FRAMES
+
+        let _frames = match time_parts.pop() {
+            Some(f) => str::parse(f).unwrap(),
+            _ => 0,
+        };
+
+        let mut multiplier = 1u64;
+        let mut seconds = 0u64;
+        while let Some(t) = time_parts.pop() {
+            let n: u64 = str::parse(t).unwrap();
+            seconds += n * multiplier;
+            multiplier *= 60;
+        }
+
+        let duration = Duration::from_secs(seconds);
+
+        duration
+    }
 }
-
-
 
 impl CueSheet {
     pub fn from_file(path: &Path) -> io::Result<CueSheet> {
@@ -76,6 +119,7 @@ impl CueSheet {
         let mut top_cue_items: Vec<CueSheetItem> = cue_nodes.iter().map(|n| CueSheetItem::from_cue_line_node(n)).collect();
 
         let mut sheet = CueSheet::default();
+        sheet.cue_sheet_file_path = path.to_path_buf();
 
         while let Some(e) = top_cue_items.pop() {
             match e {
@@ -92,7 +136,14 @@ impl CueSheet {
         sheet.comments.sort();
 
         Ok(sheet)
+    }
 
+    pub fn cue_sheet_file_path(&self) -> PathBuf {
+        self.cue_sheet_file_path.clone()
+    }
+
+    pub fn file(&self) -> Option<CueFile> {
+        self.file.clone()
     }
 }
 

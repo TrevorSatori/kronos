@@ -146,6 +146,12 @@ impl Queue {
         self.notify_queue_change();
     }
 
+    pub fn append(&self, songs: &mut VecDeque<Song>) {
+        self.songs().append(songs);
+        self.refresh_total_time();
+        self.notify_queue_change();
+    }
+
     pub fn remove_selected(&self) {
         if self.songs().is_empty() {
             return;

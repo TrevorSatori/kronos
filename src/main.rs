@@ -44,9 +44,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     set_panic_hook();
 
-    let _logger = Logger::try_with_str("info")?
+    let _logger = Logger::try_with_str("jolteon=debug")?
         .log_to_file(FileSpec::default().suppress_timestamp())
-        .write_mode(WriteMode::BufferAndFlush)
+        .write_mode(WriteMode::Direct)
         .start()?;
 
     info!("Starting");

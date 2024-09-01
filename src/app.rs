@@ -1,10 +1,10 @@
 use std::error::Error;
+use std::{env, path::PathBuf, thread, time::Duration, collections::VecDeque};
 use std::sync::{
     mpsc::Receiver,
     Arc,
     Mutex,
 };
-use std::{env, path::PathBuf, thread, time::Duration};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use log::{error, info};
@@ -24,6 +24,7 @@ use crate::{
     term::set_terminal,
     ui,
     Command,
+    structs::song::Song,
 };
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -56,12 +57,8 @@ impl<'a> App<'a> {
     pub fn new(
         player_command_receiver: Receiver<Command>,
     ) -> Self {
+        let config = Config::from_file();
         let state = State::from_file();
-
-        let current_directory = match &state.last_visited_path {
-            Some(s) => PathBuf::from(s),
-            None => env::current_dir().unwrap(),
-        };
 
         let music_output = OutputStream::try_default().unwrap();
         // music_output.0 can be neither dropped nor shared between threads.
@@ -69,20 +66,22 @@ impl<'a> App<'a> {
         // We could do this to prevent it from ever being dropped, but it's overkill and bug-prone.
         // std::mem::forget(music_output.0);
 
-        let config = Config::from_file();
-
         let player = Arc::new(Player::new(state.queue_items, &music_output.1));
 
+        let current_directory = match &state.last_visited_path {
+            Some(s) => PathBuf::from(s),
+            None => env::current_dir().unwrap(),
+        };
         let mut browser = Browser::new(current_directory);
 
         let player_for_on_select = player.clone();
         browser.on_select(move |s| {
             match s {
                 FileBrowserSelection::Song(song) => {
-                    player_for_on_select.play_now(song)
+                    player_for_on_select.play_now(song);
                 }
                 FileBrowserSelection::CueSheet(cue_sheet) => {
-                    info!("Read CueSheet {:#?}", cue_sheet);
+                    player_for_on_select.play_now_cue(cue_sheet);
                 }
                 _ => {}
             }

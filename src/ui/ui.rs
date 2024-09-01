@@ -1,5 +1,5 @@
 use std::time::Duration;
-
+use log::{debug, error, warn};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     prelude::*,
@@ -131,11 +131,19 @@ pub fn render_playing_gauge(
 
     if playing_gauge_label.len() > 0 {
         let song_progress = match current_song {
-            Some(song) => f64::clamp(
-                current_song_position.as_secs_f64() / song.length.as_secs_f64(),
-                0.0,
-                1.0,
-            ),
+            Some(song) => {
+                match song.length.as_secs_f64() {
+                    0.0 => {
+                        error!("Song length is zero! {:?}", song.path);
+                        0.0
+                    }
+                    n => f64::clamp(
+                        current_song_position.as_secs_f64() / n,
+                        0.0,
+                        1.0,
+                    )
+                }
+            },
             _ => 0.0,
         };
 

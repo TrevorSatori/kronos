@@ -3,16 +3,18 @@ use std::{
     fs::DirEntry,
     path::{Path, PathBuf},
 };
-
+use std::time::Duration;
 use lofty::{Accessor, AudioFile, LoftyError, Probe, TaggedFileExt};
-use log::error;
+use log::{debug, error, warn};
+use crate::cue::CueSheet;
 
 #[derive(Clone, Debug)]
 pub struct Song {
     pub path: PathBuf,
-    pub length: std::time::Duration,
+    pub length: Duration,
     pub artist: Option<String>,
     pub title: Option<String>,
+    pub start_time: Option<Duration>,
 }
 
 const VALID_EXTENSIONS: [&str; 8] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac", "cue"];
@@ -34,7 +36,42 @@ impl Song {
             length: tagged_file.properties().duration(),
             artist,
             title,
+            start_time: None,
         })
+    }
+
+    pub fn from_cue_sheet(cue_sheet: CueSheet) -> Vec<Self> {
+        let cue_file = cue_sheet.file().unwrap();
+        let file_name = cue_file.name();
+        let tracks = cue_file.tracks();
+
+        let cue_path = cue_sheet.cue_sheet_file_path();
+        let song_path = cue_path.parent().unwrap().join(file_name);
+
+        let s = Song::from_file(&song_path).expect("could not load file");
+
+        let mut songs: Vec<Song> = tracks.iter().map(|t| {
+            Song {
+                path: song_path.clone(),
+                length: Duration::ZERO,
+                artist: t.performer(),
+                title: Some(t.title()),
+                start_time: Some(t.start_time()),
+            }
+        }).collect();
+
+        for i in 0..songs.len() {
+            debug!("song {:?}", songs[i]);
+            let next_start = if i < songs.len() - 1 {
+                songs[i+1].start_time.unwrap()
+            } else {
+                s.length
+            };
+            let this_start = songs[i].start_time.unwrap();
+            songs[i].length = next_start.saturating_sub(this_start);
+        }
+
+        songs
     }
 }
 
