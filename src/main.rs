@@ -79,12 +79,7 @@ fn run_player(player_command_receiver: Receiver<Command>) -> Quit {
 
     thread::spawn(move || {
         let mut app = App::new(player_command_receiver);
-
-        match app.start() {
-            Ok(state) => state.to_file().unwrap(),
-            Err(err) => error!("error :( {:?}", err),
-        }
-
+        app.start().unwrap_or_else(|err| error!("app.start error :( \n{:#?}", err));
         quit_state.lock().unwrap().complete();
     });
 

@@ -1,3 +1,4 @@
+use std::fmt::{Formatter};
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::PathBuf;
 use log::error;
@@ -11,6 +12,14 @@ pub enum TomlFileError {
     TomlDeError(toml::de::Error),
     TomlSeError(toml::ser::Error),
 }
+
+impl std::fmt::Display for TomlFileError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#?}", self)
+    }
+}
+
+impl std::error::Error for TomlFileError {}
 
 impl From<std::io::Error> for TomlFileError {
     fn from(value: std::io::Error) -> Self {

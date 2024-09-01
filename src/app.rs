@@ -101,7 +101,7 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn start(&mut self) -> Result<State, Box<dyn Error>> {
+    pub fn start(&mut self) -> Result<(), Box<dyn Error>> {
         let mut terminal = set_terminal()?;
 
         let tick_rate = Duration::from_secs(1);
@@ -126,7 +126,9 @@ impl<'a> App<'a> {
             }
         }
 
-        Ok(self.to_state())
+        self.to_state().to_file()?;
+
+        Ok(())
     }
 
     fn spawn_media_key_receiver_thread(&self) {
