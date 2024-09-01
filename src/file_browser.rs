@@ -1,22 +1,31 @@
 use std::path::{Path, PathBuf};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use log::error;
+use log::{error, info};
 
 use crate::{
     cue::CueSheet,
-    structs::song::{directory_to_songs_and_folders, path_to_song, Song},
+    structs::song::{directory_to_songs_and_folders, Song},
     ui::stateful_list::StatefulList,
 };
 
-pub struct Browser {
+pub struct Browser<'a> {
     pub items: StatefulList<String>,
     pub current_directory: PathBuf,
     pub filter: Option<String>,
     last_offset: usize,
+    on_select_fn: Box<dyn FnMut(FileBrowserSelection) + 'a>,
 }
 
-impl Browser {
+#[allow(dead_code, unused_variables)]
+#[derive(Debug)]
+pub enum FileBrowserSelection {
+    Song(Song),
+    CueSheet(CueSheet),
+    Directory,
+}
+
+impl<'a> Browser<'a> {
     pub fn new(current_directory: PathBuf) -> Self {
         let mut items = StatefulList::with_items(directory_to_songs_and_folders(&current_directory));
         items.select(0);
@@ -26,6 +35,7 @@ impl Browser {
             current_directory,
             filter: None,
             last_offset: 0,
+            on_select_fn: Box::new(|_| {}) as _,
         }
     }
 
@@ -37,22 +47,32 @@ impl Browser {
         }
     }
 
-    pub fn enter_selection(&mut self) -> Option<Song> {
+    pub fn on_select(&mut self, cb: impl FnMut(FileBrowserSelection) + 'a) {
+        self.on_select_fn = Box::new(cb);
+    }
+
+    fn enter_selection(&mut self) {
         let path = self.selected_item();
 
         if path.is_dir() {
             self.navigate_into();
-            None
-        } else {
-            if path.extension().is_some_and(|e| e == "cue") {
-                let cue = CueSheet::from_file(&path);
-                error!("cue {:#?}", cue);
-                None
-            } else {
-                match path_to_song(&path) {
-                    Ok(song) => Some(song),
-                    Err(_err) => None,
+        } else if path.extension().is_some_and(|e| e == "cue") {
+            match CueSheet::from_file(&path) {
+                Ok(cue_sheet) => {
+                    (self.on_select_fn)(FileBrowserSelection::CueSheet(cue_sheet));
                 }
+                Err(err) => {
+                    error!("Filed to read CueSheet {:#?}", err);
+                }
+            }
+        } else {
+            match Song::from_file(&path) {
+                Ok(song) => {
+                    (self.on_select_fn)(FileBrowserSelection::Song(song));
+                },
+                Err(err) => {
+                    error!("Filed to read Song {:#?}", err);
+                },
             }
         }
     }
@@ -124,6 +144,7 @@ impl Browser {
 
     fn on_normal_key_event(&mut self, key: KeyEvent) {
         match key.code {
+            KeyCode::Enter => { self.enter_selection(); },
             KeyCode::Backspace => self.navigate_up(),
             KeyCode::Down | KeyCode::Char('j') => self.items.next(),
             KeyCode::Up | KeyCode::Char('k') => self.items.previous(),
@@ -142,6 +163,7 @@ impl Browser {
         match key.code {
             KeyCode::Enter => {
                 self.filter = None;
+                self.enter_selection();
             }
             KeyCode::Esc => {
                 self.filter = None;

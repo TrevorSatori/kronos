@@ -10,7 +10,7 @@ use crate::config::Config;
 use crate::file_browser::Browser;
 use crate::structs::{song, queue::Queue};
 
-impl Browser {
+impl<'a> Browser<'a> {
     pub fn render(self: &mut Self, frame: &mut Frame, queue_items: &Queue, area: Rect, cfg: &Config) {
         let (area_top, area_main_left, area_main_separator, area_main_right) = create_areas(area);
 
@@ -22,7 +22,7 @@ impl Browser {
         render_queue_list(frame, &queue_items, cfg, area_main_right);
     }
 
-    pub fn top_bar<'a>(self: &Self, cfg: &Config) -> Block<'a> {
+    pub fn top_bar(self: &Self, cfg: &Config) -> Block<'a> {
         let folder_name = self
             .current_directory
             .file_name()
@@ -53,7 +53,7 @@ impl Browser {
         frame.render_widget(self.top_bar(cfg), area);
     }
 
-    fn file_list<'a>(self: &Self, cfg: &Config) -> List<'a> {
+    fn file_list(self: &Self, cfg: &Config) -> List<'a> {
         let browser_items: Vec<ListItem> = self
             .items
             .items()

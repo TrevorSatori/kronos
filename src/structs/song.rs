@@ -17,23 +17,25 @@ pub struct Song {
 
 const VALID_EXTENSIONS: [&str; 8] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac", "cue"];
 
-pub fn path_to_song(path: &PathBuf) -> Result<Song, LoftyError> {
-    let tagged_file = Probe::open(path)?.read()?;
+impl Song {
+    pub fn from_file(path: &PathBuf) -> Result<Self, LoftyError> {
+        let tagged_file = Probe::open(path)?.read()?;
 
-    let (artist, title) = match tagged_file.primary_tag() {
-        Some(primary_tag) => (
-            primary_tag.artist().map(String::from),
-            primary_tag.title().map(String::from),
-        ),
-        _ => (None, None),
-    };
+        let (artist, title) = match tagged_file.primary_tag() {
+            Some(primary_tag) => (
+                primary_tag.artist().map(String::from),
+                primary_tag.title().map(String::from),
+            ),
+            _ => (None, None),
+        };
 
-    Ok(Song {
-        path: PathBuf::from(path),
-        length: tagged_file.properties().duration(),
-        artist,
-        title,
-    })
+        Ok(Song {
+            path: PathBuf::from(path),
+            length: tagged_file.properties().duration(),
+            artist,
+            title,
+        })
+    }
 }
 
 pub fn song_to_string(song: &Song) -> String { // TODO: this is a UI responsibility
@@ -91,7 +93,7 @@ pub fn path_list_to_song_list(paths: Vec<PathBuf>) -> (VecDeque<Song>, VecDeque<
     let mut errors: VecDeque<(PathBuf, LoftyError)> = VecDeque::new();
 
     for path in paths {
-        match path_to_song(&path) {
+        match Song::from_file(&path) {
             Ok(song) => {
                 songs.push_back(song);
             }

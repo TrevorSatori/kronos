@@ -7,7 +7,7 @@ use std::sync::{
 use std::{env, path::PathBuf, thread, time::Duration};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
-use log::error;
+use log::{error, info};
 use ratatui::{
     layout::{Constraint, Layout},
     prelude::Style,
@@ -18,7 +18,7 @@ use rodio::OutputStream;
 
 use crate::{
     config::Config,
-    file_browser::Browser,
+    file_browser::{Browser, FileBrowserSelection},
     player::Player,
     state::State,
     term::set_terminal,
@@ -44,7 +44,7 @@ pub struct App<'a> {
     config: Config,
     input_mode: InputMode,
     active_tab: AppTab,
-    browser: Browser,
+    browser: Browser<'a>,
     help_tab: ui::HelpTab<'a>,
     player_command_receiver: Arc<Mutex<Receiver<Command>>>,
     player: Arc<Player>,
@@ -71,15 +71,32 @@ impl<'a> App<'a> {
 
         let config = Config::from_file();
 
+        let player = Arc::new(Player::new(state.queue_items, &music_output.1));
+
+        let mut browser = Browser::new(current_directory);
+
+        let player_for_on_select = player.clone();
+        browser.on_select(move |s| {
+            match s {
+                FileBrowserSelection::Song(song) => {
+                    player_for_on_select.play_now(song)
+                }
+                FileBrowserSelection::CueSheet(cue_sheet) => {
+                    info!("Read CueSheet {:#?}", cue_sheet);
+                }
+                _ => {}
+            }
+        });
+
         Self {
             must_quit: false,
             config,
             input_mode: InputMode::Browser,
             active_tab: AppTab::FileBrowser,
-            browser: Browser::new(current_directory),
+            browser,
             help_tab: ui::HelpTab::new(config),
             player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
-            player: Arc::new(Player::new(state.queue_items, &music_output.1)),
+            player,
             music_output: music_output.0,
         }
     }
@@ -225,11 +242,6 @@ impl<'a> App<'a> {
             KeyCode::Char('a') if self.browser.filter.is_none() => {
                 self.player.queue().add(self.browser.selected_item());
                 self.browser.items.next();
-            }
-            KeyCode::Enter => {
-                if let Some(song) = self.browser.enter_selection() {
-                    self.player.play_now(song);
-                }
             }
             _ => {}
         }

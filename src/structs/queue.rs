@@ -4,7 +4,7 @@ use std::sync::{mpsc::{channel, Receiver, Sender}, Arc, Mutex, MutexGuard};
 
 use log::error;
 
-use super::song::{path_list_to_song_list, path_to_song, directory_to_song_list, Song};
+use super::song::{path_list_to_song_list, directory_to_song_list, Song};
 
 pub struct Queue {
     items: Arc<Mutex<VecDeque<Song>>>,
@@ -129,7 +129,7 @@ impl Queue {
             let files = directory_to_song_list(&path);
             self.songs().append(&mut VecDeque::from(files));
         } else {
-            match path_to_song(&path) {
+            match Song::from_file(&path) {
                 Ok(song) => self.songs().push_back(song),
                 Err(err) => {
                     error!("Could not add {:?}. Error was {:?}", &path, err);
