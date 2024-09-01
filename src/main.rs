@@ -30,7 +30,6 @@ use crate::{
     app::App,
     mpris::run_mpris,
     quit_future::Quit,
-    state::{load_state, save_state, State},
     term::reset_terminal,
 };
 
@@ -77,13 +76,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 fn run_player(player_command_receiver: Receiver<Command>) -> Quit {
     let quit = Quit::new();
     let quit_state = quit.state();
-    let state = load_state().unwrap_or(State::default());
 
     thread::spawn(move || {
-        let mut app = App::new(state.last_visited_path, state.queue_items, player_command_receiver);
+        let mut app = App::new(player_command_receiver);
 
         match app.start() {
-            Ok(state) => save_state(&state).unwrap(),
+            Ok(state) => state.to_file().unwrap(),
             Err(err) => error!("error :( {:?}", err),
         }
 

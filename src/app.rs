@@ -54,11 +54,11 @@ pub struct App<'a> {
 
 impl<'a> App<'a> {
     pub fn new(
-        initial_directory: Option<String>,
-        queue: Vec<String>,
         player_command_receiver: Receiver<Command>,
     ) -> Self {
-        let current_directory = match &initial_directory {
+        let state = State::from_file();
+
+        let current_directory = match &state.last_visited_path {
             Some(s) => PathBuf::from(s),
             None => env::current_dir().unwrap(),
         };
@@ -79,7 +79,7 @@ impl<'a> App<'a> {
             browser: Browser::new(current_directory),
             help_tab: ui::HelpTab::new(config),
             player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
-            player: Arc::new(Player::new(queue, &music_output.1)),
+            player: Arc::new(Player::new(state.queue_items, &music_output.1)),
             music_output: music_output.0,
         }
     }

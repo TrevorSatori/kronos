@@ -1,8 +1,7 @@
 use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
-use log::error;
 
-use crate::toml::read_toml_file;
+use crate::toml::{read_toml_file_or_default};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Default)]
 pub struct Config {
@@ -44,12 +43,6 @@ fn default_top_bar_highlight() -> Color { Color::from_hsl(39.0, 67.0, 69.0) }
 
 impl Config {
     pub fn from_file() -> Self {
-        read_toml_file("config").unwrap_or_else(|err| {
-            error!(
-                "Error loading config. Will use default values. Error was: \n{:?}",
-                err
-            );
-            Config::default()
-        })
+        read_toml_file_or_default("config")
     }
 }
