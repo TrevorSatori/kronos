@@ -40,13 +40,12 @@ pub enum Command {
 
 #[async_std::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    debug!("ola q ase");
-
     set_panic_hook();
 
     let _logger = Logger::try_with_str("jolteon=debug")?
         .log_to_file(FileSpec::default().suppress_timestamp())
         .write_mode(WriteMode::Direct)
+        .use_utc()
         .start()?;
 
     info!("Starting");

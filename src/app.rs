@@ -124,7 +124,7 @@ impl<'a> App<'a> {
         let mut last_tick = std::time::Instant::now();
 
         self.spawn_media_key_receiver_thread();
-        self.player.spawn_player_thread();
+        self.player.spawn();
 
         while !self.must_quit {
             terminal.set_cursor(0, 0)?; // see known-issues.md
@@ -226,6 +226,9 @@ impl<'a> App<'a> {
             KeyCode::Char('+') => self.player.change_volume(0.05),
             KeyCode::Char('p') | KeyCode::Char(' ') => self.player.toggle(),
             KeyCode::Char('g') => self.player.stop(),
+            KeyCode::Char('c') if key.modifiers == KeyModifiers::ALT => {
+                let _ = env::set_current_dir(&self.browser.current_directory);
+            },
             _ => {
                 handled = false;
             }

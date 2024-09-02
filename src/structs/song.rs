@@ -61,7 +61,6 @@ impl Song {
         }).collect();
 
         for i in 0..songs.len() {
-            debug!("song {:?}", songs[i]);
             let next_start = if i < songs.len() - 1 {
                 songs[i+1].start_time.unwrap()
             } else {
