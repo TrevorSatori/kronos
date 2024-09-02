@@ -163,13 +163,16 @@ impl Player {
     }
 
     pub fn seek_backward(&self) {
-        let target = self
-            .sink
-            .get_pos()
-            .saturating_sub(Duration::from_secs(5))
-            .max(Duration::from_secs(0));
-        self.sink.try_seek(target).unwrap_or_else(|e| {
-            error!("could not seek {:?}", e);
-        });
+        if let Some(song) = self.currently_playing.lock().unwrap().as_ref() {
+            let target = self
+                .sink
+                .get_pos()
+                .saturating_sub(Duration::from_secs(5))
+                .max(song.start_time.unwrap_or(Duration::ZERO));
+            self.sink.try_seek(target).unwrap_or_else(|e| {
+                error!("could not seek {:?}", e);
+            });
+        }
+
     }
 }
