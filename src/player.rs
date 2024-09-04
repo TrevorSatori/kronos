@@ -79,7 +79,7 @@ impl Player {
 
         let song_start_time = self.song_start_time.clone();
         let set_currently_playing = move |song: Option<Song>| {
-            let start_time = song.as_ref().and_then(|song| song.start_time).unwrap_or(Duration::ZERO).as_secs();
+            let start_time = song.as_ref().and_then(|song| Some(song.start_time)).unwrap_or(Duration::ZERO).as_secs();
             song_start_time.store(start_time, Ordering::Relaxed);
 
             match currently_playing.lock() {
@@ -100,7 +100,7 @@ impl Player {
                 debug!("popped {:?}", song.title);
 
                 let path = song.path.clone();
-                let start_time = song.start_time.clone().unwrap_or(Duration::ZERO);
+                let start_time = song.start_time.clone();
                 let length = song.length.clone();
 
                 set_currently_playing(Some(song));

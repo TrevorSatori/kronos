@@ -12,9 +12,9 @@ use crate::cue::CueSheet;
 pub struct Song {
     pub path: PathBuf,
     pub length: Duration,
-    pub artist: Option<String>,
     pub title: String,
-    pub start_time: Option<Duration>,
+    pub start_time: Duration,
+    pub artist: Option<String>,
 }
 
 const VALID_EXTENSIONS: [&str; 8] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac", "cue"];
@@ -36,7 +36,7 @@ impl Song {
             length: tagged_file.properties().duration(),
             artist,
             title: title.unwrap_or(path.file_name().unwrap().to_str().unwrap().to_string()),
-            start_time: None,
+            start_time: Duration::ZERO,
         })
     }
 
@@ -56,17 +56,17 @@ impl Song {
                 length: Duration::ZERO,
                 artist: t.performer(),
                 title: t.title(),
-                start_time: Some(t.start_time()),
+                start_time: t.start_time(),
             }
         }).collect();
 
         for i in 0..songs.len() {
             let next_start = if i < songs.len() - 1 {
-                songs[i+1].start_time.unwrap()
+                songs[i+1].start_time
             } else {
                 s.length
             };
-            let this_start = songs[i].start_time.unwrap();
+            let this_start = songs[i].start_time;
             songs[i].length = next_start.saturating_sub(this_start);
         }
 
