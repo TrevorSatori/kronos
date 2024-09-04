@@ -28,7 +28,7 @@ pub struct Player {
 }
 
 // At this point, Player is almost a re-implementation of Sink, with features we need and it lacks.
-// It'd probably make more sense to not use sink at all.
+// It'd probably make more sense to not use sink at all, and just go with `stream_handle.play_raw()`.
 impl Player {
     pub fn new(
         queue: Vec<String>,
@@ -224,8 +224,8 @@ impl Player {
             self.sink.try_seek(target).unwrap_or_else(|e| {
                 error!("could not seek {:?}", e);
             });
+            self.unpark_thread();
         }
-        self.unpark_thread();
     }
 
     pub fn seek_backward(&self) {
@@ -238,8 +238,8 @@ impl Player {
             self.sink.try_seek(target).unwrap_or_else(|e| {
                 error!("could not seek {:?}", e);
             });
+            self.unpark_thread();
         }
-        self.unpark_thread();
 
     }
 }
