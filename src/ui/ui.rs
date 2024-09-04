@@ -75,6 +75,7 @@ pub fn render_playing_gauge(
     queue_total_time: Duration,
     queue_song_count: usize,
 ) {
+    // log::debug!("render_playing_gauge");
     let [area_top, area_bottom] = *Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(2), Constraint::Length(1)].as_ref())
@@ -82,6 +83,8 @@ pub fn render_playing_gauge(
     else {
         panic!("Layout.split() failed");
     };
+
+    // log::debug!("render_playing_gauge current_song {:?}", current_song);
 
     if let Some(current_song) = current_song {
         let playing_file = Block::default()

@@ -291,8 +291,10 @@ impl<'a> App<'a> {
             AppTab::Help => self.help_tab.render(frame, area_center),
         };
 
+        // log::debug!("ui acquiring currently_playing");
         let currently_playing = self.player.currently_playing();
         let currently_playing = currently_playing.lock().unwrap();
+        // log::debug!("ui acquired currently_playing");
 
         ui::render_playing_gauge(
             frame,
@@ -303,5 +305,7 @@ impl<'a> App<'a> {
             self.player.queue().total_time(),
             self.player.queue().length(),
         );
+
+        // log::debug!("ui released currently_playing");
     }
 }
