@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, AtomicI8, AtomicU64, Ordering};
-use std::sync::mpsc::{channel, Receiver, RecvError, Sender};
+use std::sync::mpsc::{channel, Receiver, RecvError, RecvTimeoutError, Sender};
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -21,8 +21,7 @@ pub struct Player {
     sink: Arc<Sink>,
     currently_playing: Arc<Mutex<Option<Song>>>,
     queue_items: Arc<Queue>,
-    start_time_bool: Arc<AtomicBool>,
-    start_time_u64: Arc<AtomicU64>,
+    song_start_time: Arc<AtomicU64>, // We duplicate this off of song to save us a song.lock(). Relaxed ordering compiles down to the same ASM a normal u64. TODO: maybe make Song thread-friendly, so we won't need the Mutex.
     command_sender: Sender<Command>,
     command_receiver: Arc<Mutex<Option<Receiver<Command>>>>,
 }
@@ -53,8 +52,7 @@ impl Player {
             sink,
             queue_items: Arc::new(Queue::new(queue)),
             currently_playing: Arc::new(Mutex::new(None)),
-            start_time_bool: Arc::new(AtomicBool::new(false)),
-            start_time_u64: Arc::new(AtomicU64::new(0)),
+            song_start_time: Arc::new(AtomicU64::new(0)),
             command_sender,
             command_receiver: Arc::new(Mutex::new(Some(command_receiver))),
         }
@@ -65,12 +63,8 @@ impl Player {
     }
 
     pub fn get_pos(&self) -> Duration {
-        if self.start_time_bool.load(Ordering::Relaxed) {
-            let start_time = self.start_time_u64.load(Ordering::Relaxed);
-            self.sink.get_pos().saturating_sub(Duration::from_secs(start_time))
-        } else {
-            self.sink.get_pos()
-        }
+        let start_time = self.song_start_time.load(Ordering::Relaxed);
+        self.sink.get_pos().saturating_sub(Duration::from_secs(start_time))
     }
 
     pub fn currently_playing(&self) -> Arc<Mutex<Option<Song>>> {
@@ -81,22 +75,12 @@ impl Player {
         let sink = self.sink.clone();
         let currently_playing = self.currently_playing.clone();
         let queue_items = self.queue_items.clone();
-        let start_time_bool = self.start_time_bool.clone();
-        let start_time_u64 = self.start_time_u64.clone();
         let recv = self.command_receiver.clone().lock().unwrap().take().unwrap();
 
+        let song_start_time = self.song_start_time.clone();
         let set_currently_playing = move |song: Option<Song>| {
-            match song.as_ref() {
-                Some(song) => {
-                    let start_time = song.start_time.clone().unwrap_or(Duration::ZERO);
-                    start_time_bool.store(start_time > Duration::ZERO, Ordering::Relaxed);
-                    start_time_u64.store(start_time.as_secs(), Ordering::Relaxed);
-                }
-                None => {
-                    start_time_bool.store(false, Ordering::Relaxed);
-                    start_time_u64.store(0, Ordering::Relaxed);
-                }
-            }
+            let start_time = song.as_ref().and_then(|song| song.start_time).unwrap_or(Duration::ZERO).as_secs();
+            song_start_time.store(start_time, Ordering::Relaxed);
 
             match currently_playing.lock() {
                 Ok(mut s) => {
@@ -105,7 +89,6 @@ impl Player {
                 }
                 Err(err) => {
                     error!("currently_playing.lock() returned an error! {:?}", err);
-                    // break;
                 }
             };
         };
@@ -126,12 +109,12 @@ impl Player {
                 let source = Decoder::new(file).unwrap();
                 // TODO: can we slice source / implement wrapping iterator, so it ends at song_start + song_length? libs used by rodio consume the entire reader
 
-                debug!("sink.append");
+                debug!("sink.append()");
                 sink.append(source); // BLOCKING: `sink.append()` does `sleep_until_end()` if it's stopped and it has remaining sounds in it
                 // About 5ms could pass before the sink updates its internal status.
                 // Until we stop using Sink, this is as good as it gets:
                 thread::sleep(Duration::from_millis(15));
-                debug!("/sink.append");
+                debug!("sink.append");
 
                 // Songs coming from Cue Sheets are inside one big music file.
                 if start_time > Duration::ZERO {
@@ -144,6 +127,7 @@ impl Player {
                 // and then go back to bed.
                 loop {
                     if sink.empty() {
+                        debug!("sink.empty(). breaking out of inner loop.");
                         break;
                     }
 
@@ -160,13 +144,15 @@ impl Player {
 
                     match recv.recv_timeout(sleepy_time) {
                         Ok(command) => {
-                            debug!("command {:?}", command);
-
+                            debug!("{:?}", command);
                             match command {
-                                Command::Play => {}
-                                Command::Pause => {}
+                                Command::Play => {
+
+                                }
+                                Command::Pause => {
+
+                                }
                                 Command::Stop => {
-                                    debug!("recv: control_stop");
                                     sink.stop();
                                     break;
                                 }
@@ -176,7 +162,6 @@ impl Player {
                                         continue;
                                     }
 
-                                    debug!("recv: seek {}", seek);
                                     let duration = Duration::from_secs(seek.abs() as u64);
 
                                     let target = if seek > 0 {
@@ -191,8 +176,11 @@ impl Player {
                                 }
                             }
                         }
-                        Err(_) => {
-                            debug!("recv timeout");
+                        Err(RecvTimeoutError::Timeout) => {
+                            debug!("RecvTimeoutError::Timeout");
+                        }
+                        Err(RecvTimeoutError::Disconnected) => {
+                            warn!("RecvTimeoutError::Disconnected");
                         }
                     }
                 }
