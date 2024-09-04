@@ -23,8 +23,8 @@ use futures::{
     pin_mut,
     select,
 };
-use flexi_logger::{FileSpec, Logger, WriteMode};
-use log::{debug, error, info};
+use flexi_logger::{DeferredNow, FileSpec, Logger, WriteMode};
+use log::{debug, error, info, Record};
 
 use crate::{
     app::App,
@@ -38,11 +38,26 @@ pub enum Command {
     Next,
 }
 
+pub fn log_format(
+    w: &mut dyn std::io::Write,
+    _now: &mut DeferredNow,
+    record: &Record,
+) -> Result<(), std::io::Error> {
+    write!(
+        w,
+        "{: <12}",
+        thread::current().name().unwrap_or("<unnamed>"),
+    )?;
+
+    write!(w, "{}", record.args())
+}
+
 #[async_std::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     set_panic_hook();
 
     let _logger = Logger::try_with_str("jolteon=debug")?
+        .format(log_format)
         .log_to_file(FileSpec::default().suppress_timestamp())
         .write_mode(WriteMode::Direct)
         .use_utc()

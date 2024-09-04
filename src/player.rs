@@ -27,6 +27,9 @@ pub struct Player {
     sink_stop: Arc<AtomicBool>,
 }
 
+
+// At this point, Player is almost a re-implementation of Sink, with features we need and it lacks.
+// It'd probably make more sense to not use sink at all.
 impl Player {
     pub fn new(
         queue: Vec<String>,
@@ -77,11 +80,11 @@ impl Player {
         let start_time_u64 = self.start_time_u64.clone();
         let sink_stop = self.sink_stop.clone();
 
-        let t = thread::spawn(move || {
+        let t = thread::Builder::new().name("player".to_string()).spawn(move || {
             loop {
-                debug!("player_thread: will queue_items.pop()");
+                debug!("will queue_items.pop()");
                 let song = queue_items.pop();
-                debug!("player_thread: popped {:?}", song.title);
+                debug!("popped {:?}", song.title);
                 let path = song.path.clone();
                 let start_time = song.start_time.clone();
                 let length = song.length.clone();
@@ -94,74 +97,78 @@ impl Player {
                     start_time_bool.store(false, Ordering::Relaxed);
                 }
 
-                debug!("player_thread: acq currently_playing lock");
+                debug!("acq currently_playing lock");
                 match currently_playing.lock() {
                     Ok(mut s) => {
-                        debug!("player_thread: setting currently_playing to Song {:?}", song);
+                        debug!("setting currently_playing to Song {:?}", song);
                         *s = Some(song);
                     }
                     Err(err) => {
-                        error!("player_thread: currently_playing.lock() returned an error! {:?}", err);
+                        error!("currently_playing.lock() returned an error! {:?}", err);
                     }
                 };
-                debug!("player_thread: currently_playing lock released");
+                debug!("currently_playing lock released");
 
                 let file = BufReader::new(File::open(path).unwrap());
                 let source = Decoder::new(file).unwrap();
+
                 // TODO: can we slice source / implement wrapping iterator, so it ends at song_start + song_length? libs used by rodio consume the entire reader
 
-                debug!("player_thread: sink.append");
+                debug!("sink.append");
                 sink_stop.store(false, Ordering::SeqCst);
-                sink.append(source); // sink.append sleeps stopped + has remaining sounds in it
-                debug!("player_thread: /sink.append");
+                sink.append(source); // sink.append sleeps if it's stopped + has remaining sounds in it
+                debug!("/sink.append");
 
                 if let Some(start_time) = start_time {
                     sink.try_seek(start_time).unwrap();
                 }
 
-                debug!("player_thread: inner loop start");
+                debug!("inner loop start");
                 loop {
-                    debug!("player_thread: inner loop: get pos");
+                    debug!("inner loop: get pos");
+                    // let pos = if sink.is_paused();
                     let pos = match start_time {
                         Some(start_time) => sink.get_pos().saturating_sub(start_time),
                         _ => sink.get_pos()
                     };
-                    debug!("player_thread: inner loop: pos >= length {:?} {:?}", pos, length);
+                    debug!("inner loop: pos >= length {:?} {:?}", pos, length);
                     if pos >= length {
                         // TODO: sometimes has old pos after emptying sink!
-                        debug!("player_thread: inner loop: break pos >= length");
+                        // sink.stop() doesn't atomically sink.position = Duration::ZERO - the internal `periodicAccess` takes care of this
+                        // with up to 5ms of delay
+                        debug!("inner loop: break pos >= length");
                         break;
                     }
-                    debug!("player_thread: inner loop: sink.empty() {:?}", sink.empty());
+                    debug!("inner loop: sink.empty() {:?}", sink.empty());
                     if sink.empty() {
-                        debug!("player_thread: inner loop: break sink.empty");
+                        debug!("inner loop: break sink.empty");
                         break;
                     }
-                    debug!("player_thread: inner loop: sink_stop");
+                    debug!("inner loop: sink_stop");
                     if sink_stop.load(Ordering::Relaxed) {
-                        debug!("player_thread: inner loop: break sink_stop");
+                        debug!("inner loop: break sink_stop");
                         sink_stop.store(false, Ordering::SeqCst);
                         break;
                     }
-                    debug!("player_thread: inner loop: park {:?}", length - pos);
+                    debug!("inner loop: park {:?}", length - pos);
                     thread::park_timeout(length - pos);
-                    debug!("player_thread: inner loop: unpark");
+                    debug!("inner loop: unpark");
                 }
-                debug!("player_thread: inner loop end");
+                debug!("inner loop end");
 
-                debug!("player_thread: acq currently_playing lock for clean");
+                debug!("acq currently_playing lock for clean");
                 match currently_playing.lock() {
                     Ok(mut s) => {
                         start_time_bool.store(false, Ordering::Relaxed);
                         *s = None;
                     }
                     Err(err) => {
-                        error!("player_thread: currently_playing.lock() returned an error! {:?}", err);
+                        error!("currently_playing.lock() returned an error! {:?}", err);
                     }
                 };
-                debug!("player_thread: currently_playing lock for clean released");
+                debug!("currently_playing lock for clean released");
             }
-        });
+        }).unwrap();
 
         *self.auto_play_thread.clone().lock().unwrap() = Some(t); // ugh
     }
