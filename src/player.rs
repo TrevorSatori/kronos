@@ -29,6 +29,9 @@ pub struct Player {
 
 // At this point, Player is almost a re-implementation of Sink, with features we need and it lacks.
 // It'd probably make more sense to not use sink at all, and just go with `stream_handle.play_raw()`.
+// Its `periodicAccess` is also pretty meh. Maybe we can implement our own Source, that doesn't need it?
+// Is moving the source between threads every 5ms better than doing atomic operations with Ordering::Relaxed
+// on every iteration?
 impl Player {
     pub fn new(
         queue: Vec<String>,
