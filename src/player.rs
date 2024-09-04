@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, AtomicI8, AtomicU64, Ordering};
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::{channel, Receiver, RecvError, Sender};
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -23,9 +23,16 @@ pub struct Player {
     queue_items: Arc<Queue>,
     start_time_bool: Arc<AtomicBool>,
     start_time_u64: Arc<AtomicU64>,
-    thread: Arc<Mutex<Option<JoinHandle<()>>>>,
-    control_stop: Arc<AtomicBool>,
-    control_seek: Arc<AtomicI8>,
+    command_sender: Sender<Command>,
+    command_receiver: Arc<Mutex<Option<Receiver<Command>>>>,
+}
+
+#[derive(Debug)]
+enum Command {
+    Play,
+    Pause,
+    Stop,
+    Seek(i32),
 }
 
 // At this point, Player is almost a re-implementation of Sink, with features we need and it lacks.
@@ -40,15 +47,16 @@ impl Player {
     ) -> Self {
         let sink = Arc::new(Sink::try_new(output_stream).unwrap());
 
+        let (command_sender, command_receiver) = channel();
+
         Self {
             sink,
             queue_items: Arc::new(Queue::new(queue)),
             currently_playing: Arc::new(Mutex::new(None)),
             start_time_bool: Arc::new(AtomicBool::new(false)),
             start_time_u64: Arc::new(AtomicU64::new(0)),
-            thread: Arc::new(Mutex::new(None)),
-            control_stop: Arc::new(AtomicBool::new(false)),
-            control_seek: Arc::new(AtomicI8::new(0)),
+            command_sender,
+            command_receiver: Arc::new(Mutex::new(Some(command_receiver))),
         }
     }
 
@@ -75,8 +83,7 @@ impl Player {
         let queue_items = self.queue_items.clone();
         let start_time_bool = self.start_time_bool.clone();
         let start_time_u64 = self.start_time_u64.clone();
-        let control_stop = self.control_stop.clone();
-        let control_seek = self.control_seek.clone();
+        let recv = self.command_receiver.clone().lock().unwrap().take().unwrap();
 
         let set_currently_playing = move |song: Option<Song>| {
             match song.as_ref() {
@@ -103,7 +110,7 @@ impl Player {
             };
         };
 
-        let t = thread::Builder::new().name("player".to_string()).spawn(move || {
+        thread::Builder::new().name("player".to_string()).spawn(move || {
             loop {
                 debug!("queue_items.pop()");
                 let song = queue_items.pop();
@@ -126,6 +133,7 @@ impl Player {
                 thread::sleep(Duration::from_millis(15));
                 debug!("/sink.append");
 
+                // Songs coming from Cue Sheets are inside one big music file.
                 if start_time > Duration::ZERO {
                     sink.try_seek(start_time).unwrap();
                 }
@@ -135,13 +143,7 @@ impl Player {
                 // If we don't, we recalculate the remaining time until the song ends,
                 // and then go back to bed.
                 loop {
-                    // TODO: a sync channel may make more sense here.
-                    if control_stop.swap(false, Ordering::SeqCst) {
-                        debug!("inner loop: control_stop");
-                        sink.stop();
-                        break;
-                    } else if sink.empty() {
-                        debug!("inner loop: sink.empty");
+                    if sink.empty() {
                         break;
                     }
 
@@ -153,43 +155,57 @@ impl Player {
                         break;
                     }
 
-                    let seek = control_seek.swap(0, Ordering::Relaxed);
-                    if seek != 0 {
-                        debug!("inner loop: seek {}", seek);
-                        let duration = Duration::from_secs(seek.abs() as u64);
-
-                        let target = if seek > 0 {
-                            pos.saturating_add(duration).min(length + start_time)
-                        } else {
-                            pos.saturating_sub(duration).max(start_time)
-                        };
-
-                        sink.try_seek(target).unwrap_or_else(|e| {
-                            error!("could not seek {:?}", e);
-                        });
-                    }
-
                     let sleepy_time = length - true_pos;
                     debug!("inner loop: sleepy_time! {:?}", sleepy_time);
-                    thread::park_timeout(sleepy_time);
-                    debug!("inner loop: unpark");
+
+                    match recv.recv_timeout(sleepy_time) {
+                        Ok(command) => {
+                            debug!("command {:?}", command);
+
+                            match command {
+                                Command::Play => {}
+                                Command::Pause => {}
+                                Command::Stop => {
+                                    debug!("recv: control_stop");
+                                    sink.stop();
+                                    break;
+                                }
+                                Command::Seek(seek) => {
+                                    if seek == 0 {
+                                        error!("recv: seek == 0");
+                                        continue;
+                                    }
+
+                                    debug!("recv: seek {}", seek);
+                                    let duration = Duration::from_secs(seek.abs() as u64);
+
+                                    let target = if seek > 0 {
+                                        pos.saturating_add(duration).min(length + start_time)
+                                    } else {
+                                        pos.saturating_sub(duration).max(start_time)
+                                    };
+
+                                    sink.try_seek(target).unwrap_or_else(|e| {
+                                        error!("could not seek {:?}", e);
+                                    });
+                                }
+                            }
+                        }
+                        Err(_) => {
+                            debug!("recv timeout");
+                        }
+                    }
                 }
 
                 // At this point, the sink should be empty and no song should be playing,
                 // but Sink updates many of its internal properties only while the song is playing,
                 // in its `periodicAccess` that runs every 5ms.
                 // `sink.get_pos()` will return incorrect data in this case, for example.
-
+                // This means we may be incorrectly clearing the currently_playing, which
+                // would cause the UI to show no playing song at all, even though it'd be actually playing.
                 set_currently_playing(None);
             }
         }).unwrap();
-
-        *self.thread.clone().lock().unwrap() = Some(t); // ugh
-    }
-
-    fn unpark_thread(&self) {
-        let x = self.thread.lock().unwrap();
-        let _x = x.as_ref().unwrap().thread().unpark();
     }
 
     pub fn play_now(&self, song: Song) {
@@ -213,11 +229,13 @@ impl Player {
             self.sink.pause()
         }
         // self.unpark_thread();
+        self.command_sender.clone().send(Command::Pause).unwrap()
     }
 
     pub fn stop(&self) {
-        self.control_stop.store(true, Ordering::SeqCst);
-        self.unpark_thread();
+        // self.control_stop.store(true, Ordering::SeqCst);
+        // self.unpark_thread();
+        self.command_sender.clone().send(Command::Stop).unwrap()
     }
 
     pub fn change_volume(&self, amount: f32) {
@@ -231,12 +249,14 @@ impl Player {
     }
 
     pub fn seek_forward(&self) {
-        self.control_seek.store(5, Ordering::Relaxed);
-        self.unpark_thread();
+        // self.control_seek.store(5, Ordering::Relaxed);
+        self.command_sender.clone().send(Command::Seek(5)).unwrap()
+        // self.unpark_thread();
     }
 
     pub fn seek_backward(&self) {
-        self.control_seek.store(-5, Ordering::Relaxed);
-        self.unpark_thread();
+        // self.control_seek.store(-5, Ordering::Relaxed);
+        self.command_sender.clone().send(Command::Seek(-5)).unwrap()
+        // self.unpark_thread();
     }
 }
