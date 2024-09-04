@@ -142,25 +142,18 @@ impl Player {
                     let seek = control_seek.swap(0, Ordering::Relaxed);
                     if seek != 0 {
                         debug!("inner loop: seek {}", seek);
+                        let duration = Duration::from_secs(seek.abs() as u64);
+                        let pos = sink.get_pos();
 
-                        //     let target = self
-                        //         .sink
-                        //         .get_pos()
-                        //         .saturating_add(Duration::from_secs(5))
-                        //         .min(song.length + song.start_time.unwrap_or(Duration::ZERO));
-                        //     self.sink.try_seek(target).unwrap_or_else(|e| {
-                        //         error!("could not seek {:?}", e);
-                        //     });
+                        let target = if seek > 0 {
+                            pos.saturating_add(duration).min(length + start_time)
+                        } else {
+                            pos.saturating_sub(duration).max(start_time)
+                        };
 
-
-                        //     let target = self
-                        //         .sink
-                        //         .get_pos()
-                        //         .saturating_sub(Duration::from_secs(5))
-                        //         .max(song.start_time.unwrap_or(Duration::ZERO));
-                        //     self.sink.try_seek(target).unwrap_or_else(|e| {
-                        //         error!("could not seek {:?}", e);
-                        //     });
+                        sink.try_seek(target).unwrap_or_else(|e| {
+                            error!("could not seek {:?}", e);
+                        });
                     }
 
                     let sleepy_time = length - pos;
