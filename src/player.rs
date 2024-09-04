@@ -78,6 +78,31 @@ impl Player {
         let control_stop = self.control_stop.clone();
         let control_seek = self.control_seek.clone();
 
+        let set_currently_playing = move |song: Option<Song>| {
+            match song.as_ref() {
+                Some(song) => {
+                    let start_time = song.start_time.clone().unwrap_or(Duration::ZERO);
+                    start_time_bool.store(start_time > Duration::ZERO, Ordering::Relaxed);
+                    start_time_u64.store(start_time.as_secs(), Ordering::Relaxed);
+                }
+                None => {
+                    start_time_bool.store(false, Ordering::Relaxed);
+                    start_time_u64.store(0, Ordering::Relaxed);
+                }
+            }
+
+            match currently_playing.lock() {
+                Ok(mut s) => {
+                    debug!("currently_playing = {:?}", song);
+                    *s = song;
+                }
+                Err(err) => {
+                    error!("currently_playing.lock() returned an error! {:?}", err);
+                    // break;
+                }
+            };
+        };
+
         let t = thread::Builder::new().name("player".to_string()).spawn(move || {
             loop {
                 debug!("queue_items.pop()");
@@ -87,25 +112,11 @@ impl Player {
                 let path = song.path.clone();
                 let start_time = song.start_time.clone().unwrap_or(Duration::ZERO);
                 let length = song.length.clone();
-                let _song_name = song.title.clone();
 
-                start_time_bool.store(start_time > Duration::ZERO, Ordering::Relaxed);
-                start_time_u64.store(start_time.as_secs(), Ordering::Relaxed);
-
-                match currently_playing.lock() {
-                    Ok(mut s) => {
-                        debug!("currently_playing = {:?}", song);
-                        *s = Some(song);
-                    }
-                    Err(err) => {
-                        error!("currently_playing.lock() returned an error! {:?}", err);
-                        break;
-                    }
-                };
+                set_currently_playing(Some(song));
 
                 let file = BufReader::new(File::open(path).unwrap());
                 let source = Decoder::new(file).unwrap();
-
                 // TODO: can we slice source / implement wrapping iterator, so it ends at song_start + song_length? libs used by rodio consume the entire reader
 
                 debug!("sink.append");
@@ -124,6 +135,7 @@ impl Player {
                 // If we don't, we recalculate the remaining time until the song ends,
                 // and then go back to bed.
                 loop {
+                    // TODO: a sync channel may make more sense here.
                     if control_stop.swap(false, Ordering::SeqCst) {
                         debug!("inner loop: control_stop");
                         sink.stop();
@@ -133,7 +145,7 @@ impl Player {
                         break;
                     }
 
-                    let pos = sink.get_pos();
+                    let pos = sink.get_pos(); // BUG: sink.get_pos() could return stale data.
                     let true_pos = pos.saturating_sub(start_time);
 
                     if true_pos >= length {
@@ -163,18 +175,12 @@ impl Player {
                     debug!("inner loop: unpark");
                 }
 
-                match currently_playing.lock() {
-                    Ok(mut s) => {
-                        start_time_bool.store(false, Ordering::Relaxed);
-                        start_time_u64.store(0, Ordering::Relaxed);
-                        debug!("currently_playing = None");
-                        *s = None;
-                    }
-                    Err(err) => {
-                        error!("currently_playing.lock() returned an error! {:?}", err);
-                        break;
-                    }
-                };
+                // At this point, the sink should be empty and no song should be playing,
+                // but Sink updates many of its internal properties only while the song is playing,
+                // in its `periodicAccess` that runs every 5ms.
+                // `sink.get_pos()` will return incorrect data in this case, for example.
+
+                set_currently_playing(None);
             }
         }).unwrap();
 
