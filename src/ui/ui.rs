@@ -1,5 +1,5 @@
 use std::time::Duration;
-use log::{debug, error, warn};
+use log::{error};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     prelude::*,
@@ -13,7 +13,7 @@ use crate::{
     app::AppTab,
     config::Config,
     constants::{MAIN_SECTIONS, SECONDS_PER_HOUR, SECONDS_PER_MINUTE},
-    structs::song::{song_to_string, Song},
+    structs::song::{Song},
 };
 
 fn duration_to_string(total_time: Duration) -> String {
@@ -32,6 +32,16 @@ fn duration_to_string(total_time: Duration) -> String {
 
     let strings: Vec<String> = time_parts.iter().map(|s| format!("{:0>2}", s)).collect();
     strings.join(":")
+}
+
+pub fn song_to_string(song: &Song) -> String {
+    let title = song.title.clone();
+
+    if let Some(artist) = &song.artist {
+        format!("{artist} - {title}")
+    } else {
+        title
+    }
 }
 
 pub fn render_top_bar(frame: &mut Frame, config: &Config, area: Rect, active_tab: AppTab) {

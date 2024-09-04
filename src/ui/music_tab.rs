@@ -8,7 +8,8 @@ use ratatui::{
 
 use crate::config::Config;
 use crate::file_browser::Browser;
-use crate::structs::{song, queue::Queue};
+use crate::structs::{queue::Queue};
+use crate::ui;
 
 impl<'a> Browser<'a> {
     pub fn render(self: &mut Self, frame: &mut Frame, queue_items: &Queue, area: Rect, cfg: &Config) {
@@ -95,7 +96,7 @@ fn render_queue_list<'a>(frame: &mut Frame, queue_items: &Queue, cfg: &Config, a
 }
 
 fn queue_list<'a>(queue_items: &Queue, cfg: &Config) -> List<'a> {
-    let queue_items: Vec<String> = queue_items.songs().iter().map(song::song_to_string).collect();
+    let queue_items: Vec<String> = queue_items.songs().iter().map(ui::song_to_string).collect();
 
     let queue_list = List::new(queue_items)
         .style(Style::default().fg(cfg.theme.foreground))

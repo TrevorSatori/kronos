@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use log::{error, info};
+use log::{error};
 
 use crate::{
     cue::CueSheet,

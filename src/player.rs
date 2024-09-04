@@ -1,13 +1,12 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicBool, AtomicI8, AtomicU64, Ordering};
-use std::sync::mpsc::{channel, Receiver, RecvError, RecvTimeoutError, Sender};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
 use std::thread;
-use std::thread::JoinHandle;
 use std::time::Duration;
 use log::{debug, error, warn};
-use rodio::{queue, Decoder, OutputStreamHandle, Sink, Source};
+use rodio::{Decoder, OutputStreamHandle, Sink};
 
 use crate::{
     structs::{
@@ -27,6 +26,7 @@ pub struct Player {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 enum Command {
     Play,
     Pause,

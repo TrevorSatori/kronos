@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::{env, path::PathBuf, thread, time::Duration, collections::VecDeque};
+use std::{env, path::PathBuf, thread, time::Duration};
 use std::sync::{
     mpsc::Receiver,
     Arc,
@@ -7,7 +7,7 @@ use std::sync::{
 };
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
-use log::{error, info};
+use log::{error};
 use ratatui::{
     layout::{Constraint, Layout},
     prelude::Style,
@@ -24,7 +24,6 @@ use crate::{
     term::set_terminal,
     ui,
     Command,
-    structs::song::Song,
 };
 
 #[derive(Clone, Copy, Eq, PartialEq)]

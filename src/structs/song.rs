@@ -5,7 +5,7 @@ use std::{
 };
 use std::time::Duration;
 use lofty::{Accessor, AudioFile, LoftyError, Probe, TaggedFileExt};
-use log::{debug, error, warn};
+use log::{error};
 use crate::cue::CueSheet;
 
 #[derive(Clone, Debug)]
@@ -71,16 +71,6 @@ impl Song {
         }
 
         songs
-    }
-}
-
-pub fn song_to_string(song: &Song) -> String { // TODO: this is a UI responsibility
-    let title = song.title.clone();
-
-    if let Some(artist) = &song.artist {
-        format!("{artist} - {title}")
-    } else {
-        title
     }
 }
 
