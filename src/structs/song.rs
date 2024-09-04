@@ -13,7 +13,7 @@ pub struct Song {
     pub path: PathBuf,
     pub length: Duration,
     pub artist: Option<String>,
-    pub title: Option<String>,
+    pub title: String,
     pub start_time: Option<Duration>,
 }
 
@@ -35,7 +35,7 @@ impl Song {
             path: PathBuf::from(path),
             length: tagged_file.properties().duration(),
             artist,
-            title,
+            title: title.unwrap_or(path.file_name().unwrap().to_str().unwrap().to_string()),
             start_time: None,
         })
     }
@@ -55,7 +55,7 @@ impl Song {
                 path: song_path.clone(),
                 length: Duration::ZERO,
                 artist: t.performer(),
-                title: Some(t.title()),
+                title: t.title(),
                 start_time: Some(t.start_time()),
             }
         }).collect();
@@ -75,14 +75,12 @@ impl Song {
 }
 
 pub fn song_to_string(song: &Song) -> String { // TODO: this is a UI responsibility
-    if let Some(title) = &song.title {
-        if let Some(artist) = &song.artist {
-            format!("{artist} - {title}")
-        } else {
-            title.clone()
-        }
+    let title = song.title.clone();
+
+    if let Some(artist) = &song.artist {
+        format!("{artist} - {title}")
     } else {
-        song.path.file_name().unwrap().to_str().unwrap().to_string()
+        title
     }
 }
 
