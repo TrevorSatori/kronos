@@ -115,8 +115,8 @@ impl Player {
                 // TODO: can we slice source / implement wrapping iterator, so it ends at song_start + song_length? libs used by rodio consume the entire reader
 
                 debug!("sink.append");
-                sink_stop.store(false, Ordering::SeqCst);
                 sink.append(source); // sink.append sleeps if it's stopped + has remaining sounds in it
+                sink_stop.store(false, Ordering::SeqCst);
                 debug!("/sink.append");
 
                 if let Some(start_time) = start_time {
