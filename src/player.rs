@@ -133,8 +133,10 @@ impl Player {
                         break;
                     }
 
-                    let pos = sink.get_pos().saturating_sub(start_time);
-                    if pos >= length {
+                    let pos = sink.get_pos();
+                    let true_pos = pos.saturating_sub(start_time);
+
+                    if true_pos >= length {
                         debug!("inner loop: pos >= length");
                         break;
                     }
@@ -143,7 +145,6 @@ impl Player {
                     if seek != 0 {
                         debug!("inner loop: seek {}", seek);
                         let duration = Duration::from_secs(seek.abs() as u64);
-                        let pos = sink.get_pos();
 
                         let target = if seek > 0 {
                             pos.saturating_add(duration).min(length + start_time)
@@ -156,7 +157,7 @@ impl Player {
                         });
                     }
 
-                    let sleepy_time = length - pos;
+                    let sleepy_time = length - true_pos;
                     debug!("inner loop: sleepy_time! {:?}", sleepy_time);
                     thread::park_timeout(sleepy_time);
                     debug!("inner loop: unpark");
@@ -165,6 +166,7 @@ impl Player {
                 match currently_playing.lock() {
                     Ok(mut s) => {
                         start_time_bool.store(false, Ordering::Relaxed);
+                        start_time_u64.store(0, Ordering::Relaxed);
                         debug!("currently_playing = None");
                         *s = None;
                     }
@@ -180,14 +182,16 @@ impl Player {
     }
 
     fn unpark_thread(&self) {
-        let x = self.thread.clone();
-        let x = x.lock().unwrap();
+        let x = self.thread.lock().unwrap();
         let _x = x.as_ref().unwrap().thread().unpark();
     }
 
     pub fn play_now(&self, song: Song) {
         self.queue_items.add_front(song);
-        self.stop();
+
+        if self.currently_playing.clone().lock().unwrap().is_some() {
+            self.stop();
+        }
     }
 
     pub fn play_now_cue(&self, cue_sheet: CueSheet) {
