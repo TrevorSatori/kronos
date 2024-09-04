@@ -23,10 +23,9 @@ pub struct Player {
     queue_items: Arc<Queue>,
     start_time_bool: Arc<AtomicBool>,
     start_time_u64: Arc<AtomicU64>,
-    auto_play_thread: Arc<Mutex<Option<JoinHandle<()>>>>,
-    sink_stop: Arc<AtomicBool>,
+    thread: Arc<Mutex<Option<JoinHandle<()>>>>,
+    control_stop: Arc<AtomicBool>,
 }
-
 
 // At this point, Player is almost a re-implementation of Sink, with features we need and it lacks.
 // It'd probably make more sense to not use sink at all.
@@ -43,8 +42,8 @@ impl Player {
             currently_playing: Arc::new(Mutex::new(None)),
             start_time_bool: Arc::new(AtomicBool::new(false)),
             start_time_u64: Arc::new(AtomicU64::new(0)),
-            auto_play_thread: Arc::new(Mutex::new(None)),
-            sink_stop: Arc::new(AtomicBool::new(false)),
+            thread: Arc::new(Mutex::new(None)),
+            control_stop: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -65,20 +64,13 @@ impl Player {
         self.currently_playing.clone()
     }
 
-    // TODO: name that actually describes what this does
-    fn queue_changed(&self) {
-        let x = self.auto_play_thread.clone();
-        let x = x.lock().unwrap();
-        let _x = x.as_ref().unwrap().thread().unpark();
-    }
-
     pub fn spawn(&self) {
         let sink = self.sink.clone();
         let currently_playing = self.currently_playing.clone();
         let queue_items = self.queue_items.clone();
         let start_time_bool = self.start_time_bool.clone();
         let start_time_u64 = self.start_time_u64.clone();
-        let sink_stop = self.sink_stop.clone();
+        let sink_stop = self.control_stop.clone();
 
         let t = thread::Builder::new().name("player".to_string()).spawn(move || {
             loop {
@@ -115,8 +107,7 @@ impl Player {
                 // TODO: can we slice source / implement wrapping iterator, so it ends at song_start + song_length? libs used by rodio consume the entire reader
 
                 debug!("sink.append");
-                sink.append(source); // sink.append sleeps if it's stopped + has remaining sounds in it
-                sink_stop.store(false, Ordering::SeqCst);
+                sink.append(source); // BLOCKING: `sink.append()` does `sleep_until_end()` if it's stopped and it has remaining sounds in it
                 debug!("/sink.append");
 
                 if let Some(start_time) = start_time {
@@ -124,18 +115,22 @@ impl Player {
                 }
 
                 debug!("inner loop start");
+                let mut was_stopped = sink_stop.swap(false, Ordering::SeqCst);
+                // `sink.stop()` doesn't atomically `sink.position = Duration::ZERO`.
+                // The internal `periodicAccess` takes care of this, with up to 5ms of delay
                 loop {
                     debug!("inner loop: get pos");
-                    // let pos = if sink.is_paused();
-                    let pos = match start_time {
-                        Some(start_time) => sink.get_pos().saturating_sub(start_time),
-                        _ => sink.get_pos()
+                    let pos = if was_stopped {
+                        was_stopped = false;
+                        match start_time {
+                            Some(start_time) => sink.get_pos().saturating_sub(start_time),
+                            _ => sink.get_pos()
+                        }
+                    } else {
+                        Duration::ZERO
                     };
                     debug!("inner loop: pos >= length {:?} {:?}", pos, length);
                     if pos >= length {
-                        // TODO: sometimes has old pos after emptying sink!
-                        // sink.stop() doesn't atomically sink.position = Duration::ZERO - the internal `periodicAccess` takes care of this
-                        // with up to 5ms of delay
                         debug!("inner loop: break pos >= length");
                         break;
                     }
@@ -145,9 +140,9 @@ impl Player {
                         break;
                     }
                     debug!("inner loop: sink_stop");
-                    if sink_stop.load(Ordering::Relaxed) {
+                    if sink_stop.swap(false, Ordering::SeqCst) {
                         debug!("inner loop: break sink_stop");
-                        sink_stop.store(false, Ordering::SeqCst);
+                        // sink.stop();
                         break;
                     }
                     debug!("inner loop: park {:?}", length - pos);
@@ -170,22 +165,28 @@ impl Player {
             }
         }).unwrap();
 
-        *self.auto_play_thread.clone().lock().unwrap() = Some(t); // ugh
+        *self.thread.clone().lock().unwrap() = Some(t); // ugh
+    }
+
+    fn unpark_thread(&self) {
+        let x = self.thread.clone();
+        let x = x.lock().unwrap();
+        let _x = x.as_ref().unwrap().thread().unpark();
     }
 
     pub fn play_now(&self, song: Song) {
         // todo: clear current_song
         self.queue_items.add_front(song);
         self.sink.stop();
-        self.sink_stop.store(true, Ordering::SeqCst);
-        self.queue_changed();
+        self.control_stop.store(true, Ordering::SeqCst);
+        self.unpark_thread();
     }
 
     pub fn play_now_cue(&self, cue_sheet: CueSheet) {
         let songs = Song::from_cue_sheet(cue_sheet);
         self.queue_items.append(&mut std::collections::VecDeque::from(songs));
-        self.sink_stop.store(true, Ordering::SeqCst);
-        self.queue_changed();
+        self.control_stop.store(true, Ordering::SeqCst);
+        self.unpark_thread();
     }
 
     pub fn toggle(&self) {
@@ -199,8 +200,8 @@ impl Player {
 
     pub fn stop(&self) {
         self.sink.stop();
-        self.sink_stop.store(true, Ordering::SeqCst);
-        self.queue_changed();
+        self.control_stop.store(true, Ordering::SeqCst);
+        self.unpark_thread();
     }
 
     pub fn change_volume(&self, amount: f32) {
@@ -224,7 +225,7 @@ impl Player {
                 error!("could not seek {:?}", e);
             });
         }
-        self.queue_changed();
+        self.unpark_thread();
     }
 
     pub fn seek_backward(&self) {
@@ -238,7 +239,7 @@ impl Player {
                 error!("could not seek {:?}", e);
             });
         }
-        self.queue_changed();
+        self.unpark_thread();
 
     }
 }
