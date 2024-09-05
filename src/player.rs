@@ -114,11 +114,13 @@ impl Player {
                 // About 5ms could pass before the sink updates its internal status.
                 // Until we stop using Sink, this is as good as it gets:
                 thread::sleep(Duration::from_millis(15));
-                debug!("sink.append");
+                debug!("sink.appended. sink.get_pos()={:?}", sink.get_pos());
 
                 // Songs coming from Cue Sheets are inside one big music file.
                 if start_time > Duration::ZERO {
+                    debug!("start_time > Duration::ZERO {:?}", start_time);
                     sink.try_seek(start_time).unwrap();
+                    debug!("sink.try_seek() -> sink.get_pos()={:?}", sink.get_pos());
                 }
 
                 // Start looping until the current song ends OR something wakes us up.
@@ -131,11 +133,9 @@ impl Player {
                         break;
                     }
 
-                    let pos = sink.get_pos(); // BUG: sink.get_pos() could return stale data.
-                    let true_pos = pos.saturating_sub(start_time);
-
+                    let true_pos = sink.get_pos().saturating_sub(start_time); // BUG: sink.get_pos() could return stale data.
                     if true_pos >= length {
-                        debug!("inner loop: pos >= length");
+                        debug!("inner loop: pos >= length, {:?} > {:?}", true_pos, length);
                         break;
                     }
 
@@ -162,12 +162,13 @@ impl Player {
                                         continue;
                                     }
 
-                                    let duration = Duration::from_secs(seek.abs() as u64);
+                                    let seek_abs = Duration::from_secs(seek.abs() as u64);
+                                    let pos = sink.get_pos();
 
                                     let target = if seek > 0 {
-                                        pos.saturating_add(duration).min(length + start_time)
+                                        pos.saturating_add(seek_abs).min(length + start_time)
                                     } else {
-                                        pos.saturating_sub(duration).max(start_time)
+                                        pos.saturating_sub(seek_abs).max(start_time)
                                     };
 
                                     sink.try_seek(target).unwrap_or_else(|e| {
@@ -181,6 +182,7 @@ impl Player {
                         }
                         Err(RecvTimeoutError::Disconnected) => {
                             warn!("RecvTimeoutError::Disconnected");
+                            return;
                         }
                     }
                 }
@@ -207,23 +209,32 @@ impl Player {
     pub fn play_now_cue(&self, cue_sheet: CueSheet) {
         let songs = Song::from_cue_sheet(cue_sheet);
         self.queue_items.append(&mut std::collections::VecDeque::from(songs));
-        self.stop();
     }
 
     pub fn toggle(&self) {
         if self.sink.is_paused() {
-            self.sink.play()
+            self.sink.play();
+            self.command_sender.clone().send(Command::Play).unwrap();
         } else {
-            self.sink.pause()
+            self.sink.pause();
+            self.command_sender.clone().send(Command::Pause).unwrap();
         }
-        // self.unpark_thread();
-        self.command_sender.clone().send(Command::Pause).unwrap()
     }
 
     pub fn stop(&self) {
-        // self.control_stop.store(true, Ordering::SeqCst);
-        // self.unpark_thread();
         self.command_sender.clone().send(Command::Stop).unwrap()
+    }
+
+    pub fn seek(&self, seek: i32) {
+        self.command_sender.clone().send(Command::Seek(seek)).unwrap()
+    }
+
+    pub fn seek_forward(&self) {
+        self.seek(5);
+    }
+
+    pub fn seek_backward(&self) {
+        self.seek(-5);
     }
 
     pub fn change_volume(&self, amount: f32) {
@@ -234,17 +245,5 @@ impl Player {
             volume = 1.;
         }
         self.sink.set_volume(volume)
-    }
-
-    pub fn seek_forward(&self) {
-        // self.control_seek.store(5, Ordering::Relaxed);
-        self.command_sender.clone().send(Command::Seek(5)).unwrap()
-        // self.unpark_thread();
-    }
-
-    pub fn seek_backward(&self) {
-        // self.control_seek.store(-5, Ordering::Relaxed);
-        self.command_sender.clone().send(Command::Seek(-5)).unwrap()
-        // self.unpark_thread();
     }
 }
