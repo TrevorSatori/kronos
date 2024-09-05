@@ -9,8 +9,7 @@ This causes two issues:
 - Random text will get printed at a random position.
 - This may cause the screen to scroll. Sometimes, the screen will start scrolling one line per frame.
 
-We can "fix" the latter by running `terminal.set_cursor(0, 0)`.
-Fortunately, this takes care of the ugliest part of this issue.
+~We can "fix" the latter by running `terminal.set_cursor(0, 0)`. Fortunately, this takes care of the ugliest part of this issue.~ Actually, this doesn't fix anything at all :(
 
 But the latter is not so trivial to fix. Some options are:
 

@@ -102,17 +102,11 @@ impl<'a> App<'a> {
     fn to_state(&self) -> State {
         let player = self.player.clone();
 
-        let queue_items = player
-            .queue()
-            .paths()
-            .iter()
-            .filter_map(|i| i.to_str())
-            .map(|i| i.to_string())
-            .collect();
+        let queue_items = player.queue().songs().clone();
 
         State {
             last_visited_path: self.browser.current_directory.to_str().map(String::from),
-            queue_items,
+            queue_items: Vec::from(queue_items),
         }
     }
 

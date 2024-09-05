@@ -4,7 +4,7 @@ use std::sync::{mpsc::{channel, Receiver, Sender}, Arc, Mutex, MutexGuard};
 
 use log::error;
 
-use super::song::{path_list_to_song_list, directory_to_song_list, Song};
+use super::song::{directory_to_song_list, Song};
 
 pub struct Queue {
     items: Arc<Mutex<VecDeque<Song>>>,
@@ -19,13 +19,8 @@ fn song_list_to_duration(items: &VecDeque<Song>) -> Duration {
 }
 
 impl Queue {
-    pub fn new(queue: Vec<String>) -> Self {
-        let (songs, errors) = path_list_to_song_list(queue.iter().map(PathBuf::from).collect());
-
-        if !errors.is_empty() {
-            error!("Failed to load some songs.\n{:?}", errors);
-        }
-
+    pub fn new(songs: Vec<Song>) -> Self {
+        let songs = VecDeque::from(songs);
         let total_time = song_list_to_duration(&songs);
 
         let (tx, rx) = channel();
@@ -49,10 +44,6 @@ impl Queue {
 
     pub fn length(&self) -> usize {
         self.songs().len()
-    }
-
-    pub fn paths(&self) -> VecDeque<PathBuf> {
-        self.songs().iter().map(|i| i.path.clone()).collect()
     }
 
     pub fn total_time(&self) -> Duration {

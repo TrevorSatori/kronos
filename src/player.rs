@@ -41,7 +41,7 @@ enum Command {
 // on every iteration?
 impl Player {
     pub fn new(
-        queue: Vec<String>,
+        queue: Vec<Song>,
         output_stream: &OutputStreamHandle,
     ) -> Self {
         let sink = Arc::new(Sink::try_new(output_stream).unwrap());

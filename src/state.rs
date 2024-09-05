@@ -1,12 +1,15 @@
 use serde::{Deserialize, Serialize};
 
-use crate::toml::{read_toml_file_or_default, write_toml_file, TomlFileError};
+use crate::{
+    toml::{read_toml_file_or_default, write_toml_file, TomlFileError},
+    structs::song::Song,
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct State {
     pub last_visited_path: Option<String>,
     #[serde(default)]
-    pub queue_items: Vec<String>,
+    pub queue_items: Vec<Song>,
 }
 
 impl Default for State {

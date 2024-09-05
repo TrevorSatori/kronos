@@ -2,13 +2,16 @@ use std::{
     collections::VecDeque,
     fs::DirEntry,
     path::{Path, PathBuf},
+    time::Duration,
 };
-use std::time::Duration;
+
 use lofty::{Accessor, AudioFile, LoftyError, Probe, TaggedFileExt};
 use log::{error};
+use serde::{Deserialize, Serialize};
+
 use crate::cue::CueSheet;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Song {
     pub path: PathBuf,
     pub length: Duration,
