@@ -133,13 +133,17 @@ impl Player {
                         break;
                     }
 
-                    let true_pos = sink.get_pos().saturating_sub(start_time); // BUG: sink.get_pos() could return stale data.
-                    if true_pos >= length {
-                        debug!("inner loop: pos >= length, {:?} > {:?}", true_pos, length);
-                        break;
-                    }
+                    let sleepy_time = if sink.is_paused() {
+                        Duration::MAX
+                    } else {
+                        let true_pos = sink.get_pos().saturating_sub(start_time); // BUG: sink.get_pos() could return stale data.
+                        if true_pos >= length {
+                            debug!("inner loop: pos >= length, {:?} > {:?}", true_pos, length);
+                            break;
+                        }
+                        length - true_pos
+                    };
 
-                    let sleepy_time = length - true_pos;
                     debug!("inner loop: sleepy_time! {:?}", sleepy_time);
 
                     match recv.recv_timeout(sleepy_time) {
