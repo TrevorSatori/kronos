@@ -159,8 +159,10 @@ impl Player {
                                     break;
                                 }
                                 Command::Seek(seek) => {
+                                    // TODO: "intense" seek causes `ALSA lib pcm.c:8740:(snd_pcm_recover) underrun occurred`.
+                                    // See https://github.com/RustAudio/cpal/pull/909
                                     if seek == 0 {
-                                        error!("recv: seek == 0");
+                                        error!("Command::Seek(0)");
                                         continue;
                                     }
 
