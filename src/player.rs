@@ -118,9 +118,7 @@ impl Player {
 
                 // Songs coming from Cue Sheets are inside one big music file.
                 if start_time > Duration::ZERO {
-                    debug!("start_time > Duration::ZERO {:?}", start_time);
                     sink.try_seek(start_time).unwrap();
-                    debug!("sink.try_seek() -> sink.get_pos()={:?}", sink.get_pos());
                 }
 
                 // Start looping until the current song ends OR something wakes us up.

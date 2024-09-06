@@ -12,7 +12,9 @@ panic = 'abort'
 [dependencies]
 crossterm = {  version = "0.28.1", features = ["event-stream"] }
 glob = "0.3.1"
-rodio = { version = "0.19.0", features = ["symphonia-all"]}
+# rodio = { version = "0.19.0", features = ["symphonia-all"]}
+#rodio = { path = "../RustAudio/rodio", features = ["symphonia-all"]}
+rodio = { git = "https://github.com/RustAudio/rodio", features = ["symphonia-all"]}
 lofty = "0.18.2"
 toml = "0.7.2"
 serde = {version = "1.0.152", features = ["derive"]}

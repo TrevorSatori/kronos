@@ -1732,8 +1732,7 @@ checksum = "7a66a03ae7c801facd77a29370b4faec201768915ac14a721ba36f20bc9c209b"
 [[package]]
 name = "rodio"
 version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6006a627c1a38d37f3d3a85c6575418cfe34a5392d60a686d0071e1c8d427acb"
+source = "git+https://github.com/RustAudio/rodio#6bfd840de6ee786ca7e06d21fd29fc888ddfa7fe"
 dependencies = [
  "claxon",
  "cpal",
