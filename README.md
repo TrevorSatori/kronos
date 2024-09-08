@@ -1,6 +1,6 @@
 # Jolteon 
 
-A Terminal Music Player For Offline Listening
+Music player that runs on the terminal.
 
 ![File Browser - Light Theme](assets/file_browser_light.png?raw=true)
 ![File Browser - Dark Theme](assets/file_browser_dark.png?raw=true)
@@ -53,32 +53,26 @@ cargo run --release
 
 Won't be publishing this to `apt`, `yum`, etc. any time soon.
 
+### Auto Updates
+
+In the future, Jolteon will support detecting new versions automatically and offer downloading them.
+
 ## Features
 
 - File Browser
 - Search/Filter in File Browser (Ctrl+F)
 - Playing Queue
-- Media keys Play/Pause support via MPRIS in Linux
+- Controls
+  - Play/Pause
+  - Seek 5 seconds forward/backward
+  - Media keys Play/Pause support via MPRIS in Linux
 - `.cue` file support
-- gapless playback
-- Persist app state. Closing and reopening Jolteon should feel similar to simply hitting pause and play. In particular, Jolteon persists the following:
+- Gapless playback
+- Persist app state:
   - The current directory of the browser
   - The queue
   - Current song (coming soon)
-- Controls
-  - Seek 5 seconds forward/backward
-- UI improvements (according to my own personal preference). See screenshots.
-- Performance improvements. Removed some redundant disk access.
-- Panic handler to restore the terminal if/when the application crashes, rather than leaving it in a rather unusable state.
-
-I've also extensively refactored the code base:
-- Migrated from Tui to Ratatui
-- Removed a thread that tracked the current playing position. 
-  - _This was possible thanks to the migration to Ratatui._
-- Broke down rendering code into smaller pieces.
-- Moved some logic into `app`
-- Reduced the number of mutable references overall
-  - And plan to do so as much as I can. I want everything to have the least possible access.
+- Safe handling of application crashes, restoring the terminal to its normal state.
 
 ### Upcoming
 
@@ -96,6 +90,9 @@ I mainly use `flac` files, and some `mp3`. Other formats aren't usually tested, 
 ## Customization
 
 The theme can be customized. Check out `config.rs`.
+
+In the future, keyboard shortcuts will also be customizable.
+Maybe texts too, since that'd enable translations, and there are so few of them anyway.
                   
 ## Philosophy
 
@@ -104,40 +101,23 @@ The theme can be customized. Check out `config.rs`.
 
 ### History & Rant
 
-I used `cmus` daily for years and loved it. Some time in the past I found a bothersome bug/limitation in it. Looking for a fix,
-I realized I was using a very old version. `cmus` has CI/CD and automatically publishes builds, but they were not available — GitHub deleted them
-after a while.
-
-I was feeling brave and decided to `git clone` and build it myself. Having practically no experience with C/C++, 
-I found this particularly challenging, but eventually succeeded.
-
-Then, after a while, I upgraded from PopOS to Ubuntu 24, and found the `cmus` I had built wasn't working anymore.
-I tried building again, but couldn't install one `apt` dependency due to one of them not being available in the repos
-set up by Ubuntu. Thanks to the modular nature of `cmus`, I could run it and listen to music... except for `flac`, and
-that is what I use the most.
-
-I work with JavaScript/TypeScript every day. In this world, I can `npm install` anything and it'll be contained in the project's structure.
-I can even `nvm use 16/20/22` to switch between NodeJS versions. If a project has a build step, it's usually no more than `npm run build`.
-Most of the time, things Just Work™.
-
-I find the way these old applications require me to install a bunch of dependencies in my machine just to run the build, 
-and a bunch of others to be able to run the application, absolutely crazy.
-
-So I went looking and found Kronos. Having zero Rust experience, I was able to download and run the binary. No dependencies to install. No nothing.
-Then I wanted to dig into the code. With zero Rust experience, I just `git clone`'ed, `cargo run` and that was it. 
-Took me less than 5 minutes to go from not even having `cargo` or `rust` (let alone RustRover or any other Rust IDE) installed to
-making modifications to the code and running them.
-
-I initially submitted a couple of fixes to upstream Kronos, but later decided I just wanted the freedom to commit and push to `main`
-and break the application if needed, prioritizing speed, fun and the features _I_ wanted over process, quality and community.
-
-This is my fork of Kronos. It is not aimed at being easily consumable by anyone, or customizable. At least not for now.
-I use Jolteon daily, pretty much all day, and work on the features I want to have, and fix the bugs as I find them.
-
-This is my first Rust application, and I'm learning as I go, so the code can be pretty bad at times.
-But, so far, I'm amazed by how beautiful a language Rust is. And I don't say this lightly! 
-I've been writing software for 20+ years. 
+See [History & Rant](./HISTORY.md).
 
 ## Contribute
 
 In general, I won't accept contributions, because I don't have enough time or Rust knowledge to properly do code review. 
+
+You're free to have your own fork of Jolteon, though. Even if you're new to Rust, it's very friendly language with a very friendly community; and I try to keep the source code as clean and intuitive as I can, so modifying it should be relatively easy. 
+
+To install Rust and Cargo, see https://www.rust-lang.org/tools/install or https://doc.rust-lang.org/cargo/getting-started/installation.html. Under macOS, Linux, etc, it's just copy-pasting a `curl ...` command. I won't copy it here for safety reasons.
+
+Then, just clone the repo:
+
+```
+git clone --depth=1 https://github.com/lautarodragan/jolteon.git
+cd jolteon
+```
+
+And `cargo run`, `cargo run --release` and `cargo build` are the commands you'll be running the most.
+
+Keep in mind I'm using my own fork of `cpal` right now. I have an open [PR for cpal](https://github.com/RustAudio/cpal/pull/909), with a small bugfix, that hasn't been merged yet. 
