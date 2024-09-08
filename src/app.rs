@@ -73,16 +73,18 @@ impl<'a> App<'a> {
         };
         let mut browser = Browser::new(current_directory);
 
-        let player_for_on_select = player.clone();
-        browser.on_select(move |s| {
-            match s {
-                FileBrowserSelection::Song(song) => {
-                    player_for_on_select.play_now(song);
+        browser.on_select({
+            let player = player.clone();
+            move |s| {
+                match s {
+                    FileBrowserSelection::Song(song) => {
+                        player.play_now(song);
+                    }
+                    FileBrowserSelection::CueSheet(cue_sheet) => {
+                        player.play_now_cue(cue_sheet);
+                    }
+                    _ => {}
                 }
-                FileBrowserSelection::CueSheet(cue_sheet) => {
-                    player_for_on_select.play_now_cue(cue_sheet);
-                }
-                _ => {}
             }
         });
 
