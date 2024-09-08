@@ -2,8 +2,9 @@
 
 A Terminal Music Player For Offline Listening
 
-![Music](assets/music_tab.png?raw=true)
-![Controls](assets/controls_tab.png?raw=true)
+![File Browser - Light Theme](assets/file_browser_light.png?raw=true)
+![File Browser - Dark Theme](assets/file_browser_dark.png?raw=true)
+![File Browser - Search](assets/file_browser_search.png?raw=true)
 
 # Table of contents
 1. [About](#About)
@@ -54,24 +55,18 @@ Won't be publishing this to `apt`, `yum`, etc. any time soon.
 
 ## Features
 
-Since this started as a fork of Kronos, I'll skip the features it supports.
-
-### Differences between Jolteon and Kronos
-
-Some features I've added to Jolteon that weren't available in Kronos:
+- File Browser
+- Search/Filter in File Browser (Ctrl+F)
+- Playing Queue
 - Media keys Play/Pause support via MPRIS in Linux
-- .cue file support (WIP)
-- File Browser: 
-  - Search (Ctrl+F)
-  - Selected directory is saved whenever a folder is entered, so, when navigating upwards, that folder stays selected, rather than selecting the first item of the list.
-  - Smart movement of the "camera" (offset) in the file list viewport, relative to the currently selected item.  
+- `.cue` file support
+- gapless playback
 - Persist app state. Closing and reopening Jolteon should feel similar to simply hitting pause and play. In particular, Jolteon persists the following:
   - The current directory of the browser
   - The queue
   - Current song (coming soon)
 - Controls
   - Seek 5 seconds forward/backward
-  - Changed a few keyboard shortcuts
 - UI improvements (according to my own personal preference). See screenshots.
 - Performance improvements. Removed some redundant disk access.
 - Panic handler to restore the terminal if/when the application crashes, rather than leaving it in a rather unusable state.
@@ -85,7 +80,7 @@ I've also extensively refactored the code base:
 - Reduced the number of mutable references overall
   - And plan to do so as much as I can. I want everything to have the least possible access.
 
-### Future
+### Upcoming
 
 - Playlists (like `cmus`)
 - Audio library (like `cmus`)
@@ -96,25 +91,11 @@ I've also extensively refactored the code base:
 
 Jolteon uses Rodeo to play music, so it supports whatever formats Rodeo does.
 
-I mainly use `flac` files, and some `mp3`. Other formats aren't usually tested, but the following should work:
-
-Format
---- | 
-aac |
-flac |
-mp3 |
-mp4 |
-m4a |
-ogg |
-wav |
+I mainly use `flac` files, and some `mp3`. Other formats aren't usually tested, but the following should work: `aac`, `flac`, `mp3`, `mp4`, `m4a`, `ogg`, `wav`.
 
 ## Customization
 
-Customization was present in Kronos but not completely respected in Jolteon. Some colors are currently hard-coded.
-
-I will un-hard-code them eventually.
-
-If you're interested in customizing Jolteon's theme, see Krono's documentation and/or `config.rs`.
+The theme can be customized. Check out `config.rs`.
                   
 ## Philosophy
 

@@ -34,7 +34,7 @@ impl<'a> Browser<'a> {
 
         let browser_title = match &self.filter {
             Some(filter) => Line::from(vec![
-                Span::styled("  search: ", Style::default()),
+                Span::styled("Search: ", Style::default()),
                 Span::styled(filter.clone(), Style::default().fg(cfg.theme.search)),
             ]),
             _ => Line::from(folder_name),
