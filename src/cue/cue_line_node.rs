@@ -25,7 +25,9 @@ impl CueLineNode {
         });
 
         while let Some(line) = cue_lines.pop_front() {
-            let Some(stack_top) = stack.last_mut() else { panic!("Stack should always have at least one element!") };
+            let Some(stack_top) = stack.last_mut() else {
+                panic!("Stack should always have at least one element!")
+            };
 
             let stack_top_indentation = match &stack_top.line {
                 Some(parent_line) => parent_line.indentation + 2,
@@ -39,7 +41,12 @@ impl CueLineNode {
                 let mut v = Vec::new();
 
                 while let Some(node) = stack.pop() {
-                    if node.line.as_ref().is_none() || node.line.as_ref().is_some_and(|l| l.indentation +2 != stack_top_indentation){
+                    if node.line.as_ref().is_none()
+                        || node
+                            .line
+                            .as_ref()
+                            .is_some_and(|l| l.indentation + 2 != stack_top_indentation)
+                    {
                         stack.push(node);
                         break;
                     } else {
@@ -51,7 +58,6 @@ impl CueLineNode {
                 stack.last_mut().unwrap().children = v;
                 stack.push(CueLineNode::from_line(line));
             }
-
         }
 
         while stack.len() > 1 {
@@ -81,7 +87,6 @@ impl CueLineNode {
 
         stack.pop().unwrap().children
     }
-
 }
 
 #[cfg(test)]
@@ -113,20 +118,29 @@ mod tests {
         assert_eq!(file.children[0].children.len(), 3);
 
         assert!(file.children[0].children[0].children.is_empty());
-        assert_eq!(file.children[0].children[0].line, Some(CueLine {
-            indentation: 4,
-            key: "TITLE".to_string(),
-            value: "\"Strange Feelin'\"".to_string(),
-        } ));
-        assert_eq!(file.children[0].children[1].line, Some(CueLine {
-            indentation: 4,
-            key: "PERFORMER".to_string(),
-            value: "\"Tim Buckley\"".to_string(),
-        } ));
-        assert_eq!(file.children[0].children[2].line, Some(CueLine {
-            indentation: 4,
-            key: "INDEX".to_string(),
-            value: "01 00:00:00".to_string(),
-        } ));
+        assert_eq!(
+            file.children[0].children[0].line,
+            Some(CueLine {
+                indentation: 4,
+                key: "TITLE".to_string(),
+                value: "\"Strange Feelin'\"".to_string(),
+            })
+        );
+        assert_eq!(
+            file.children[0].children[1].line,
+            Some(CueLine {
+                indentation: 4,
+                key: "PERFORMER".to_string(),
+                value: "\"Tim Buckley\"".to_string(),
+            })
+        );
+        assert_eq!(
+            file.children[0].children[2].line,
+            Some(CueLine {
+                indentation: 4,
+                key: "INDEX".to_string(),
+                value: "01 00:00:00".to_string(),
+            })
+        );
     }
 }

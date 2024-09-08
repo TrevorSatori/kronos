@@ -1,7 +1,7 @@
 use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
 
-use crate::toml::{read_toml_file_or_default};
+use crate::toml::read_toml_file_or_default;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, Default)]
 pub struct Config {

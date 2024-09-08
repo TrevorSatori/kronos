@@ -1,6 +1,9 @@
+use std::sync::{
+    mpsc::{channel, Receiver, Sender},
+    Arc, Mutex, MutexGuard,
+};
 use std::time::Duration;
 use std::{collections::VecDeque, path::PathBuf};
-use std::sync::{mpsc::{channel, Receiver, Sender}, Arc, Mutex, MutexGuard};
 
 use log::error;
 
@@ -78,10 +81,10 @@ impl Queue {
             drop(items);
             if let Some(l) = item {
                 self.refresh_total_time();
-                return l
+                return l;
             }
             rx.lock().unwrap().recv().unwrap_or_else(|e| {
-               error!("queue.pop() tried to recv and failed. {:#?}", e);
+                error!("queue.pop() tried to recv and failed. {:#?}", e);
             });
         }
     }

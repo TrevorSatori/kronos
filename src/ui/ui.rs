@@ -1,5 +1,4 @@
-use std::time::Duration;
-use log::{error};
+use log::error;
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     prelude::*,
@@ -8,12 +7,13 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Gauge, Tabs},
     Frame,
 };
+use std::time::Duration;
 
 use crate::{
     app::AppTab,
     config::Config,
     constants::{MAIN_SECTIONS, SECONDS_PER_HOUR, SECONDS_PER_MINUTE},
-    structs::song::{Song},
+    structs::song::Song,
 };
 
 fn duration_to_string(total_time: Duration) -> String {
@@ -106,18 +106,15 @@ pub fn render_playing_gauge(
         frame.render_widget(playing_file, area_top);
     }
 
-    let playing_song_label = current_song.as_ref().map(|song|
+    let playing_song_label = current_song.as_ref().map(|song| {
         format!(
             "{time_played} / {current_song_length}",
             time_played = duration_to_string(current_song_position),
             current_song_length = duration_to_string(song.length),
-        ));
+        )
+    });
 
-    let songs = if queue_song_count == 1 {
-        "song"
-    } else {
-        "songs"
-    };
+    let songs = if queue_song_count == 1 { "song" } else { "songs" };
 
     let queue_label = if queue_song_count > 0 {
         Some(format!(
@@ -139,23 +136,17 @@ pub fn render_playing_gauge(
         (Some(playing_song_label), None) => {
             format!("{playing_song_label}")
         }
-        _ => "".to_string()
+        _ => "".to_string(),
     };
 
     if playing_gauge_label.len() > 0 {
         let song_progress = match current_song {
-            Some(song) => {
-                match song.length.as_secs_f64() {
-                    0.0 => {
-                        error!("Song length is zero! {:?}", song.path);
-                        0.0
-                    }
-                    n => f64::clamp(
-                        current_song_position.as_secs_f64() / n,
-                        0.0,
-                        1.0,
-                    )
+            Some(song) => match song.length.as_secs_f64() {
+                0.0 => {
+                    error!("Song length is zero! {:?}", song.path);
+                    0.0
                 }
+                n => f64::clamp(current_song_position.as_secs_f64() / n, 0.0, 1.0),
             },
             _ => 0.0,
         };
@@ -167,6 +158,4 @@ pub fn render_playing_gauge(
             .ratio(song_progress);
         frame.render_widget(playing_gauge, area_bottom);
     }
-
-
 }

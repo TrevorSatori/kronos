@@ -1,13 +1,9 @@
 use std::error::Error;
+use std::sync::{mpsc::Receiver, Arc, Mutex};
 use std::{env, path::PathBuf, thread, time::Duration};
-use std::sync::{
-    mpsc::Receiver,
-    Arc,
-    Mutex,
-};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
-use log::{error};
+use log::error;
 use ratatui::{
     layout::{Constraint, Layout},
     prelude::Style,
@@ -53,9 +49,7 @@ pub struct App<'a> {
 }
 
 impl<'a> App<'a> {
-    pub fn new(
-        player_command_receiver: Receiver<Command>,
-    ) -> Self {
+    pub fn new(player_command_receiver: Receiver<Command>) -> Self {
         let config = Config::from_file();
         let state = State::from_file();
 
@@ -264,11 +258,8 @@ impl<'a> App<'a> {
         let block = Block::default().style(Style::default().bg(self.config.theme.background));
         frame.render_widget(block, frame.size());
 
-        let [area_top, area_center, area_bottom] = Layout
-            ::vertical([
-                Constraint::Length(2), Constraint::Min(0), Constraint::Length(3)
-            ])
-            .areas(frame.size());
+        let [area_top, area_center, area_bottom] =
+            Layout::vertical([Constraint::Length(2), Constraint::Min(0), Constraint::Length(3)]).areas(frame.size());
 
         ui::render_top_bar(frame, &self.config, area_top, self.active_tab);
 

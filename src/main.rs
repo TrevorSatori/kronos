@@ -1,53 +1,40 @@
 mod app;
 mod config;
 mod constants;
-mod file_browser;
-mod structs;
+mod cue;
 mod extensions;
+mod file_browser;
 mod mpris;
+mod player;
 mod quit_future;
 mod state;
+mod structs;
 mod term;
-mod ui;
-mod player;
-mod cue;
 mod toml;
+mod ui;
 
 use std::error::Error;
 use std::io::stdout;
 use std::sync::mpsc::{channel, Receiver};
 use std::thread;
 
+use flexi_logger::{DeferredNow, FileSpec, Logger, WriteMode};
 use futures::{
     future::FutureExt, // for `.fuse()`
     pin_mut,
     select,
 };
-use flexi_logger::{DeferredNow, FileSpec, Logger, WriteMode};
 use log::{debug, error, info, Record};
 
-use crate::{
-    app::App,
-    mpris::run_mpris,
-    quit_future::Quit,
-    term::reset_terminal,
-};
+use crate::{app::App, mpris::run_mpris, quit_future::Quit, term::reset_terminal};
 
 pub enum Command {
     PlayPause,
     Next,
 }
 
-pub fn log_format(
-    w: &mut dyn std::io::Write,
-    _now: &mut DeferredNow,
-    record: &Record,
-) -> Result<(), std::io::Error> {
-    write!(
-        w,
-        "{: <12}",
-        thread::current().name().unwrap_or("<unnamed>"),
-    )?;
+pub fn log_format(w: &mut dyn std::io::Write, _now: &mut DeferredNow, record: &Record) -> Result<(), std::io::Error> {
+    write!(w, "{: <12}", thread::current().name().unwrap_or("<unnamed>"),)?;
 
     write!(w, "{}", record.args())
 }

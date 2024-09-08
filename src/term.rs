@@ -2,8 +2,8 @@ use std::error::Error;
 use std::io::stdout;
 
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
     cursor::Show,
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };

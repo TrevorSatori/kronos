@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    toml::{read_toml_file_or_default, write_toml_file, TomlFileError},
     structs::song::Song,
+    toml::{read_toml_file_or_default, write_toml_file, TomlFileError},
 };
 
 #[derive(Serialize, Deserialize, Debug)]

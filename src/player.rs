@@ -1,19 +1,17 @@
 use std::fs::File;
 use std::io::BufReader;
-use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
+
 use log::{debug, error, warn};
 use rodio::{Decoder, OutputStreamHandle, Sink};
 
 use crate::{
-    structs::{
-        song::{Song},
-        queue::Queue,
-    },
     cue::CueSheet,
+    structs::{queue::Queue, song::Song},
 };
 
 pub struct Player {
@@ -40,10 +38,7 @@ enum Command {
 // Is moving the source between threads every 5ms better than doing atomic operations with Ordering::Relaxed
 // on every iteration?
 impl Player {
-    pub fn new(
-        queue: Vec<Song>,
-        output_stream: &OutputStreamHandle,
-    ) -> Self {
+    pub fn new(queue: Vec<Song>, output_stream: &OutputStreamHandle) -> Self {
         let sink = Arc::new(Sink::try_new(output_stream).unwrap());
 
         let (command_sender, command_receiver) = channel();
@@ -79,7 +74,11 @@ impl Player {
 
         let song_start_time = self.song_start_time.clone();
         let set_currently_playing = move |song: Option<Song>| {
-            let start_time = song.as_ref().and_then(|song| Some(song.start_time)).unwrap_or(Duration::ZERO).as_secs();
+            let start_time = song
+                .as_ref()
+                .and_then(|song| Some(song.start_time))
+                .unwrap_or(Duration::ZERO)
+                .as_secs();
             song_start_time.store(start_time, Ordering::Relaxed);
 
             match currently_playing.lock() {

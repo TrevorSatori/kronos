@@ -1,6 +1,7 @@
-use std::fmt::{Formatter};
+use std::fmt::Formatter;
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::PathBuf;
+
 use log::error;
 use serde::de::DeserializeOwned;
 
@@ -40,7 +41,10 @@ impl From<toml::ser::Error> for TomlFileError {
 }
 
 fn get_config_dir_path() -> Result<PathBuf, TomlFileError> {
-    home::home_dir().map(|path| path.as_path().join(".config/jolteon")).ok_or(TomlFileError::NoPath(".config/jolteon".to_string()))
+    // TODO: XDG_CONFIG_HOME
+    home::home_dir()
+        .map(|path| path.as_path().join(".config/jolteon"))
+        .ok_or(TomlFileError::NoPath(".config/jolteon".to_string()))
 }
 
 fn get_config_file_path(file_name: &str) -> Result<PathBuf, TomlFileError> {
@@ -54,7 +58,8 @@ fn create_dir() -> Result<(), TomlFileError> {
 }
 
 pub fn read_toml_file<T>(file_name: &str) -> Result<T, TomlFileError>
-where T: DeserializeOwned
+where
+    T: DeserializeOwned,
 {
     let path = get_config_file_path(file_name)?;
     let string = read_to_string(&path)?;
@@ -62,7 +67,8 @@ where T: DeserializeOwned
 }
 
 pub fn read_toml_file_or_default<T>(file_name: &str) -> T
-where T: DeserializeOwned + Default
+where
+    T: DeserializeOwned + Default,
 {
     read_toml_file(file_name).unwrap_or_else(|err| {
         error!(
@@ -74,7 +80,8 @@ where T: DeserializeOwned + Default
 }
 
 pub fn write_toml_file<T>(file_name: &str, file_contents: &T) -> Result<(), TomlFileError>
-where T: serde::ser::Serialize
+where
+    T: serde::ser::Serialize,
 {
     create_dir()?;
     let path = get_config_file_path(file_name)?;

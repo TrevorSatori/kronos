@@ -6,7 +6,7 @@ use std::{
 };
 
 use lofty::{Accessor, AudioFile, LoftyError, Probe, TaggedFileExt};
-use log::{error};
+use log::error;
 use serde::{Deserialize, Serialize};
 
 use crate::cue::CueSheet;
@@ -53,19 +53,20 @@ impl Song {
 
         let s = Song::from_file(&song_path).expect("could not load file");
 
-        let mut songs: Vec<Song> = tracks.iter().map(|t| {
-            Song {
+        let mut songs: Vec<Song> = tracks
+            .iter()
+            .map(|t| Song {
                 path: song_path.clone(),
                 length: Duration::ZERO,
                 artist: t.performer(),
                 title: t.title(),
                 start_time: t.start_time(),
-            }
-        }).collect();
+            })
+            .collect();
 
         for i in 0..songs.len() {
             let next_start = if i < songs.len() - 1 {
-                songs[i+1].start_time
+                songs[i + 1].start_time
             } else {
                 s.length
             };
