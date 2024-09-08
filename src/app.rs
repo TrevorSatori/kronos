@@ -74,16 +74,16 @@ impl<'a> App<'a> {
                 log::debug!("browser.on_select({:?}, {:?})", s, q);
                 match (s, q) {
                     (FileBrowserSelection::Song(song), false) => {
-                        player.play_now(song);
+                        player.play_song(song);
                     }
                     (FileBrowserSelection::CueSheet(cue_sheet), false) => {
-                        player.play_now_cue(cue_sheet);
+                        player.enqueue_cue(cue_sheet);
                     }
                     (FileBrowserSelection::Song(song), true) => {
                         player.enqueue_song(song);
                     }
                     (FileBrowserSelection::CueSheet(cue_sheet), true) => {
-                        player.play_now_cue(cue_sheet);
+                        player.enqueue_cue(cue_sheet);
                     }
                     _ => {}
                 }
@@ -237,7 +237,7 @@ impl<'a> App<'a> {
         match key.code {
             KeyCode::Enter => {
                 if let Some(song) = self.player.queue().selected_song() {
-                    self.player.play_now(song);
+                    self.player.play_song(song);
                 };
             }
             KeyCode::Down | KeyCode::Char('j') => self.player.queue().select_next(),
