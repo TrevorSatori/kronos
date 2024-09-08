@@ -27,7 +27,7 @@ use crate::{
 };
 
 #[derive(Clone, Copy, Eq, PartialEq)]
-pub enum InputMode {
+pub enum FocusedElement {
     Browser,
     Queue,
     HelpControls,
@@ -42,7 +42,7 @@ pub enum AppTab {
 pub struct App<'a> {
     must_quit: bool,
     config: Config,
-    input_mode: InputMode,
+    focused_element: FocusedElement,
     active_tab: AppTab,
     browser: Browser<'a>,
     help_tab: ui::HelpTab<'a>,
@@ -92,7 +92,7 @@ impl<'a> App<'a> {
         Self {
             must_quit: false,
             config,
-            input_mode: InputMode::Browser,
+            focused_element: FocusedElement::Browser,
             active_tab: AppTab::FileBrowser,
             browser,
             help_tab: ui::HelpTab::new(config),
@@ -164,14 +164,14 @@ impl<'a> App<'a> {
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) {
-        let focus_trapped = self.input_mode == InputMode::Browser && self.browser.filter.is_some();
+        let focus_trapped = self.focused_element == FocusedElement::Browser && self.browser.filter.is_some();
         let handled = !focus_trapped && self.handle_app_key_event(&key);
 
         if !handled {
-            match self.input_mode {
-                InputMode::Browser => self.handle_browser_key_events(key),
-                InputMode::Queue => self.handle_queue_key_events(key),
-                InputMode::HelpControls => self.handle_help_key_events(key),
+            match self.focused_element {
+                FocusedElement::Browser => self.handle_browser_key_events(key),
+                FocusedElement::Queue => self.handle_queue_key_events(key),
+                FocusedElement::HelpControls => self.handle_help_key_events(key),
             }
         }
     }
@@ -184,28 +184,28 @@ impl<'a> App<'a> {
             }
             KeyCode::Char('1') => {
                 self.active_tab = AppTab::FileBrowser;
-                self.input_mode = InputMode::Browser;
+                self.focused_element = FocusedElement::Browser;
             }
             KeyCode::Char('2') => {
                 self.active_tab = AppTab::Help;
-                self.input_mode = InputMode::HelpControls;
+                self.focused_element = FocusedElement::HelpControls;
             }
             KeyCode::Tab if self.browser.filter.is_none() => {
                 match self.active_tab {
                     AppTab::FileBrowser => {
-                        self.input_mode = match self.input_mode {
-                            InputMode::Browser => InputMode::Queue,
-                            InputMode::Queue => InputMode::Browser,
+                        self.focused_element = match self.focused_element {
+                            FocusedElement::Browser => FocusedElement::Queue,
+                            FocusedElement::Queue => FocusedElement::Browser,
                             e => e,
                         };
 
                         // TODO: focus/blur colors
-                        match self.input_mode {
-                            InputMode::Browser => {
+                        match self.focused_element {
+                            FocusedElement::Browser => {
                                 self.browser.items.next();
                                 self.player.queue().select_none();
                             }
-                            InputMode::Queue => {
+                            FocusedElement::Queue => {
                                 self.browser.items.unselect();
                                 self.player.queue().select_next();
                             }
