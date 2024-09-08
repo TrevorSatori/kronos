@@ -123,7 +123,6 @@ impl<'a> App<'a> {
         self.player.spawn();
 
         while !self.must_quit {
-            terminal.set_cursor(0, 0)?; // see known-issues.md
             terminal.draw(|frame| self.render(frame))?;
 
             let timeout = tick_rate.saturating_sub(last_tick.elapsed());
