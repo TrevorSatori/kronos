@@ -109,7 +109,7 @@ impl<'a> App<'a> {
         let queue_items = player.queue().songs().clone();
 
         State {
-            last_visited_path: self.browser.current_directory.to_str().map(String::from),
+            last_visited_path: self.browser.current_directory().to_str().map(String::from),
             queue_items: Vec::from(queue_items),
         }
     }
@@ -223,8 +223,8 @@ impl<'a> App<'a> {
             KeyCode::Char('p') | KeyCode::Char(' ') => self.player.toggle(),
             KeyCode::Char('g') => self.player.stop(),
             KeyCode::Char('c') if key.modifiers == KeyModifiers::ALT => {
-                let _ = env::set_current_dir(&self.browser.current_directory);
-            },
+                let _ = env::set_current_dir(self.browser.current_directory());
+            }
             _ => {
                 handled = false;
             }

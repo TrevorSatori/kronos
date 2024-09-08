@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::config::Config;
 use crate::file_browser::Browser;
-use crate::structs::{queue::Queue};
+use crate::structs::queue::Queue;
 use crate::ui;
 
 impl<'a> Browser<'a> {
@@ -25,7 +25,7 @@ impl<'a> Browser<'a> {
 
     pub fn top_bar(self: &Self, cfg: &Config) -> Block<'a> {
         let folder_name = self
-            .current_directory
+            .current_directory()
             .file_name()
             .map(|s| s.to_str())
             .flatten()

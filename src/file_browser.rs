@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use log::{error};
+use log::error;
 
 use crate::{
     cue::CueSheet,
@@ -11,7 +11,7 @@ use crate::{
 
 pub struct Browser<'a> {
     pub items: StatefulList<String>,
-    pub current_directory: PathBuf,
+    current_directory: PathBuf,
     pub filter: Option<String>,
     last_offset: usize,
     on_select_fn: Box<dyn FnMut((FileBrowserSelection, bool)) + 'a>,
@@ -37,6 +37,10 @@ impl<'a> Browser<'a> {
             last_offset: 0,
             on_select_fn: Box::new(|_| {}) as _,
         }
+    }
+
+    pub fn current_directory(&self) -> &PathBuf {
+        &self.current_directory
     }
 
     pub fn selected_item(&self) -> PathBuf {
@@ -69,10 +73,10 @@ impl<'a> Browser<'a> {
             match Song::from_file(&path) {
                 Ok(song) => {
                     (self.on_select_fn)((FileBrowserSelection::Song(song), for_queue));
-                },
+                }
                 Err(err) => {
                     error!("Filed to read Song {:#?}", err);
-                },
+                }
             }
         }
     }
