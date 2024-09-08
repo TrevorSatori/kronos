@@ -215,6 +215,10 @@ impl Player {
         self.queue_items.append(&mut std::collections::VecDeque::from(songs));
     }
 
+    pub fn enqueue_song(&self, song: Song) {
+        self.queue_items.add_front(song);
+    }
+
     pub fn toggle(&self) {
         if self.sink.is_paused() {
             self.sink.play();

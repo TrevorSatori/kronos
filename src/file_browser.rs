@@ -14,7 +14,7 @@ pub struct Browser<'a> {
     pub current_directory: PathBuf,
     pub filter: Option<String>,
     last_offset: usize,
-    on_select_fn: Box<dyn FnMut(FileBrowserSelection) + 'a>,
+    on_select_fn: Box<dyn FnMut((FileBrowserSelection, bool)) + 'a>,
 }
 
 #[allow(dead_code, unused_variables)]
@@ -47,11 +47,11 @@ impl<'a> Browser<'a> {
         }
     }
 
-    pub fn on_select(&mut self, cb: impl FnMut(FileBrowserSelection) + 'a) {
+    pub fn on_select(&mut self, cb: impl FnMut((FileBrowserSelection, bool)) + 'a) {
         self.on_select_fn = Box::new(cb);
     }
 
-    fn enter_selection(&mut self) {
+    fn enter_selection(&mut self, for_queue: bool) {
         let path = self.selected_item();
 
         if path.is_dir() {
@@ -59,7 +59,7 @@ impl<'a> Browser<'a> {
         } else if path.extension().is_some_and(|e| e == "cue") {
             match CueSheet::from_file(&path) {
                 Ok(cue_sheet) => {
-                    (self.on_select_fn)(FileBrowserSelection::CueSheet(cue_sheet));
+                    (self.on_select_fn)((FileBrowserSelection::CueSheet(cue_sheet), for_queue));
                 }
                 Err(err) => {
                     error!("Filed to read CueSheet {:#?}", err);
@@ -68,7 +68,7 @@ impl<'a> Browser<'a> {
         } else {
             match Song::from_file(&path) {
                 Ok(song) => {
-                    (self.on_select_fn)(FileBrowserSelection::Song(song));
+                    (self.on_select_fn)((FileBrowserSelection::Song(song), for_queue));
                 },
                 Err(err) => {
                     error!("Filed to read Song {:#?}", err);
@@ -144,7 +144,7 @@ impl<'a> Browser<'a> {
 
     fn on_normal_key_event(&mut self, key: KeyEvent) {
         match key.code {
-            KeyCode::Enter => { self.enter_selection(); },
+            KeyCode::Enter => { self.enter_selection(false); },
             KeyCode::Backspace => self.navigate_up(),
             KeyCode::Down | KeyCode::Char('j') => self.items.next(),
             KeyCode::Up | KeyCode::Char('k') => self.items.previous(),
@@ -155,15 +155,23 @@ impl<'a> Browser<'a> {
             KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
                 self.filter = Some("".to_string());
             }
+            KeyCode::Char('a') => {
+                self.enter_selection(true);
+                self.items.next();
+            }
             _ => {}
         }
     }
 
     fn on_filter_key_event(&mut self, key: KeyEvent) {
         match key.code {
+            KeyCode::Enter if key.modifiers == KeyModifiers::ALT => {
+                self.enter_selection(true);
+                self.items.next();
+            }
             KeyCode::Enter => {
                 self.filter = None;
-                self.enter_selection();
+                self.enter_selection(false);
             }
             KeyCode::Esc => {
                 self.filter = None;

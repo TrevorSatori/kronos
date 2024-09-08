@@ -76,12 +76,19 @@ impl<'a> App<'a> {
 
         browser.on_select({
             let player = player.clone();
-            move |s| {
-                match s {
-                    FileBrowserSelection::Song(song) => {
+            move |(s, q)| {
+                log::debug!("browser.on_select({:?}, {:?})", s, q);
+                match (s, q) {
+                    (FileBrowserSelection::Song(song), false) => {
                         player.play_now(song);
                     }
-                    FileBrowserSelection::CueSheet(cue_sheet) => {
+                    (FileBrowserSelection::CueSheet(cue_sheet), false) => {
+                        player.play_now_cue(cue_sheet);
+                    }
+                    (FileBrowserSelection::Song(song), true) => {
+                        player.enqueue_song(song);
+                    }
+                    (FileBrowserSelection::CueSheet(cue_sheet), true) => {
                         player.play_now_cue(cue_sheet);
                     }
                     _ => {}
@@ -147,7 +154,7 @@ impl<'a> App<'a> {
         let player_command_receiver = self.player_command_receiver.clone();
         let player = self.player.clone();
 
-        thread::spawn(move || loop {
+        thread::Builder::new().name("media_key_receiver".to_string()).spawn(move || loop {
             match player_command_receiver.lock().unwrap().recv() {
                 Ok(Command::PlayPause) => {
                     player.toggle();
@@ -160,7 +167,7 @@ impl<'a> App<'a> {
                     break;
                 }
             }
-        });
+        }).unwrap();
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) {
@@ -169,7 +176,7 @@ impl<'a> App<'a> {
 
         if !handled {
             match self.focused_element {
-                FocusedElement::Browser => self.handle_browser_key_events(key),
+                FocusedElement::Browser => self.browser.on_key_event(key),
                 FocusedElement::Queue => self.handle_queue_key_events(key),
                 FocusedElement::HelpControls => self.handle_help_key_events(key),
             }
@@ -229,22 +236,6 @@ impl<'a> App<'a> {
             }
         }
         handled
-    }
-
-    fn handle_browser_key_events(&mut self, key: KeyEvent) {
-        match key.code {
-            KeyCode::Enter if key.modifiers == KeyModifiers::ALT => {
-                self.player.queue().add(self.browser.selected_item());
-                self.browser.items.next();
-            }
-            KeyCode::Char('a') if self.browser.filter.is_none() => {
-                self.player.queue().add(self.browser.selected_item());
-                self.browser.items.next();
-            }
-            _ => {}
-        }
-
-        self.browser.on_key_event(key);
     }
 
     fn handle_queue_key_events(&mut self, key: KeyEvent) {
