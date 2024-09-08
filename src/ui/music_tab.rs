@@ -32,7 +32,7 @@ impl<'a> Browser<'a> {
             .map(String::from)
             .unwrap_or("".to_string());
 
-        let browser_title = match &self.filter {
+        let browser_title = match &self.filter() {
             Some(filter) => Line::from(vec![
                 Span::styled("Search: ", Style::default()),
                 Span::styled(filter.clone(), Style::default().fg(cfg.theme.search)),
@@ -60,8 +60,8 @@ impl<'a> Browser<'a> {
             .items()
             .iter()
             .map(|i| {
-                let fg = match self.filter.as_ref() {
-                    Some(s) if (i.to_lowercase().contains(&s.to_lowercase())) => cfg.theme.search,
+                let fg = match self.filter().as_ref() {
+                    Some(s) if i.to_lowercase().contains(&s.to_lowercase()) => cfg.theme.search,
                     _ => Color::Reset,
                 };
                 ListItem::new(Text::from(i.to_owned())).style(Style::default().fg(fg))

@@ -165,7 +165,7 @@ impl<'a> App<'a> {
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) {
-        let focus_trapped = self.focused_element == FocusedElement::Browser && self.browser.filter.is_some();
+        let focus_trapped = self.focused_element == FocusedElement::Browser && self.browser.filter().is_some();
         let handled = !focus_trapped && self.handle_app_key_event(&key);
 
         if !handled {
@@ -191,7 +191,7 @@ impl<'a> App<'a> {
                 self.active_tab = AppTab::Help;
                 self.focused_element = FocusedElement::HelpControls;
             }
-            KeyCode::Tab if self.browser.filter.is_none() => {
+            KeyCode::Tab if self.browser.filter().is_none() => {
                 match self.active_tab {
                     AppTab::FileBrowser => {
                         self.focused_element = match self.focused_element {

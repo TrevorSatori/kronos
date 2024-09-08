@@ -12,7 +12,7 @@ use crate::{
 pub struct Browser<'a> {
     items: StatefulList<String>,
     current_directory: PathBuf,
-    pub filter: Option<String>,
+    filter: Option<String>,
     last_offset: usize,
     on_select_fn: Box<dyn FnMut((FileBrowserSelection, bool)) + 'a>,
 }
@@ -41,6 +41,10 @@ impl<'a> Browser<'a> {
 
     pub fn items(&self) -> &StatefulList<String> {
         &self.items
+    }
+
+    pub fn filter(&self) -> &Option<String> {
+        &self.filter
     }
 
     pub fn set_height(&mut self, height: u16) {
