@@ -64,6 +64,7 @@ impl<'a> App<'a> {
         // The underlying library is not thread-safe.
         // We could do this to prevent it from ever being dropped, but it's overkill and bug-prone.
         // std::mem::forget(music_output.0);
+        // This is why we can't have Player own music_output.0. We wouldn't be able to move it across threads.
 
         let player = Arc::new(Player::new(state.queue_items, &music_output.1));
 
