@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::config::Config;
 use crate::file_browser::Browser;
-use crate::structs::queue::Queue;
+use crate::structs::Queue;
 use crate::ui;
 
 impl<'a> Browser<'a> {

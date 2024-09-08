@@ -14,17 +14,21 @@ pub async fn run_mpris(player_command_sender: Sender<Command>) -> Result<(), Box
         .build()
         .await?;
 
-    let play_pause = player_command_sender.clone();
-    player.connect_play_pause(move |_player| {
-        if let Err(err) = play_pause.send(Command::PlayPause) {
-            error!("Failed to send play_pause! {:?}", err);
+    player.connect_play_pause({
+        let player_command_sender = player_command_sender.clone();
+        move |_player| {
+            if let Err(err) = player_command_sender.send(Command::PlayPause) {
+                error!("mpris: Failed to send play_pause! {:?}", err);
+            }
         }
     });
 
-    let next = player_command_sender.clone();
-    player.connect_next(move |_player| {
-        if let Err(err) = next.send(Command::Next) {
-            error!("Failed to send next! {:?}", err);
+    player.connect_next({
+        let player_command_sender = player_command_sender.clone();
+        move |_player| {
+            if let Err(err) = player_command_sender.send(Command::Next) {
+                error!("mpris: Failed to send next! {:?}", err);
+            }
         }
     });
 

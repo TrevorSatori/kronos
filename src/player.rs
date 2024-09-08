@@ -11,7 +11,7 @@ use rodio::{Decoder, OutputStreamHandle, Sink};
 
 use crate::{
     cue::CueSheet,
-    structs::{queue::Queue, song::Song},
+    structs::{Queue, Song},
 };
 
 pub struct Player {

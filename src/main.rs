@@ -14,7 +14,7 @@ mod ui;
 
 use std::error::Error;
 use std::io::stdout;
-use std::sync::mpsc::{channel, Receiver};
+use std::sync::mpsc::channel;
 use std::thread;
 
 use async_std::task;

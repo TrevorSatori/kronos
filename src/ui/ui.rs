@@ -13,7 +13,7 @@ use crate::{
     app::AppTab,
     config::Config,
     constants::{MAIN_SECTIONS, SECONDS_PER_HOUR, SECONDS_PER_MINUTE},
-    structs::song::Song,
+    structs::Song,
 };
 
 fn duration_to_string(total_time: Duration) -> String {

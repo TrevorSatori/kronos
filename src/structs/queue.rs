@@ -3,11 +3,11 @@ use std::sync::{
     Arc, Mutex, MutexGuard,
 };
 use std::time::Duration;
-use std::{collections::VecDeque, path::PathBuf};
+use std::collections::VecDeque;
 
 use log::error;
 
-use super::song::{directory_to_song_list, Song};
+use crate::structs::Song;
 
 pub struct Queue {
     items: Arc<Mutex<VecDeque<Song>>>,
@@ -116,22 +116,6 @@ impl Queue {
     pub fn select_none(&self) {
         let mut selected_item_index = self.selected_item_index.lock().unwrap();
         *selected_item_index = None;
-    }
-
-    pub fn add(&self, path: PathBuf) {
-        if path.is_dir() {
-            let files = directory_to_song_list(&path);
-            self.songs().append(&mut VecDeque::from(files));
-        } else {
-            match Song::from_file(&path) {
-                Ok(song) => self.songs().push_back(song),
-                Err(err) => {
-                    error!("Could not add {:?}. Error was {:?}", &path, err);
-                }
-            }
-        }
-        self.refresh_total_time();
-        self.notify_queue_change();
     }
 
     pub fn add_front(&self, song: Song) {
