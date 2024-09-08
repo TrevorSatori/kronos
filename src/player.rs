@@ -216,7 +216,6 @@ impl Player {
     pub fn enqueue_cue(&self, cue_sheet: CueSheet) {
         let songs = Song::from_cue_sheet(cue_sheet);
         self.queue_items.append(&mut std::collections::VecDeque::from(songs));
-        self.queue_items.append(&mut std::collections::VecDeque::from(songs));
     }
 
     pub fn toggle(&self) {
