@@ -44,6 +44,7 @@ fn get_config_dir_path() -> Result<PathBuf, TomlFileError> {
 }
 
 fn get_config_file_path(file_name: &str) -> Result<PathBuf, TomlFileError> {
+    // TODO: XDG_CONFIG_HOME
     get_config_dir_path().map(|path| path.as_path().join(file_name).with_extension("toml"))
 }
 
