@@ -27,11 +27,13 @@ pub enum FocusedElement {
     Browser,
     Queue,
     HelpControls,
+    Playlists,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum AppTab {
     FileBrowser = 0,
+    Playlists,
     Help,
 }
 
@@ -173,6 +175,7 @@ impl<'a> App<'a> {
             match self.focused_element {
                 FocusedElement::Browser => self.browser.on_key_event(key),
                 FocusedElement::Queue => self.handle_queue_key_events(key),
+                FocusedElement::Playlists => {},
                 FocusedElement::HelpControls => self.handle_help_key_events(key),
             }
         }
@@ -189,6 +192,10 @@ impl<'a> App<'a> {
                 self.focused_element = FocusedElement::Browser;
             }
             KeyCode::Char('2') => {
+                self.active_tab = AppTab::Playlists;
+                self.focused_element = FocusedElement::HelpControls;
+            }
+            KeyCode::Char('3') => {
                 self.active_tab = AppTab::Help;
                 self.focused_element = FocusedElement::HelpControls;
             }
@@ -266,6 +273,7 @@ impl<'a> App<'a> {
 
         match self.active_tab {
             AppTab::FileBrowser => self.browser.render(frame, &self.player.queue(), area_center, &self.config),
+            AppTab::Playlists => {},
             AppTab::Help => self.help_tab.render(frame, area_center),
         };
 

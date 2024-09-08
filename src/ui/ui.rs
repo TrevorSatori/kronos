@@ -155,6 +155,7 @@ pub fn render_playing_gauge(
             .style(Style::default().fg(config.theme.foreground))
             .label(playing_gauge_label)
             .gauge_style(Style::default().fg(config.theme.highlight_background))
+            .use_unicode(true)
             .ratio(song_progress);
         frame.render_widget(playing_gauge, area_bottom);
     }
