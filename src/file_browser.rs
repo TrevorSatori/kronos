@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub struct Browser<'a> {
-    pub items: StatefulList<String>,
+    items: StatefulList<String>,
     current_directory: PathBuf,
     pub filter: Option<String>,
     last_offset: usize,
@@ -37,6 +37,22 @@ impl<'a> Browser<'a> {
             last_offset: 0,
             on_select_fn: Box::new(|_| {}) as _,
         }
+    }
+
+    pub fn items(&self) -> &StatefulList<String> {
+        &self.items
+    }
+
+    pub fn set_height(&mut self, height: u16) {
+        self.items.height = height;
+    }
+
+    pub fn blur(&mut self) {
+        self.items.unselect();
+    }
+
+    pub fn focus(&mut self) {
+        self.items.next();
     }
 
     pub fn current_directory(&self) -> &PathBuf {

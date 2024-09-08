@@ -15,7 +15,7 @@ impl<'a> Browser<'a> {
     pub fn render(self: &mut Self, frame: &mut Frame, queue_items: &Queue, area: Rect, cfg: &Config) {
         let (area_top, area_main_left, area_main_separator, area_main_right) = create_areas(area);
 
-        self.items.height = area_main_left.height;
+        self.set_height(area_main_left.height);
 
         self.render_top_bar(cfg, frame, area_top);
         self.render_file_list(cfg, frame, area_main_left);
@@ -56,7 +56,7 @@ impl<'a> Browser<'a> {
 
     fn file_list(self: &Self, cfg: &Config) -> List<'a> {
         let browser_items: Vec<ListItem> = self
-            .items
+            .items()
             .items()
             .iter()
             .map(|i| {
@@ -83,7 +83,7 @@ impl<'a> Browser<'a> {
     }
 
     pub fn render_file_list(self: &Self, cfg: &Config, frame: &mut Frame, area: Rect) {
-        frame.render_stateful_widget(self.file_list(cfg), area, &mut self.items.state());
+        frame.render_stateful_widget(self.file_list(cfg), area, &mut self.items().state());
     }
 }
 

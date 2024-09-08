@@ -203,11 +203,11 @@ impl<'a> App<'a> {
                         // TODO: focus/blur colors
                         match self.focused_element {
                             FocusedElement::Browser => {
-                                self.browser.items.next();
+                                self.browser.focus();
                                 self.player.queue().select_none();
                             }
                             FocusedElement::Queue => {
-                                self.browser.items.unselect();
+                                self.browser.blur();
                                 self.player.queue().select_next();
                             }
                             _ => {}
