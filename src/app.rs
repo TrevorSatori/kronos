@@ -120,7 +120,7 @@ impl<'a> App<'a> {
     pub fn start(&mut self) -> Result<(), Box<dyn Error>> {
         let mut terminal = set_terminal()?;
 
-        let tick_rate = Duration::from_secs(1);
+        let tick_rate = Duration::from_millis(100);
         let mut last_tick = std::time::Instant::now();
 
         self.spawn_media_key_receiver_thread();
