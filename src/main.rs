@@ -6,7 +6,6 @@ mod extensions;
 mod file_browser;
 mod mpris;
 mod player;
-mod quit_future;
 mod state;
 mod structs;
 mod term;
@@ -18,6 +17,7 @@ use std::io::stdout;
 use std::sync::mpsc::{channel, Receiver};
 use std::thread;
 
+use async_std::task;
 use flexi_logger::{DeferredNow, FileSpec, Logger, WriteMode};
 use futures::{
     future::FutureExt, // for `.fuse()`
@@ -26,7 +26,7 @@ use futures::{
 };
 use log::{debug, error, info, Record};
 
-use crate::{app::App, mpris::run_mpris, quit_future::Quit, term::reset_terminal};
+use crate::{app::App, mpris::run_mpris, term::reset_terminal};
 
 pub enum Command {
     PlayPause,
@@ -56,7 +56,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     debug!("Starting mpris and player");
 
-    let task_player = run_player(player_command_receiver).fuse();
+    let task_player = task::spawn_blocking(|| {
+        let mut app = App::new(player_command_receiver);
+        app.start()
+            .unwrap_or_else(|err| error!("app.start error :( \n{:#?}", err));
+    })
+    .fuse();
+
     let task_mpris = run_mpris(player_command_sender).fuse();
 
     pin_mut!(task_player, task_mpris);
@@ -72,19 +78,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     debug!("kthxbye");
     Ok(())
-}
-
-fn run_player(player_command_receiver: Receiver<Command>) -> Quit {
-    let quit = Quit::new();
-    let quit_state = quit.state();
-
-    thread::spawn(move || {
-        let mut app = App::new(player_command_receiver);
-        app.start().unwrap_or_else(|err| error!("app.start error :( \n{:#?}", err));
-        quit_state.lock().unwrap().complete();
-    });
-
-    quit
 }
 
 fn set_panic_hook() {

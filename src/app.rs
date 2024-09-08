@@ -114,6 +114,7 @@ impl<'a> App<'a> {
         }
     }
 
+    // Starts the player loop. Blocking.
     pub fn start(&mut self) -> Result<(), Box<dyn Error>> {
         let mut terminal = set_terminal()?;
 
