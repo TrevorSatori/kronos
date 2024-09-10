@@ -23,6 +23,7 @@ async-std = {version = "1.12.0", features = ["attributes", "unstable"]}
 futures = "0.3.30"
 flexi_logger = { version = "0.29", default-features = false }
 log = "0.4"
+chrono = "0.4.38"
 
 [patch.crates-io]
 cpal = { git = 'https://github.com/lautarodragan/cpal' }

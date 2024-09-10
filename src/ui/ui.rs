@@ -1,13 +1,15 @@
+use std::time::Duration;
+
+use chrono::prelude::*;
 use log::error;
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     prelude::*,
     style::{Modifier, Style},
-    text::Span,
+    text::{Span, Line},
     widgets::{Block, BorderType, Borders, Gauge, Tabs},
     Frame,
 };
-use std::time::Duration;
 
 use crate::{
     app::AppTab,
@@ -15,6 +17,22 @@ use crate::{
     constants::{MAIN_SECTIONS, SECONDS_PER_HOUR, SECONDS_PER_MINUTE},
     structs::Song,
 };
+
+// static TIME_FORMAT: &str = "%A %-l:%M%P, %B %-e | %F";
+// static TIME_FORMAT: &str = "%A %-l:%M%P, %B %-e";
+static TIME_FORMAT: &str = "%A %-l:%M%P";
+
+fn time_format() -> String {
+    let st = match Local::now().day() {
+        1 | 21 | 31 => "st",
+        2 | 22 => "nd",
+        3 | 23 => "rd",
+        _ => "th",
+    };
+
+    // Local::now().format(format!("%A %-l:%M%P, %B %-e{st}").as_str()).to_string()
+    Local::now().format(format!("%A %-l:%M%P").as_str()).to_string()
+}
 
 fn duration_to_string(total_time: Duration) -> String {
     let hours = total_time.as_secs() / SECONDS_PER_HOUR;
@@ -58,9 +76,9 @@ pub fn render_top_bar(frame: &mut Frame, config: &Config, area: Rect, active_tab
     let tabs = Tabs::new(tab_titles)
         .block(
             Block::default()
-                .borders(Borders::BOTTOM)
-                .border_type(BorderType::Plain)
-                .border_style(Style::default().fg(config.theme.background).bg(config.theme.background)),
+                // .borders(Borders::NONE)
+                // .border_type(BorderType::Plain)
+                // .border_style(Style::default().fg(config.theme.background).bg(config.theme.background)),
         )
         .select(active_tab as usize)
         .style(
@@ -74,6 +92,10 @@ pub fn render_top_bar(frame: &mut Frame, config: &Config, area: Rect, active_tab
                 .fg(config.theme.top_bar_highlight),
         );
     frame.render_widget(tabs, area);
+
+    let clock = Line::from(time_format())
+        .alignment(Alignment::Center);
+    frame.render_widget(clock, area);
 }
 
 pub fn render_playing_gauge(
