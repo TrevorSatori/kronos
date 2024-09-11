@@ -124,6 +124,12 @@ impl Queue {
         self.notify_queue_change();
     }
 
+    pub fn add_back(&self, song: Song) {
+        self.songs().push_back(song);
+        self.refresh_total_time();
+        self.notify_queue_change();
+    }
+
     pub fn append(&self, songs: &mut VecDeque<Song>) {
         self.songs().append(songs);
         self.refresh_total_time();

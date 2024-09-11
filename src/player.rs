@@ -210,7 +210,7 @@ impl Player {
     }
 
     pub fn enqueue_song(&self, song: Song) {
-        self.queue_items.add_front(song);
+        self.queue_items.add_back(song);
     }
 
     pub fn enqueue_cue(&self, cue_sheet: CueSheet) {
