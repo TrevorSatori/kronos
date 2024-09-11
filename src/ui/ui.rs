@@ -7,7 +7,7 @@ use ratatui::{
     prelude::*,
     style::{Modifier, Style},
     text::{Span, Line},
-    widgets::{Block, BorderType, Borders, Gauge, Tabs},
+    widgets::{Block, Borders, Gauge, Tabs},
     Frame,
 };
 
@@ -23,15 +23,16 @@ use crate::{
 static TIME_FORMAT: &str = "%A %-l:%M%P";
 
 fn time_format() -> String {
-    let st = match Local::now().day() {
-        1 | 21 | 31 => "st",
-        2 | 22 => "nd",
-        3 | 23 => "rd",
-        _ => "th",
-    };
+    // let st = match Local::now().day() {
+    //     1 | 21 | 31 => "st",
+    //     2 | 22 => "nd",
+    //     3 | 23 => "rd",
+    //     _ => "th",
+    // };
 
     // Local::now().format(format!("%A %-l:%M%P, %B %-e{st}").as_str()).to_string()
-    Local::now().format(format!("%A %-l:%M%P").as_str()).to_string()
+    // Local::now().format(format!("%A %-l:%M%P").as_str()).to_string()
+    Local::now().format("%A %-l:%M%P").to_string()
 }
 
 fn duration_to_string(total_time: Duration) -> String {
