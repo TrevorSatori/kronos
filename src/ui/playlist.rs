@@ -23,10 +23,18 @@ pub struct Playlist {
     pub songs: Vec<Song>,
 }
 
+#[derive(Eq, PartialEq)]
+enum PlaylistScreenElement {
+    PlaylistList,
+    SongList,
+}
+
 pub struct Playlists {
     pub playlists: Mutex<Vec<Playlist>>,
-    pub selected_playlist_index: AtomicUsize,
     theme: Theme,
+    focused_element: Mutex<PlaylistScreenElement>,
+    selected_playlist_index: AtomicUsize,
+    selected_song_index: AtomicUsize,
 }
 
 impl Playlists {
@@ -51,7 +59,9 @@ impl Playlists {
                 },
             ]),
             selected_playlist_index: AtomicUsize::new(0),
+            selected_song_index: AtomicUsize::new(0),
             theme,
+            focused_element: Mutex::new(PlaylistScreenElement::PlaylistList),
         }
     }
 
@@ -65,15 +75,38 @@ impl Playlists {
         self.playlists.lock().unwrap()[selected_playlist_index].songs.push(song);
     }
 
-    pub fn on_key_event(&self, key: KeyEvent) {
+    pub fn on_key_event(&self, key: &KeyEvent) {
         let len = self.playlists.lock().unwrap().len();
+        let mut focused_element_guard = self.focused_element.lock().unwrap();
 
         match key.code {
+            KeyCode::Tab => {
+                log::debug!("TAB");
+                *focused_element_guard = match *focused_element_guard {
+                    PlaylistScreenElement::PlaylistList => PlaylistScreenElement::SongList,
+                    PlaylistScreenElement::SongList => PlaylistScreenElement::PlaylistList,
+                };
+            }
             KeyCode::Up => {
-                let _ = self.selected_playlist_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_sub(1)) });
+                match *focused_element_guard {
+                    PlaylistScreenElement::PlaylistList => {
+                        let _ = self.selected_playlist_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_sub(1)) });
+                    },
+                    PlaylistScreenElement::SongList => {
+                        let _ = self.selected_song_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_sub(1)) });
+                    },
+                };
+
             },
             KeyCode::Down => {
-                let _ = self.selected_playlist_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len.saturating_sub(1))) });
+                match *focused_element_guard {
+                    PlaylistScreenElement::PlaylistList => {
+                        let _ = self.selected_playlist_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len.saturating_sub(1))) });
+                    },
+                    PlaylistScreenElement::SongList => {
+                        let _ = self.selected_song_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len.saturating_sub(1))) });
+                    },
+                };
             },
             _ => {},
         }
@@ -99,6 +132,7 @@ impl WidgetRef for Playlists {
 
         let playlists = self.playlists.lock().unwrap();
         let selected_playlist = self.selected_playlist_index.load(Ordering::Relaxed);
+        let focused_element = self.focused_element.lock().unwrap();
 
         for i in 0..playlists.len() {
             let playlist = &playlists[i];
@@ -109,7 +143,11 @@ impl WidgetRef for Playlists {
             };
 
             let style = if i == selected_playlist {
-                Style::default().fg(self.theme.highlight_foreground).bg(self.theme.highlight_background)
+                if *focused_element == PlaylistScreenElement::PlaylistList {
+                    Style::default().fg(self.theme.highlight_foreground).bg(self.theme.highlight_background)
+                } else {
+                    Style::default().fg(self.theme.highlight_foreground).bg(Color::from_hsl(29.0, 54.0, 34.0))
+                }
             } else {
                 Style::default().fg(Color::White).bg(self.theme.background)
             };

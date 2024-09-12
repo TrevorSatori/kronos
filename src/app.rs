@@ -181,7 +181,7 @@ impl<'a> App<'a> {
             match self.focused_element {
                 FocusedElement::Browser => self.browser.on_key_event(key),
                 FocusedElement::Queue => self.handle_queue_key_events(key),
-                FocusedElement::Playlists => { self.playlist.on_key_event(key) },
+                FocusedElement::Playlists => { self.playlist.on_key_event(&key) },
                 FocusedElement::HelpControls => self.handle_help_key_events(key),
             }
         }
@@ -226,6 +226,9 @@ impl<'a> App<'a> {
                             }
                             _ => {}
                         };
+                    }
+                    AppTab::Playlists => {
+                        self.playlist.on_key_event(key);
                     }
                     _ => {}
                 }
