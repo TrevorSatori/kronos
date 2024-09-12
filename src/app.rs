@@ -70,7 +70,7 @@ impl<'a> App<'a> {
             Some(s) => PathBuf::from(s),
             None => env::current_dir().unwrap(),
         };
-        let mut browser = Browser::new(current_directory);
+        let browser = Browser::new(current_directory);
 
         let mut app = Self {
             music_output: music_output.0,

@@ -32,7 +32,7 @@ enum PlaylistScreenElement {
 }
 
 pub struct Playlists {
-    pub playlists: Mutex<Vec<Playlist>>,
+    playlists: Mutex<Vec<Playlist>>,
     theme: Theme,
     focused_element: Mutex<PlaylistScreenElement>,
     selected_playlist_index: AtomicUsize,
@@ -50,11 +50,6 @@ impl Playlists {
         }
     }
 
-    // pub fn selected_playlist(&self) -> Option<&Playlist> {
-    //     // &self.playlists[self.selected_playlist_index]
-    //     self.selected_playlist
-    // }
-
     pub fn create_playlist(&self) {
         let playlist = Playlist {
             name: format!("New playlist created at {}", Local::now().format("%A %-l:%M:%S%P").to_string()),
@@ -63,23 +58,26 @@ impl Playlists {
         self.playlists.lock().unwrap().push(playlist);
     }
 
-    pub fn add_song(&self, song: Song) {
+    pub fn selected_playlist(&self, f: impl FnOnce(&mut Playlist)) {
         let selected_playlist_index = self.selected_playlist_index.load(Ordering::Relaxed);
         let mut playlists = self.playlists.lock().unwrap();
 
         if let Some(selected_playlist) = playlists.get_mut(selected_playlist_index) {
-            selected_playlist.songs.push(song);
+            f(selected_playlist);
         }
     }
 
-    pub fn add_cue(&self, cue_sheet: CueSheet) {
-        let selected_playlist_index = self.selected_playlist_index.load(Ordering::Relaxed);
-        let mut playlists = self.playlists.lock().unwrap();
+    pub fn add_song(&self, song: Song) {
+        self.selected_playlist(move |pl| {
+            pl.songs.push(song.clone());
+        });
+    }
 
-        if let Some(selected_playlist) = playlists.get_mut(selected_playlist_index) {
+    pub fn add_cue(&self, cue_sheet: CueSheet) {
+        self.selected_playlist(move |pl| {
             let mut songs = Song::from_cue_sheet(cue_sheet);
-            selected_playlist.songs.append(&mut songs);
-        }
+            pl.songs.append(&mut songs);
+        });
     }
 
     pub fn on_key_event(&self, key: &KeyEvent) {
