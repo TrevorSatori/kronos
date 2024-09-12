@@ -3,7 +3,8 @@ use std::sync::{
     Mutex,
 };
 
-use crossterm::event::{KeyCode, KeyEvent};
+use chrono::Local;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     prelude::Widget,
     buffer::Buffer,
@@ -16,8 +17,8 @@ use crate::{
     ui,
     structs::Song,
     config::Theme,
+    cue::CueSheet,
 };
-use crate::cue::CueSheet;
 
 pub struct Playlist {
     pub name: String,
@@ -41,24 +42,7 @@ pub struct Playlists {
 impl Playlists {
     pub fn new(theme: Theme) -> Self {
         Self {
-            playlists: Mutex::new(vec![
-                Playlist {
-                    name: "Cream".to_string(),
-                    songs: vec![]
-                },
-                Playlist {
-                    name: "ASD".to_string(),
-                    songs: vec![]
-                },
-                Playlist {
-                    name: "xxx".to_string(),
-                    songs: vec![]
-                },
-                Playlist {
-                    name: "aaaaaaaaaaaa".to_string(),
-                    songs: vec![]
-                },
-            ]),
+            playlists: Mutex::new(vec![]),
             selected_playlist_index: AtomicUsize::new(0),
             selected_song_index: AtomicUsize::new(0),
             theme,
@@ -71,9 +55,21 @@ impl Playlists {
     //     self.selected_playlist
     // }
 
+    pub fn create_playlist(&self) {
+        let playlist = Playlist {
+            name: format!("New playlist created at {}", Local::now().format("%A %-l:%M:%S%P").to_string()),
+            songs: vec![],
+        };
+        self.playlists.lock().unwrap().push(playlist);
+    }
+
     pub fn add_song(&self, song: Song) {
         let selected_playlist_index = self.selected_playlist_index.load(Ordering::Relaxed);
-        self.playlists.lock().unwrap()[selected_playlist_index].songs.push(song);
+        let mut playlists = self.playlists.lock().unwrap();
+
+        if let Some(selected_playlist) = playlists.get_mut(selected_playlist_index) {
+            selected_playlist.songs.push(song);
+        }
     }
 
     pub fn add_cue(&self, cue_sheet: CueSheet) {
@@ -119,6 +115,9 @@ impl Playlists {
                     },
                 };
             },
+            KeyCode::Char('n') if key.modifiers == KeyModifiers::CONTROL => {
+                self.create_playlist();
+            }
             _ => {},
         }
     }
@@ -142,6 +141,11 @@ impl WidgetRef for Playlists {
             .areas(area);
 
         let playlists = self.playlists.lock().unwrap();
+
+        if playlists.len() < 1 {
+            return;
+        }
+
         let selected_playlist = self.selected_playlist_index.load(Ordering::Relaxed);
         let focused_element = self.focused_element.lock().unwrap();
 
