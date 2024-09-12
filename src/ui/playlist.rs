@@ -1,6 +1,9 @@
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Mutex,
+use std::{
+    time::{Instant, Duration, SystemTime, UNIX_EPOCH},
+    sync::{
+        atomic::{AtomicUsize, AtomicBool, Ordering},
+        Mutex,
+    },
 };
 
 use chrono::Local;
@@ -46,6 +49,7 @@ pub struct Playlists {
     focused_element: Mutex<PlaylistScreenElement>,
     selected_playlist_index: AtomicUsize,
     selected_song_index: AtomicUsize,
+    renaming: AtomicBool,
 }
 
 impl Playlists {
@@ -60,6 +64,7 @@ impl Playlists {
             selected_song_index: AtomicUsize::new(0),
             theme,
             focused_element: Mutex::new(PlaylistScreenElement::PlaylistList),
+            renaming: AtomicBool::new(false),
         }
     }
 
@@ -97,15 +102,17 @@ impl Playlists {
         let len = self.playlists.lock().unwrap().len();
         let mut focused_element_guard = self.focused_element.lock().unwrap();
 
+        let is_renaming = self.renaming.load(Ordering::Relaxed);
+
         match key.code {
-            KeyCode::Tab => {
+            KeyCode::Tab if !is_renaming => {
                 log::debug!("TAB");
                 *focused_element_guard = match *focused_element_guard {
                     PlaylistScreenElement::PlaylistList => PlaylistScreenElement::SongList,
                     PlaylistScreenElement::SongList => PlaylistScreenElement::PlaylistList,
                 };
             }
-            KeyCode::Up => {
+            KeyCode::Up if !is_renaming  => {
                 match *focused_element_guard {
                     PlaylistScreenElement::PlaylistList => {
                         let _ = self.selected_playlist_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_sub(1)) });
@@ -116,7 +123,7 @@ impl Playlists {
                 };
 
             },
-            KeyCode::Down => {
+            KeyCode::Down if !is_renaming  => {
                 match *focused_element_guard {
                     PlaylistScreenElement::PlaylistList => {
                         let _ = self.selected_playlist_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len.saturating_sub(1))) });
@@ -126,8 +133,24 @@ impl Playlists {
                     },
                 };
             },
-            KeyCode::Char('n') if key.modifiers == KeyModifiers::CONTROL => {
+            KeyCode::Char('n') if key.modifiers == KeyModifiers::CONTROL && !is_renaming  => {
                 self.create_playlist();
+            }
+            KeyCode::Char('n') if key.modifiers == KeyModifiers::ALT && !is_renaming => {
+                self.renaming.store(true, Ordering::Relaxed);
+            }
+            KeyCode::Char(char) if is_renaming => {
+                self.selected_playlist(move |pl| {
+                    pl.name.push(char);
+                });
+            }
+            KeyCode::Backspace if is_renaming => {
+                self.selected_playlist(move |pl| {
+                    pl.name.pop();
+                });
+            }
+            KeyCode::Esc if is_renaming => {
+                self.renaming.store(false, Ordering::Relaxed);
             }
             _ => {},
         }
@@ -159,6 +182,7 @@ impl WidgetRef for Playlists {
 
         let selected_playlist = self.selected_playlist_index.load(Ordering::Relaxed);
         let focused_element = self.focused_element.lock().unwrap();
+        let is_renaming = self.renaming.load(Ordering::Relaxed);
 
         for i in 0..playlists.len() {
             let playlist = &playlists[i];
@@ -170,7 +194,11 @@ impl WidgetRef for Playlists {
 
             let style = if i == selected_playlist {
                 if *focused_element == PlaylistScreenElement::PlaylistList {
-                    Style::default().fg(self.theme.highlight_foreground).bg(self.theme.highlight_background)
+                    if is_renaming {
+                        Style::default().fg(self.theme.highlight_foreground).bg(Color::Red)
+                    } else {
+                        Style::default().fg(self.theme.highlight_foreground).bg(self.theme.highlight_background)
+                    }
                 } else {
                     Style::default().fg(self.theme.highlight_foreground).bg(Color::from_hsl(29.0, 54.0, 34.0))
                 }
@@ -178,7 +206,19 @@ impl WidgetRef for Playlists {
                 Style::default().fg(Color::White).bg(self.theme.background)
             };
 
-            let line = ratatui::text::Line::from(playlist.name.as_str()).style(style);
+            let line = if is_renaming && i == selected_playlist {
+                let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
+                let caret = if now % 500 < 250 {
+                    '⎸'
+                } else {
+                    ' '
+                };
+                format!("{}{}", playlist.name, caret)
+            } else {
+                playlist.name.clone()
+            };
+
+            let line = ratatui::text::Line::from(line).style(style);
 
             line.render_ref(area, buf);
         }
