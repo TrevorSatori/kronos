@@ -76,21 +76,32 @@ impl<'a> App<'a> {
             let player = player.clone();
             let playlists = playlist.clone();
 
-            move |(s, q)| {
-                log::debug!("browser.on_select({:?}, {:?})", s, q);
-                match (s, q) {
-                    (FileBrowserSelection::Song(song), false) => {
+            move |(s, key_event)| {
+                log::debug!("browser.on_select({:?}, {:?})", s, key_event);
+                match (s, key_event.code) {
+                    (FileBrowserSelection::Song(song), KeyCode::Enter) => {
                         player.play_song(song);
                     }
-                    (FileBrowserSelection::CueSheet(cue_sheet), false) => {
+                    (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Enter) => {
                         player.enqueue_cue(cue_sheet);
                     }
-                    (FileBrowserSelection::Song(song), true) => {
-                        playlists.add_song(song.clone());
+                    (FileBrowserSelection::Song(song), KeyCode::Char('a')) => {
                         player.enqueue_song(song);
                     }
-                    (FileBrowserSelection::CueSheet(cue_sheet), true) => {
+                    (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Char('a')) => {
                         player.enqueue_cue(cue_sheet);
+                    }
+                    (FileBrowserSelection::Directory(path), KeyCode::Char('a')) => {
+                        log::debug!("TODO: browser.on_select(Directory({}), a)", path.display());
+                    }
+                    (FileBrowserSelection::Song(song), KeyCode::Char('y')) => {
+                        playlists.add_song(song.clone());
+                    }
+                    (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Char('y')) => {
+                        log::debug!("TODO: browser.on_select(cue_sheet, y)");
+                    }
+                    (FileBrowserSelection::Directory(path), KeyCode::Char('y')) => {
+                        log::debug!("TODO: browser.on_select(Directory({}), y)", path.display());
                     }
                     _ => {}
                 }
