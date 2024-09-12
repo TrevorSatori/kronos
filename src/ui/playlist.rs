@@ -25,6 +25,15 @@ pub struct Playlist {
     pub songs: Vec<Song>,
 }
 
+impl Playlist {
+    fn new(name: String) -> Self {
+        Self {
+            name,
+            songs: vec![],
+        }
+    }
+}
+
 #[derive(Eq, PartialEq)]
 enum PlaylistScreenElement {
     PlaylistList,
@@ -42,7 +51,11 @@ pub struct Playlists {
 impl Playlists {
     pub fn new(theme: Theme) -> Self {
         Self {
-            playlists: Mutex::new(vec![]),
+            playlists: Mutex::new(vec![
+                Playlist::new("My first Jolteon playlist".to_string()),
+                Playlist::new("Ctrl+N to create new ones".to_string()),
+                Playlist::new("Alt+N to rename".to_string()),
+            ]),
             selected_playlist_index: AtomicUsize::new(0),
             selected_song_index: AtomicUsize::new(0),
             theme,
