@@ -98,7 +98,7 @@ impl<'a> App<'a> {
                         playlists.add_song(song.clone());
                     }
                     (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Char('y')) => {
-                        log::debug!("TODO: browser.on_select(cue_sheet, y)");
+                        playlists.add_cue(cue_sheet);
                     }
                     (FileBrowserSelection::Directory(path), KeyCode::Char('y')) => {
                         log::debug!("TODO: browser.on_select(Directory({}), y)", path.display());

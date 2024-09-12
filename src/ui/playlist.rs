@@ -17,6 +17,7 @@ use crate::{
     structs::Song,
     config::Theme,
 };
+use crate::cue::CueSheet;
 
 pub struct Playlist {
     pub name: String,
@@ -73,6 +74,16 @@ impl Playlists {
     pub fn add_song(&self, song: Song) {
         let selected_playlist_index = self.selected_playlist_index.load(Ordering::Relaxed);
         self.playlists.lock().unwrap()[selected_playlist_index].songs.push(song);
+    }
+
+    pub fn add_cue(&self, cue_sheet: CueSheet) {
+        let selected_playlist_index = self.selected_playlist_index.load(Ordering::Relaxed);
+        let mut playlists = self.playlists.lock().unwrap();
+
+        if let Some(selected_playlist) = playlists.get_mut(selected_playlist_index) {
+            let mut songs = Song::from_cue_sheet(cue_sheet);
+            selected_playlist.songs.append(&mut songs);
+        }
     }
 
     pub fn on_key_event(&self, key: &KeyEvent) {
