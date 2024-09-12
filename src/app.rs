@@ -72,43 +72,7 @@ impl<'a> App<'a> {
         };
         let mut browser = Browser::new(current_directory);
 
-        browser.on_select({
-            let player = player.clone();
-            let playlists = playlist.clone();
-
-            move |(s, key_event)| {
-                log::debug!("browser.on_select({:?}, {:?})", s, key_event);
-                match (s, key_event.code) {
-                    (FileBrowserSelection::Song(song), KeyCode::Enter) => {
-                        player.play_song(song);
-                    }
-                    (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Enter) => {
-                        player.enqueue_cue(cue_sheet);
-                    }
-                    (FileBrowserSelection::Song(song), KeyCode::Char('a')) => {
-                        player.enqueue_song(song);
-                    }
-                    (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Char('a')) => {
-                        player.enqueue_cue(cue_sheet);
-                    }
-                    (FileBrowserSelection::Directory(path), KeyCode::Char('a')) => {
-                        log::debug!("TODO: browser.on_select(Directory({}), a)", path.display());
-                    }
-                    (FileBrowserSelection::Song(song), KeyCode::Char('y')) => {
-                        playlists.add_song(song.clone());
-                    }
-                    (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Char('y')) => {
-                        playlists.add_cue(cue_sheet);
-                    }
-                    (FileBrowserSelection::Directory(path), KeyCode::Char('y')) => {
-                        log::debug!("TODO: browser.on_select(Directory({}), y)", path.display());
-                    }
-                    _ => {}
-                }
-            }
-        });
-
-        Self {
+        let mut app = Self {
             music_output: music_output.0,
             must_quit: false,
             config,
@@ -119,7 +83,18 @@ impl<'a> App<'a> {
             player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
             player,
             playlist,
-        }
+        };
+
+        app.browser.on_select({
+            let player = app.player.clone();
+            let playlists = app.playlist.clone();
+
+            move |(s, key_event)| {
+                Self::on_file_browser_key(player.as_ref(), playlists.as_ref(), s, key_event);
+            }
+        });
+
+        app
     }
 
     fn to_state(&self) -> State {
@@ -182,6 +157,37 @@ impl<'a> App<'a> {
                 }
             }
         }).unwrap();
+    }
+
+    fn on_file_browser_key(player: &Player, playlists: &ui::Playlists, file_browser_selection: FileBrowserSelection, key_event: KeyEvent) {
+        log::debug!("browser.on_select({:?}, {:?})", file_browser_selection, key_event);
+        match (file_browser_selection, key_event.code) {
+            (FileBrowserSelection::Song(song), KeyCode::Enter) => {
+                player.play_song(song);
+            }
+            (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Enter) => {
+                player.enqueue_cue(cue_sheet);
+            }
+            (FileBrowserSelection::Song(song), KeyCode::Char('a')) => {
+                player.enqueue_song(song);
+            }
+            (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Char('a')) => {
+                player.enqueue_cue(cue_sheet);
+            }
+            (FileBrowserSelection::Directory(path), KeyCode::Char('a')) => {
+                log::debug!("TODO: browser.on_select(Directory({}), a)", path.display());
+            }
+            (FileBrowserSelection::Song(song), KeyCode::Char('y')) => {
+                playlists.add_song(song.clone());
+            }
+            (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Char('y')) => {
+                playlists.add_cue(cue_sheet);
+            }
+            (FileBrowserSelection::Directory(path), KeyCode::Char('y')) => {
+                log::debug!("TODO: browser.on_select(Directory({}), y)", path.display());
+            }
+            _ => {}
+        }
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) {
