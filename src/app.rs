@@ -48,6 +48,7 @@ pub struct App<'a> {
     player: Arc<Player>,
     #[allow(dead_code)]
     music_output: OutputStream,
+    playlist: Arc<ui::Playlists>,
 }
 
 impl<'a> App<'a> {
@@ -63,6 +64,7 @@ impl<'a> App<'a> {
         // This is why we can't have Player own music_output.0. We wouldn't be able to move it across threads.
 
         let player = Arc::new(Player::new(state.queue_items, &music_output.1));
+        let playlist = Arc::new(ui::Playlists::new(config.theme));
 
         let current_directory = match &state.last_visited_path {
             Some(s) => PathBuf::from(s),
@@ -72,6 +74,8 @@ impl<'a> App<'a> {
 
         browser.on_select({
             let player = player.clone();
+            let playlists = playlist.clone();
+
             move |(s, q)| {
                 log::debug!("browser.on_select({:?}, {:?})", s, q);
                 match (s, q) {
@@ -82,6 +86,7 @@ impl<'a> App<'a> {
                         player.enqueue_cue(cue_sheet);
                     }
                     (FileBrowserSelection::Song(song), true) => {
+                        playlists.add_song(song.clone());
                         player.enqueue_song(song);
                     }
                     (FileBrowserSelection::CueSheet(cue_sheet), true) => {
@@ -93,6 +98,7 @@ impl<'a> App<'a> {
         });
 
         Self {
+            music_output: music_output.0,
             must_quit: false,
             config,
             focused_element: FocusedElement::Browser,
@@ -101,7 +107,7 @@ impl<'a> App<'a> {
             help_tab: ui::HelpTab::new(config),
             player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
             player,
-            music_output: music_output.0,
+            playlist,
         }
     }
 
@@ -175,7 +181,7 @@ impl<'a> App<'a> {
             match self.focused_element {
                 FocusedElement::Browser => self.browser.on_key_event(key),
                 FocusedElement::Queue => self.handle_queue_key_events(key),
-                FocusedElement::Playlists => {},
+                FocusedElement::Playlists => { self.playlist.on_key_event(key) },
                 FocusedElement::HelpControls => self.handle_help_key_events(key),
             }
         }
@@ -193,7 +199,7 @@ impl<'a> App<'a> {
             }
             KeyCode::Char('2') => {
                 self.active_tab = AppTab::Playlists;
-                self.focused_element = FocusedElement::HelpControls;
+                self.focused_element = FocusedElement::Playlists;
             }
             KeyCode::Char('3') => {
                 self.active_tab = AppTab::Help;
@@ -273,7 +279,9 @@ impl<'a> App<'a> {
 
         match self.active_tab {
             AppTab::FileBrowser => self.browser.render(frame, &self.player.queue(), area_center, &self.config),
-            AppTab::Playlists => {},
+            AppTab::Playlists => {
+                frame.render_widget(&*self.playlist, area_center); // &*...? Is this ok?
+            },
             AppTab::Help => self.help_tab.render(frame, area_center),
         };
 
