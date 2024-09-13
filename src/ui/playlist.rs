@@ -185,12 +185,20 @@ impl<'a> Playlists<'a> {
             },
             KeyCode::Enter | KeyCode::Char(_) => {
                 let selected_song = self.selected_playlist(|pl| pl.songs[self.selected_song_index.load(Ordering::Relaxed)].clone());
-                // log::debug!("selected_song {:?}", selected_song);
-
                 if let Some(song) = selected_song {
-                    (self.on_select_fn.lock().unwrap())((song, key));
+                    self.on_select_fn.lock().unwrap()((song, key));
                 }
-
+            },
+            KeyCode::Delete => {
+                let selected_song = self.selected_song_index.load(Ordering::Relaxed);
+                self.selected_playlist_mut(|pl| {
+                    if pl.songs.len() > 0 {
+                        pl.songs.remove(selected_song);
+                        if selected_song >= pl.songs.len() {
+                            self.selected_song_index.store(selected_song.saturating_sub(1), Ordering::Relaxed);
+                        }
+                    }
+                });
             },
             _ => {},
         }
