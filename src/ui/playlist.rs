@@ -140,11 +140,29 @@ impl<'a> Playlists<'a> {
                 KeyCode::Down => {
                     let _ = self.selected_playlist_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len.saturating_sub(1))) });
                 },
+                KeyCode::Home => {
+                    self.selected_playlist_index.store(0, Ordering::Relaxed);
+                },
+                KeyCode::End => {
+                    self.selected_playlist_index.store(len.saturating_sub(1), Ordering::Relaxed);
+                },
                 KeyCode::Char('n') if key.modifiers == KeyModifiers::CONTROL => {
                     self.create_playlist();
+                    let _ = self.selected_playlist_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len)) });
                 }
                 KeyCode::Char('n') if key.modifiers == KeyModifiers::ALT => {
                     self.renaming.store(true, Ordering::Relaxed);
+                }
+                KeyCode::Delete => {
+                    let selected_playlist_index = self.selected_playlist_index.load(Ordering::Relaxed);
+                    let mut playlists = self.playlists.lock().unwrap();
+
+                    if playlists.len() > 0 {
+                        playlists.remove(selected_playlist_index);
+                        if selected_playlist_index > playlists.len().saturating_sub(1) {
+                            self.selected_playlist_index.store(playlists.len().saturating_sub(1), Ordering::Relaxed);
+                        }
+                    }
                 }
                 _ => {},
             }
@@ -288,6 +306,11 @@ impl<'a> WidgetRef for Playlists<'a> {
             let line = ratatui::text::Line::from(line).style(style);
 
             line.render_ref(area, buf);
+        }
+
+        if selected_playlist_index >= playlists.len() {
+            log::error!("selected_playlist_index >= playlists.len()");
+            return;
         }
 
         let selected_playlist = &playlists[selected_playlist_index];
