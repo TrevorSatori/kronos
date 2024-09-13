@@ -176,15 +176,17 @@ impl<'a> App<'a> {
             }
             (FileBrowserSelection::Directory(path), KeyCode::Char('a')) => {
                 log::debug!("TODO: browser.on_select(Directory({}), a)", path.display());
+                // directory_to_songs_and_folders
             }
             (FileBrowserSelection::Song(song), KeyCode::Char('y')) => {
-                playlists.add_song(song.clone());
+                playlists.add_song(song);
             }
             (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Char('y')) => {
                 playlists.add_cue(cue_sheet);
             }
             (FileBrowserSelection::Directory(path), KeyCode::Char('y')) => {
                 log::debug!("TODO: browser.on_select(Directory({}), y)", path.display());
+                // directory_to_songs_and_folders
             }
             _ => {}
         }

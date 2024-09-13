@@ -91,6 +91,7 @@ impl<'a> Browser<'a> {
             match CueSheet::from_file(&path) {
                 Ok(cue_sheet) => {
                     (self.on_select_fn)((FileBrowserSelection::CueSheet(cue_sheet), key_event));
+                    self.items.next();
                 }
                 Err(err) => {
                     error!("Filed to read CueSheet {:#?}", err);
@@ -100,6 +101,7 @@ impl<'a> Browser<'a> {
             match Song::from_file(&path) {
                 Ok(song) => {
                     (self.on_select_fn)((FileBrowserSelection::Song(song), key_event));
+                    self.items.next();
                 }
                 Err(err) => {
                     error!("Failed to read Song {:#?}", err);
@@ -186,10 +188,6 @@ impl<'a> Browser<'a> {
             KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
                 self.filter = Some("".to_string());
             }
-            KeyCode::Char('a') => {
-                self.enter_selection(key);
-                self.items.next();
-            }
             KeyCode::Enter | KeyCode::Char(_) => {
                 self.enter_selection(key);
             },
@@ -201,7 +199,6 @@ impl<'a> Browser<'a> {
         match key.code {
             KeyCode::Enter if key.modifiers == KeyModifiers::ALT => {
                 self.enter_selection(key);
-                self.items.next();
             }
             KeyCode::Enter => {
                 self.filter = None;
