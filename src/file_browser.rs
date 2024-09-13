@@ -1,3 +1,4 @@
+use std::fs;
 use std::fs::DirEntry;
 use std::path::{Path, PathBuf};
 
@@ -122,7 +123,7 @@ impl<'a> Browser<'a> {
     }
 
     pub fn navigate_up(&mut self) {
-        let parent = self.current_directory.as_path().parent().unwrap().to_path_buf();
+        let Some(parent) = self.current_directory.as_path().parent().map(|p| p.to_path_buf()) else { return };
         self.items = StatefulList::with_items(directory_to_songs_and_folders(&parent));
         self.items.select_by_path(&self.current_directory);
         self.items.offset = self.last_offset;
@@ -232,7 +233,7 @@ impl<'a> Browser<'a> {
 
 fn directory_to_songs_and_folders(path: &PathBuf) -> Vec<String> {
     // TODO: .cue
-    let entries = path.read_dir().unwrap();
+    let entries = path.read_dir().unwrap(); // TODO: .unwrap
 
     let mut items: Vec<String> = entries
         .filter_map(|e| e.ok())
@@ -248,11 +249,22 @@ fn directory_to_songs_and_folders(path: &PathBuf) -> Vec<String> {
 
 
 fn dir_entry_is_file(dir_entry: &DirEntry) -> bool {
+    // TODO: resolve symlinks
     dir_entry.file_type().is_ok_and(|ft| ft.is_file())
 }
 
 fn dir_entry_is_dir(dir_entry: &DirEntry) -> bool {
-    dir_entry.file_type().is_ok_and(|ft| ft.is_dir())
+    let Ok(ft) = dir_entry.file_type() else {
+        log::error!("dir_entry_is_dir: .file_type() returned error for {:?}", dir_entry.path());
+        return false;
+    };
+
+    if ft.is_symlink() {
+        let ln = fs::canonicalize(dir_entry.path());
+        ln.is_ok_and(|ln| ln.is_dir())
+    } else {
+        ft.is_dir()
+    }
 }
 
 fn path_is_not_hidden(path: &PathBuf) -> bool {
