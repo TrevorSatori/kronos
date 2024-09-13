@@ -68,7 +68,18 @@ impl Playlists {
         self.playlists.lock().unwrap().push(playlist);
     }
 
-    pub fn selected_playlist(&self, f: impl FnOnce(&mut Playlist)) {
+    pub fn selected_playlist<T>(&self, f: impl FnOnce(&Playlist) -> T) -> Option<T> {
+        let selected_playlist_index = self.selected_playlist_index.load(Ordering::Relaxed);
+        let mut playlists = self.playlists.lock().unwrap();
+
+        if let Some(selected_playlist) = playlists.get_mut(selected_playlist_index) {
+            Some(f(selected_playlist))
+        } else {
+            None
+        }
+    }
+
+    pub fn selected_playlist_mut(&self, f: impl FnOnce(&mut Playlist)) {
         let selected_playlist_index = self.selected_playlist_index.load(Ordering::Relaxed);
         let mut playlists = self.playlists.lock().unwrap();
 
@@ -78,73 +89,100 @@ impl Playlists {
     }
 
     pub fn add_song(&self, song: Song) {
-        self.selected_playlist(move |pl| {
+        self.selected_playlist_mut(move |pl| {
             pl.songs.push(song.clone());
         });
     }
 
     pub fn add_cue(&self, cue_sheet: CueSheet) {
-        self.selected_playlist(move |pl| {
+        self.selected_playlist_mut(move |pl| {
             let mut songs = Song::from_cue_sheet(cue_sheet);
             pl.songs.append(&mut songs);
         });
     }
 
     pub fn on_key_event(&self, key: &KeyEvent) {
-        let len = self.playlists.lock().unwrap().len();
         let mut focused_element_guard = self.focused_element.lock().unwrap();
 
         let is_renaming = self.renaming.load(Ordering::Relaxed);
 
         match key.code {
             KeyCode::Tab if !is_renaming => {
-                log::debug!("TAB");
                 *focused_element_guard = match *focused_element_guard {
                     PlaylistScreenElement::PlaylistList => PlaylistScreenElement::SongList,
                     PlaylistScreenElement::SongList => PlaylistScreenElement::PlaylistList,
                 };
             }
-            KeyCode::Up if !is_renaming  => {
-                match *focused_element_guard {
-                    PlaylistScreenElement::PlaylistList => {
-                        let _ = self.selected_playlist_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_sub(1)) });
-                    },
-                    PlaylistScreenElement::SongList => {
-                        let _ = self.selected_song_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_sub(1)) });
-                    },
-                };
+            _ if *focused_element_guard == PlaylistScreenElement::PlaylistList  => {
+                self.on_key_event_playlist_list(key);
             },
-            KeyCode::Down if !is_renaming  => {
-                match *focused_element_guard {
-                    PlaylistScreenElement::PlaylistList => {
-                        let _ = self.selected_playlist_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len.saturating_sub(1))) });
-                    },
-                    PlaylistScreenElement::SongList => {
-                        let _ = self.selected_song_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len.saturating_sub(1))) });
-                    },
-                };
+            _ if *focused_element_guard == PlaylistScreenElement::SongList  => {
+                self.on_key_event_song_list(key);
             },
-            KeyCode::Char('n') if key.modifiers == KeyModifiers::CONTROL && !is_renaming  => {
+            _ => {},
+        }
+    }
+
+    pub fn on_key_event_playlist_list(&self, key: &KeyEvent) {
+        let len = self.playlists.lock().unwrap().len();
+        let is_renaming = self.renaming.load(Ordering::Relaxed);
+
+        if !is_renaming {
+            match key.code {
+                KeyCode::Up => {
+                    let _ = self.selected_playlist_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_sub(1)) });
+                },
+                KeyCode::Down => {
+                    let _ = self.selected_playlist_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len.saturating_sub(1))) });
+                },
+                KeyCode::Char('n') if key.modifiers == KeyModifiers::CONTROL => {
+                    self.create_playlist();
+                }
+                KeyCode::Char('n') if key.modifiers == KeyModifiers::ALT => {
+                    self.renaming.store(true, Ordering::Relaxed);
+                }
+                _ => {},
+            }
+        } else {
+            match key.code {
+                KeyCode::Char(char) => {
+                    self.selected_playlist_mut(move |pl| {
+                        if pl.name.len() < 60 {
+                            pl.name.push(char);
+                        }
+                    });
+                }
+                KeyCode::Backspace => {
+                    self.selected_playlist_mut(move |pl| {
+                        pl.name.pop();
+                    });
+                }
+                KeyCode::Esc => {
+                    self.renaming.store(false, Ordering::Relaxed);
+                }
+                KeyCode::Enter => {
+                    self.renaming.store(false, Ordering::Relaxed);
+                }
+                _ => {},
+            }
+        }
+    }
+
+    pub fn on_key_event_song_list(&self, key: &KeyEvent) {
+        let len = self.selected_playlist(|pl| pl.songs.len());
+
+        match key.code {
+            KeyCode::Up => {
+                let _ = self.selected_song_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_sub(1)) });
+            },
+            KeyCode::Down => {
+                let _ = self.selected_song_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len.saturating_sub(1))) });
+            },
+            KeyCode::Char('n') if key.modifiers == KeyModifiers::CONTROL => {
                 self.create_playlist();
             }
-            KeyCode::Char('n') if key.modifiers == KeyModifiers::ALT && !is_renaming => {
+            KeyCode::Char('n') if key.modifiers == KeyModifiers::ALT => {
                 self.renaming.store(true, Ordering::Relaxed);
-            }
-            KeyCode::Char(char) if is_renaming => {
-                self.selected_playlist(move |pl| {
-                    pl.name.push(char);
-                });
-            }
-            KeyCode::Backspace if is_renaming => {
-                self.selected_playlist(move |pl| {
-                    pl.name.pop();
-                });
-            }
-            KeyCode::Esc if is_renaming => {
-                self.renaming.store(false, Ordering::Relaxed);
-            }
-            KeyCode::Enter if is_renaming => {
-                self.renaming.store(false, Ordering::Relaxed);
             }
             _ => {},
         }
