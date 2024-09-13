@@ -104,10 +104,8 @@ impl Playlists {
     pub fn on_key_event(&self, key: &KeyEvent) {
         let mut focused_element_guard = self.focused_element.lock().unwrap();
 
-        let is_renaming = self.renaming.load(Ordering::Relaxed);
-
         match key.code {
-            KeyCode::Tab if !is_renaming => {
+            KeyCode::Tab => {
                 *focused_element_guard = match *focused_element_guard {
                     PlaylistScreenElement::PlaylistList => PlaylistScreenElement::SongList,
                     PlaylistScreenElement::SongList => PlaylistScreenElement::PlaylistList,
@@ -169,7 +167,7 @@ impl Playlists {
     }
 
     pub fn on_key_event_song_list(&self, key: &KeyEvent) {
-        let len = self.selected_playlist(|pl| pl.songs.len());
+        let Some(len) = self.selected_playlist(|pl| pl.songs.len()) else { return };
 
         match key.code {
             KeyCode::Up => {
@@ -212,7 +210,8 @@ impl WidgetRef for Playlists {
             return;
         }
 
-        let selected_playlist = self.selected_playlist_index.load(Ordering::Relaxed);
+        let selected_playlist_index = self.selected_playlist_index.load(Ordering::Relaxed);
+        let selected_song = self.selected_song_index.load(Ordering::Relaxed);
         let focused_element = self.focused_element.lock().unwrap();
         let is_renaming = self.renaming.load(Ordering::Relaxed);
 
@@ -224,7 +223,7 @@ impl WidgetRef for Playlists {
                 ..area_left
             };
 
-            let style = if i == selected_playlist {
+            let style = if i == selected_playlist_index {
                 if *focused_element == PlaylistScreenElement::PlaylistList {
                     if is_renaming {
                         Style::default().fg(self.theme.highlight_foreground).bg(Color::Red)
@@ -238,7 +237,7 @@ impl WidgetRef for Playlists {
                 Style::default().fg(Color::White).bg(self.theme.background)
             };
 
-            let line = if is_renaming && i == selected_playlist {
+            let line = if is_renaming && i == selected_playlist_index {
                 let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
                 let caret = if now % 500 < 250 {
                     '⎸'
@@ -255,10 +254,29 @@ impl WidgetRef for Playlists {
             line.render_ref(area, buf);
         }
 
-        let playlist = &playlists[selected_playlist];
-        let songs = playlist.songs.iter().map(ui::song_to_string).collect();
-        let list = ratatui::widgets::List::from(songs);
+        let selected_playlist = &playlists[selected_playlist_index];
 
-        list.render(area_right, buf);
+        for i in 0..selected_playlist.songs.len() {
+            let song = &selected_playlist.songs[i];
+            let area = Rect {
+                y: area_right.y + i as u16,
+                height: 1,
+                ..area_right
+            };
+
+            let style = if i == selected_song {
+                if *focused_element == PlaylistScreenElement::SongList {
+                    Style::default().fg(self.theme.highlight_foreground).bg(self.theme.highlight_background)
+                } else {
+                    Style::default().fg(self.theme.highlight_foreground).bg(Color::from_hsl(29.0, 54.0, 34.0))
+                }
+            } else {
+                Style::default().fg(Color::White).bg(self.theme.background)
+            };
+
+            let line = ratatui::text::Line::from(song.title.as_str()).style(style);
+
+            line.render_ref(area, buf);
+        }
     }
 }
