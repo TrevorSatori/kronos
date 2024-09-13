@@ -177,11 +177,29 @@ impl<'a> Playlists<'a> {
         let Some(len) = self.selected_playlist(|pl| pl.songs.len()) else { return };
 
         match key.code {
-            KeyCode::Up => {
+            KeyCode::Up if key.modifiers == KeyModifiers::NONE => {
                 let _ = self.selected_song_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_sub(1)) });
             },
-            KeyCode::Down => {
+            KeyCode::Down if key.modifiers == KeyModifiers::NONE => {
                 let _ = self.selected_song_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len.saturating_sub(1))) });
+            },
+            KeyCode::Up if key.modifiers == KeyModifiers::ALT => {
+                let selected_song = self.selected_song_index.load(Ordering::Relaxed);
+                self.selected_playlist_mut(|pl| {
+                    if pl.songs.len() > 1 && selected_song > 0 {
+                        pl.songs.swap(selected_song, selected_song - 1);
+                        self.selected_song_index.store(selected_song - 1, Ordering::Relaxed);
+                    }
+                });
+            },
+            KeyCode::Down if key.modifiers == KeyModifiers::ALT => {
+                let selected_song = self.selected_song_index.load(Ordering::Relaxed);
+                self.selected_playlist_mut(|pl| {
+                    if pl.songs.len() > 1 && selected_song < pl.songs.len() - 1 {
+                        pl.songs.swap(selected_song, selected_song + 1);
+                        self.selected_song_index.store(selected_song + 1, Ordering::Relaxed);
+                    }
+                });
             },
             KeyCode::Enter | KeyCode::Char(_) => {
                 let selected_song = self.selected_playlist(|pl| pl.songs[self.selected_song_index.load(Ordering::Relaxed)].clone());
