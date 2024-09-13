@@ -121,7 +121,6 @@ impl Playlists {
                         let _ = self.selected_song_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_sub(1)) });
                     },
                 };
-
             },
             KeyCode::Down if !is_renaming  => {
                 match *focused_element_guard {
@@ -150,6 +149,9 @@ impl Playlists {
                 });
             }
             KeyCode::Esc if is_renaming => {
+                self.renaming.store(false, Ordering::Relaxed);
+            }
+            KeyCode::Enter if is_renaming => {
                 self.renaming.store(false, Ordering::Relaxed);
             }
             _ => {},

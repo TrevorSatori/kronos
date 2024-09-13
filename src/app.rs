@@ -207,7 +207,7 @@ impl<'a> App<'a> {
     fn handle_app_key_event(&mut self, key: &KeyEvent) -> bool {
         let mut handled = true;
         match key.code {
-            KeyCode::Char('q') => {
+            KeyCode::Char('q') if key.modifiers == KeyModifiers::CONTROL => {
                 self.must_quit = true;
             }
             KeyCode::Char('1') => {
@@ -254,8 +254,8 @@ impl<'a> App<'a> {
             KeyCode::Left => self.player.seek_backward(),
             KeyCode::Char('-') => self.player.change_volume(-0.05),
             KeyCode::Char('+') => self.player.change_volume(0.05),
-            KeyCode::Char('p') | KeyCode::Char(' ') => self.player.toggle(),
-            KeyCode::Char('g') => self.player.stop(),
+            KeyCode::Char('p') if key.modifiers == KeyModifiers::CONTROL => self.player.toggle(),
+            KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => self.player.stop(),
             KeyCode::Char('c') if key.modifiers == KeyModifiers::ALT => {
                 let _ = env::set_current_dir(self.browser.current_directory());
             }
