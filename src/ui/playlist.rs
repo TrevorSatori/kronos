@@ -1,5 +1,5 @@
 use std::{
-    time::{Instant, Duration, SystemTime, UNIX_EPOCH},
+    time::{SystemTime, UNIX_EPOCH},
     sync::{
         atomic::{AtomicUsize, AtomicBool, Ordering},
         Mutex,
@@ -15,6 +15,7 @@ use ratatui::{
     style::{Color, Style},
     widgets::{WidgetRef},
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{
     ui,
@@ -23,6 +24,7 @@ use crate::{
     cue::CueSheet,
 };
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Playlist {
     pub name: String,
     pub songs: Vec<Song>,
@@ -53,19 +55,25 @@ pub struct Playlists {
 }
 
 impl Playlists {
-    pub fn new(theme: Theme) -> Self {
+    pub fn new(theme: Theme, playlists: Vec<Playlist>) -> Self {
         Self {
-            playlists: Mutex::new(vec![
-                Playlist::new("My first Jolteon playlist".to_string()),
-                Playlist::new("Ctrl+N to create new ones".to_string()),
-                Playlist::new("Alt+N to rename".to_string()),
-            ]),
+            // playlists: Mutex::new(vec![
+            //     Playlist::new("My first Jolteon playlist".to_string()),
+            //     Playlist::new("Ctrl+N to create new ones".to_string()),
+            //     Playlist::new("Alt+N to rename".to_string()),
+            // ]),
+            playlists: Mutex::new(playlists),
             selected_playlist_index: AtomicUsize::new(0),
             selected_song_index: AtomicUsize::new(0),
             theme,
             focused_element: Mutex::new(PlaylistScreenElement::PlaylistList),
             renaming: AtomicBool::new(false),
         }
+    }
+
+    pub fn playlists(&self) -> Vec<Playlist> {
+        let playlists = self.playlists.lock().unwrap();
+        playlists.clone()
     }
 
     pub fn create_playlist(&self) {

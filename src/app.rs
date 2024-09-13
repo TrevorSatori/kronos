@@ -64,7 +64,7 @@ impl<'a> App<'a> {
         // This is why we can't have Player own music_output.0. We wouldn't be able to move it across threads.
 
         let player = Arc::new(Player::new(state.queue_items, &music_output.1));
-        let playlist = Arc::new(ui::Playlists::new(config.theme));
+        let playlist = Arc::new(ui::Playlists::new(config.theme, state.playlists));
 
         let current_directory = match &state.last_visited_path {
             Some(s) => PathBuf::from(s),
@@ -98,13 +98,13 @@ impl<'a> App<'a> {
     }
 
     fn to_state(&self) -> State {
-        let player = self.player.clone();
-
-        let queue_items = player.queue().songs().clone();
+        let queue_items = self.player.queue().songs().clone();
+        let playlists = self.playlist.playlists();
 
         State {
             last_visited_path: self.browser.current_directory().to_str().map(String::from),
             queue_items: Vec::from(queue_items),
+            playlists,
         }
     }
 

@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     structs::Song,
+    ui::Playlist,
     toml::{read_toml_file_or_default, write_toml_file, TomlFileError},
 };
 
@@ -10,6 +11,8 @@ pub struct State {
     pub last_visited_path: Option<String>,
     #[serde(default)]
     pub queue_items: Vec<Song>,
+    #[serde(default)]
+    pub playlists: Vec<Playlist>,
 }
 
 impl Default for State {
@@ -17,6 +20,7 @@ impl Default for State {
         Self {
             last_visited_path: None,
             queue_items: vec![],
+            playlists: vec![],
         }
     }
 }
