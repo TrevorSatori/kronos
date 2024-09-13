@@ -32,7 +32,7 @@ fn time_format() -> String {
 
     // Local::now().format(format!("%A %-l:%M%P, %B %-e{st}").as_str()).to_string()
     // Local::now().format(format!("%A %-l:%M%P").as_str()).to_string()
-    Local::now().format("%A %-l:%M%P").to_string()
+    Local::now().format(TIME_FORMAT).to_string()
 }
 
 fn duration_to_string(total_time: Duration) -> String {
