@@ -158,6 +158,7 @@ impl Queue {
                 }
             }
 
+            drop(items);
             self.refresh_total_time();
         }
     }
