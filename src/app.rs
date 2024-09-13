@@ -48,7 +48,7 @@ pub struct App<'a> {
     player: Arc<Player>,
     #[allow(dead_code)]
     music_output: OutputStream,
-    playlist: Arc<ui::Playlists>,
+    playlist: Arc<ui::Playlists<'a>>,
 }
 
 impl<'a> App<'a> {
@@ -92,6 +92,17 @@ impl<'a> App<'a> {
             move |(s, key_event)| {
                 Self::on_file_browser_key(player.as_ref(), playlists.as_ref(), s, key_event);
             }
+        });
+
+        app.playlist.on_select({
+            let player = app.player.clone();
+            move |(song, key)| {
+                if key.code == KeyCode::Enter {
+                    player.play_song(song);
+                } else if key.code == KeyCode::Char('a') {
+                    player.enqueue_song(song);
+                }
+           }
         });
 
         app
@@ -194,19 +205,19 @@ impl<'a> App<'a> {
 
     fn handle_key_event(&mut self, key: KeyEvent) {
         let focus_trapped = self.focused_element == FocusedElement::Browser && self.browser.filter().is_some();
-        let handled = !focus_trapped && self.handle_app_key_event(&key);
+        let handled = !focus_trapped && self.handle_app_key_event(key);
 
         if !handled {
             match self.focused_element {
                 FocusedElement::Browser => self.browser.on_key_event(key),
                 FocusedElement::Queue => self.handle_queue_key_events(key),
-                FocusedElement::Playlists => { self.playlist.on_key_event(&key) },
+                FocusedElement::Playlists => { self.playlist.on_key_event(key) },
                 FocusedElement::HelpControls => self.handle_help_key_events(key),
             }
         }
     }
 
-    fn handle_app_key_event(&mut self, key: &KeyEvent) -> bool {
+    fn handle_app_key_event(&mut self, key: KeyEvent) -> bool {
         let mut handled = true;
         match key.code {
             KeyCode::Char('q') if key.modifiers == KeyModifiers::CONTROL => {

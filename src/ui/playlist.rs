@@ -22,6 +22,7 @@ use crate::{
     config::Theme,
     cue::CueSheet,
 };
+use crate::file_browser::FileBrowserSelection;
 
 #[derive(Eq, PartialEq)]
 enum PlaylistScreenElement {
@@ -29,16 +30,17 @@ enum PlaylistScreenElement {
     SongList,
 }
 
-pub struct Playlists {
+pub struct Playlists<'a> {
     playlists: Mutex<Vec<Playlist>>,
     theme: Theme,
     focused_element: Mutex<PlaylistScreenElement>,
     selected_playlist_index: AtomicUsize,
     selected_song_index: AtomicUsize,
     renaming: AtomicBool,
+    on_select_fn: Mutex<Box<dyn FnMut((Song, KeyEvent)) + 'a>>,
 }
 
-impl Playlists {
+impl<'a> Playlists<'a> {
     pub fn new(theme: Theme, playlists: Vec<Playlist>) -> Self {
         Self {
             // playlists: Mutex::new(vec![
@@ -52,7 +54,12 @@ impl Playlists {
             theme,
             focused_element: Mutex::new(PlaylistScreenElement::PlaylistList),
             renaming: AtomicBool::new(false),
+            on_select_fn: Mutex::new(Box::new(|_| {}) as _),
         }
+    }
+
+    pub fn on_select(&self, cb: impl FnMut((Song, KeyEvent)) + 'a) {
+        *self.on_select_fn.lock().unwrap() = Box::new(cb);
     }
 
     pub fn playlists(&self) -> Vec<Playlist> {
@@ -101,7 +108,7 @@ impl Playlists {
         });
     }
 
-    pub fn on_key_event(&self, key: &KeyEvent) {
+    pub fn on_key_event(&self, key: KeyEvent) {
         let mut focused_element_guard = self.focused_element.lock().unwrap();
 
         match key.code {
@@ -121,7 +128,7 @@ impl Playlists {
         }
     }
 
-    pub fn on_key_event_playlist_list(&self, key: &KeyEvent) {
+    pub fn on_key_event_playlist_list(&self, key: KeyEvent) {
         let len = self.playlists.lock().unwrap().len();
         let is_renaming = self.renaming.load(Ordering::Relaxed);
 
@@ -166,7 +173,7 @@ impl Playlists {
         }
     }
 
-    pub fn on_key_event_song_list(&self, key: &KeyEvent) {
+    pub fn on_key_event_song_list(&self, key: KeyEvent) {
         let Some(len) = self.selected_playlist(|pl| pl.songs.len()) else { return };
 
         match key.code {
@@ -176,25 +183,28 @@ impl Playlists {
             KeyCode::Down => {
                 let _ = self.selected_song_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len.saturating_sub(1))) });
             },
-            KeyCode::Char('n') if key.modifiers == KeyModifiers::CONTROL => {
-                self.create_playlist();
-            }
-            KeyCode::Char('n') if key.modifiers == KeyModifiers::ALT => {
-                self.renaming.store(true, Ordering::Relaxed);
-            }
+            KeyCode::Enter | KeyCode::Char(_) => {
+                let selected_song = self.selected_playlist(|pl| pl.songs[self.selected_song_index.load(Ordering::Relaxed)].clone());
+                // log::debug!("selected_song {:?}", selected_song);
+
+                if let Some(song) = selected_song {
+                    (self.on_select_fn.lock().unwrap())((song, key));
+                }
+
+            },
             _ => {},
         }
     }
 
 }
 
-impl Widget for Playlists {
+impl<'a> Widget for Playlists<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         WidgetRef::render_ref(&self, area, buf);
     }
 }
 
-impl WidgetRef for Playlists {
+impl<'a> WidgetRef for Playlists<'a> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         let [area_left, _, area_right] = Layout::horizontal([
             Constraint::Percentage(50),
@@ -275,7 +285,6 @@ impl WidgetRef for Playlists {
             };
 
             let line = ratatui::text::Line::from(song.title.as_str()).style(style);
-
             line.render_ref(area, buf);
         }
     }
