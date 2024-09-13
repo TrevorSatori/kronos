@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    structs::Song,
-    ui::Playlist,
+    structs::{Song, Playlist},
     toml::{read_toml_file_or_default, write_toml_file, TomlFileError},
 };
 

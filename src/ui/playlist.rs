@@ -15,29 +15,13 @@ use ratatui::{
     style::{Color, Style},
     widgets::{WidgetRef},
 };
-use serde::{Deserialize, Serialize};
 
 use crate::{
     ui,
-    structs::Song,
+    structs::{Song, Playlist},
     config::Theme,
     cue::CueSheet,
 };
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Playlist {
-    pub name: String,
-    pub songs: Vec<Song>,
-}
-
-impl Playlist {
-    fn new(name: String) -> Self {
-        Self {
-            name,
-            songs: vec![],
-        }
-    }
-}
 
 #[derive(Eq, PartialEq)]
 enum PlaylistScreenElement {
