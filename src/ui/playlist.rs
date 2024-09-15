@@ -17,12 +17,11 @@ use ratatui::{
 };
 
 use crate::{
-    ui,
     structs::{Song, Playlist},
     config::Theme,
     cue::CueSheet,
+    ui::song_to_string,
 };
-use crate::file_browser::FileBrowserSelection;
 
 #[derive(Eq, PartialEq)]
 enum PlaylistScreenElement {
@@ -150,7 +149,7 @@ impl<'a> Playlists<'a> {
                     self.create_playlist();
                     let _ = self.selected_playlist_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len)) });
                 }
-                KeyCode::Char('n') if key.modifiers == KeyModifiers::ALT => {
+                KeyCode::Char('r') if key.modifiers == KeyModifiers::CONTROL => {
                     self.renaming.store(true, Ordering::Relaxed);
                 }
                 KeyCode::Delete => {
@@ -177,7 +176,11 @@ impl<'a> Playlists<'a> {
                 }
                 KeyCode::Backspace => {
                     self.selected_playlist_mut(move |pl| {
-                        pl.name.pop();
+                        if key.modifiers == KeyModifiers::ALT {
+                            pl.name.clear();
+                        } else {
+                            pl.name.pop();
+                        }
                     });
                 }
                 KeyCode::Esc => {
@@ -333,7 +336,7 @@ impl<'a> WidgetRef for Playlists<'a> {
                 Style::default().fg(Color::White).bg(self.theme.background)
             };
 
-            let line = ratatui::text::Line::from(song.title.as_str()).style(style);
+            let line = ratatui::text::Line::from(song_to_string(song)).style(style);
             line.render_ref(area, buf);
         }
     }
