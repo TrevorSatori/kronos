@@ -221,19 +221,19 @@ impl Player {
     pub fn toggle(&self) {
         if self.sink.is_paused() {
             self.sink.play();
-            self.command_sender.clone().send(Command::Play).unwrap();
+            self.command_sender.send(Command::Play).unwrap();
         } else {
             self.sink.pause();
-            self.command_sender.clone().send(Command::Pause).unwrap();
+            self.command_sender.send(Command::Pause).unwrap();
         }
     }
 
     pub fn stop(&self) {
-        self.command_sender.clone().send(Command::Stop).unwrap()
+        self.command_sender.send(Command::Stop).unwrap()
     }
 
     pub fn seek(&self, seek: i32) {
-        self.command_sender.clone().send(Command::Seek(seek)).unwrap()
+        self.command_sender.send(Command::Seek(seek)).unwrap()
     }
 
     pub fn seek_forward(&self) {
