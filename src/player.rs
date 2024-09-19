@@ -204,7 +204,7 @@ impl Player {
     pub fn play_song(&self, song: Song) {
         self.queue_items.add_front(song);
 
-        if self.currently_playing.clone().lock().unwrap().is_some() {
+        if self.currently_playing.lock().unwrap().is_some() {
             self.stop();
         }
     }
@@ -219,6 +219,9 @@ impl Player {
     }
 
     pub fn toggle(&self) {
+        if self.sink.empty() {
+            return;
+        }
         if self.sink.is_paused() {
             self.sink.play();
             self.command_sender.send(Command::Play).unwrap();
@@ -229,6 +232,9 @@ impl Player {
     }
 
     pub fn stop(&self) {
+        if self.sink.empty() {
+            return;
+        }
         self.command_sender.send(Command::Stop).unwrap()
     }
 
