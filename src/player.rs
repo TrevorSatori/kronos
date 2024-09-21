@@ -213,6 +213,7 @@ impl Player {
                 set_currently_playing(None);
                 is_stopped.store(true, Ordering::SeqCst);
                 sink.clear();
+                thread::sleep(Duration::from_millis(15));
             }
         }).unwrap();
     }
