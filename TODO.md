@@ -54,3 +54,9 @@ we could just store the millis as an AtomicU64, and do `Duration::from_millis()`
 There are 86_400_000 millis in a day. The u64 max is 18446744073709551615... that is 213_503_982_334 days? Should be fine lol 
 Even a U32 should give us more than 40 days, in which case we'd be using a single AtomicU32, which is what a Mutex is already using inside,
 so, at worst, we'd have the same performance of the Mutex.
+
+## Custom Source Iterator
+
+- CUE support out of the box, so we no longer need the initial seek and the calculation of the end time
+  - Should still be able to not need the initial seek if the next song in the queue/playlist would be the next song in the same CUE, meaning we could just keep playing the same source.
+- Whatever we need in it so we don't need the periodic_access
