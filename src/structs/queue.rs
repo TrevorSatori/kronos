@@ -38,7 +38,7 @@ impl Queue {
     }
 
     fn notify_queue_change(&self) {
-        self.tx.clone().lock().unwrap().send(()).unwrap();
+        self.tx.lock().unwrap().send(()).unwrap();
     }
 
     pub fn songs(&self) -> MutexGuard<VecDeque<Song>> {
@@ -47,6 +47,10 @@ impl Queue {
 
     pub fn length(&self) -> usize {
         self.songs().len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.length() == 0
     }
 
     pub fn total_time(&self) -> Duration {
@@ -74,17 +78,22 @@ impl Queue {
     /// Retrieves the first item of the queue, removing it in the process.
     /// This function will block if there is no item available, until there is one.
     pub fn pop(&self) -> Song {
-        let rx = self.rx.clone();
         loop {
-            let mut items = self.items.lock().unwrap();
-            let item = items.pop_front();
-            drop(items);
+            let item = {
+                let mut items = self.items.lock().unwrap();
+                items.pop_front()
+            };
             if let Some(l) = item {
                 self.refresh_total_time();
                 return l;
             }
-            rx.lock().unwrap().recv().unwrap_or_else(|e| {
-                error!("queue.pop() tried to recv and failed. {:#?}", e);
+            self.rx.lock().unwrap().recv().unwrap_or_else(|e| {
+                log::error!("queue.pop() - no more messages. {:#?}", e);
+                // TODO(BUG):
+                //   If we're here, then rx.lock will keep returning an error,
+                //   so this loop will start spinning.
+                //   Yet we own the channel sender, so, if we're here, we're being dropped.
+                //   Does the drop exit the loop automagically?
             });
         }
     }
