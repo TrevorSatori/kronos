@@ -33,11 +33,7 @@ enum Command {
     Seek(i32),
 }
 
-// At this point, Player is almost a re-implementation of Sink, with features we need and it lacks.
-// It'd probably make more sense to not use sink at all, and just go with `stream_handle.play_raw()`.
-// Its `periodicAccess` is also pretty meh. Maybe we can implement our own Source, that doesn't need it?
-// Is moving the source between threads every 5ms better than doing atomic operations with Ordering::Relaxed
-// on every iteration?
+// See TODO.md to understand some of the unintuitive, weird things Player does (like seemingly random `thread::sleep`s).
 impl Player {
     pub fn new(queue: Vec<Song>, output_stream: &OutputStreamHandle) -> Self {
         let sink = Arc::new(Sink::try_new(output_stream).unwrap());
@@ -112,7 +108,6 @@ impl Player {
                 let source = Decoder::new(file).unwrap();
 
                 debug!("sink.append(), {}, get_pos={:?}", sink.len(), sink.get_pos());
-                // TODO: just do what `sink.append` does, here, and get rid of it. It has bugs in it and we complicate the code here to get around them.
                 sink.append(source); // Would blocking if sink.len() > 0, but we always have up to 1 source in the sink at any given time.
                 thread::sleep(Duration::from_millis(15));
                 debug!("sink.appended. sink.get_pos()={:?}, len={}", sink.get_pos(), sink.len());
@@ -140,7 +135,7 @@ impl Player {
                     let sleepy_time = if sink.is_paused() {
                         Duration::MAX
                     } else {
-                        let true_pos = sink.get_pos().saturating_sub(start_time); // BUG: sink.get_pos() could return stale data.
+                        let true_pos = sink.get_pos().saturating_sub(start_time);
                         if true_pos >= length {
                             debug!("inner loop: pos >= length, {:?} > {:?}; sink.empty()={}", true_pos, length, sink.empty());
                             break;
@@ -209,7 +204,6 @@ impl Player {
                     }
                 }
 
-                // The next lines are redundant and confusing, but we need them because Sink doesn't update its `pos` and some other things immediately.
                 set_currently_playing(None);
                 is_stopped.store(true, Ordering::SeqCst);
                 sink.clear();
