@@ -260,6 +260,9 @@ impl Player {
         if self.is_stopped.load(Ordering::SeqCst) || self.sink.len() == 0 {
             return;
         }
+        // Note: Symphonia seems to be the only decoder that supports seeking in Rodio (that we really care about), but it can fail.
+        // Rodio's `Source for TrackPosition` does have its own `try_seek`, though, as well as `Source for SamplesBuffer`.
+        // Are we using those (indirectly), or just Symphonia?
         self.command_sender.send(Command::Seek(seek)).unwrap()
     }
 
