@@ -56,14 +56,14 @@ impl<'a> App<'a> {
         let config = Config::from_file();
         let state = State::from_file();
 
-        let music_output = OutputStream::try_default().unwrap();
-        // music_output.0 can be neither dropped nor shared between threads.
-        // The underlying library is not thread-safe.
-        // We could do this to prevent it from ever being dropped, but it's overkill and bug-prone.
-        // std::mem::forget(music_output.0);
-        // This is why we can't have Player own music_output.0. We wouldn't be able to move it across threads.
+        let (output_stream, output_stream_handle) = OutputStream::try_default().unwrap();
+        // output_stream is !Send + !Sync, and we want Player to be Send+Sync, so
+        // App will own it and pass just the weak reference to it.
+        // output_stream_handle is roughly a Weak<output_stream> that IS Send+Sync (because it doesn't contain the cpal stream in it)
+        // See https://github.com/RustAudio/cpal/blob/bbb58ab76787d090d32ed56964bfcf194b8f6a3d/src/platform/mod.rs#L67
+        // Note: if this is only true for Android, it'd be nice to just drop this requirement.
 
-        let player = Arc::new(Player::new(state.queue_items, &music_output.1));
+        let player = Arc::new(Player::new(state.queue_items, output_stream_handle));
         let playlist = Arc::new(ui::Playlists::new(config.theme, state.playlists));
 
         let current_directory = match &state.last_visited_path {
@@ -73,7 +73,7 @@ impl<'a> App<'a> {
         let browser = Browser::new(current_directory);
 
         let mut app = Self {
-            music_output: music_output.0,
+            music_output: output_stream,
             must_quit: false,
             config,
             focused_element: FocusedElement::Browser,

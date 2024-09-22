@@ -1,12 +1,5 @@
 # TODO
 
-## Stop Using Sink
-
-Player is, by now, almost a re-implementation of Sink. Sink's `periodic_access` causes a bunch of issues that are hard to deal with,
-and Player's implementation has to dance around them to avoid weird bugs.
-
-Almost all that's left is doing what `Sink.append` does, ourselves, and then we can get rid of it.
-
 ## Custom Source Iterator
 
 - CUE support out of the box, so we no longer need the initial seek and the calculation of the end time

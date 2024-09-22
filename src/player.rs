@@ -6,8 +6,8 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-use log::{debug, error, warn};
-use rodio::{Decoder, OutputStreamHandle, Sink};
+use log::{debug, error};
+use rodio::{Decoder, OutputStreamHandle, Source};
 
 use crate::{
     cue::CueSheet,
@@ -15,13 +15,16 @@ use crate::{
 };
 
 pub struct Player {
-    sink: Arc<Sink>,
-    currently_playing: Arc<Mutex<Option<Song>>>,
+    output_stream: OutputStreamHandle,
     queue_items: Arc<Queue>,
-    song_start_time: Arc<AtomicU64>, // We duplicate this off of song to save us a song.lock(). Relaxed ordering compiles down to the same ASM a normal u64. TODO: maybe make Song thread-friendly, so we won't need the Mutex.
+    currently_playing: Arc<Mutex<Option<Song>>>,
+    currently_playing_start_time: Arc<AtomicU64>,
     command_sender: Sender<Command>,
     command_receiver: Arc<Mutex<Option<Receiver<Command>>>>,
     is_stopped: Arc<AtomicBool>,
+    volume: Arc<Mutex<f32>>,
+    pause: Arc<AtomicBool>,
+    position: Arc<Mutex<Duration>>,
 }
 
 #[derive(Debug)]
@@ -33,21 +36,21 @@ enum Command {
     Seek(i32),
 }
 
-// See TODO.md to understand some of the unintuitive, weird things Player does (like seemingly random `thread::sleep`s).
 impl Player {
-    pub fn new(queue: Vec<Song>, output_stream: &OutputStreamHandle) -> Self {
-        let sink = Arc::new(Sink::try_new(output_stream).unwrap());
-
+    pub fn new(queue: Vec<Song>, output_stream: OutputStreamHandle) -> Self {
         let (command_sender, command_receiver) = channel();
 
         Self {
-            sink,
+            output_stream,
             queue_items: Arc::new(Queue::new(queue)),
             currently_playing: Arc::new(Mutex::new(None)),
-            song_start_time: Arc::new(AtomicU64::new(0)),
+            currently_playing_start_time: Arc::new(AtomicU64::new(0)),
             command_sender,
             command_receiver: Arc::new(Mutex::new(Some(command_receiver))),
             is_stopped: Arc::new(AtomicBool::new(true)),
+            volume: Arc::new(Mutex::new(1.0)),
+            pause: Arc::new(AtomicBool::new(false)),
+            position: Arc::new(Mutex::new(Duration::ZERO)),
         }
     }
 
@@ -56,8 +59,9 @@ impl Player {
     }
 
     pub fn get_pos(&self) -> Duration {
-        let start_time = self.song_start_time.load(Ordering::Relaxed);
-        self.sink.get_pos().saturating_sub(Duration::from_secs(start_time))
+        let start_time = self.currently_playing_start_time.load(Ordering::Relaxed);
+        let pos = self.position.lock().unwrap();
+        pos.saturating_sub(Duration::from_secs(start_time))
     }
 
     pub fn currently_playing(&self) -> Arc<Mutex<Option<Song>>> {
@@ -65,12 +69,19 @@ impl Player {
     }
 
     pub fn spawn(&self) {
-        let sink = self.sink.clone();
-        let currently_playing = self.currently_playing.clone();
-        let queue_items = self.queue_items.clone();
+        let output_stream = self.output_stream.clone();
         let recv = self.command_receiver.clone().lock().unwrap().take().unwrap();
-        let song_start_time = self.song_start_time.clone();
         let is_stopped = self.is_stopped.clone();
+        let queue_items = self.queue_items.clone();
+        let currently_playing = self.currently_playing.clone();
+        let song_start_time = self.currently_playing_start_time.clone();
+        let position = self.position.clone();
+        let volume = self.volume.clone();
+        let pause = self.pause.clone();
+
+        let must_stop = Arc::new(AtomicBool::new(false));
+        let (ended_sender, ender_recv) = channel::<()>();
+        let must_seek = Arc::new(Mutex::new(None));
 
         let set_currently_playing = move |song: Option<Song>| {
             let start_time = song
@@ -93,10 +104,11 @@ impl Player {
 
         thread::Builder::new().name("player".to_string()).spawn(move || {
             loop {
-                debug!("queue_items.pop()");
                 // Grab the next song in the queue. If there isn't one, we block until one comes in.
+                debug!("queue_items.pop()...");
                 let song = queue_items.pop();
-                debug!("popped {:?}", song.title);
+                is_stopped.store(false, Ordering::SeqCst);
+                debug!("queue_items.pop() -> popped {:?}", song.title);
 
                 let path = song.path.clone();
                 let start_time = song.start_time.clone();
@@ -106,20 +118,60 @@ impl Player {
 
                 let file = BufReader::new(File::open(path).unwrap());
                 let source = Decoder::new(file).unwrap();
+                let mut source = source
+                    .speed(1.0)
+                    .track_position()
+                    .pausable(false)
+                    .amplify(1.0)
+                    .skippable()
+                    .stoppable()
+                    .periodic_access(Duration::from_millis(5), {
+                        let is_stopped = is_stopped.clone();
+                        let must_stop = must_stop.clone();
+                        let ended_sender = ended_sender.clone();
+                        let position = position.clone();
+                        let volume = volume.clone();
+                        let pause = pause.clone();
+                        let must_seek = must_seek.clone();
 
-                debug!("sink.append(), {}, get_pos={:?}", sink.len(), sink.get_pos());
-                sink.append(source); // Would blocking if sink.len() > 0, but we always have up to 1 source in the sink at any given time.
-                thread::sleep(Duration::from_millis(15));
-                debug!("sink.appended. sink.get_pos()={:?}, len={}", sink.get_pos(), sink.len());
-                is_stopped.store(false, Ordering::SeqCst);
-                sink.play();
+                        move |src| {
+                            if must_stop.swap(false, Ordering::SeqCst) {
+                                src.stop();
+                                src.inner_mut().skip();
+                                *position.lock().unwrap() = Duration::ZERO;
+                                is_stopped.store(true, Ordering::SeqCst);
+                                let _ = ended_sender.send(());
+                            } else {
+                                *position.lock().unwrap() = src.inner().inner().inner().inner().get_pos();
+                            }
 
-                // Songs coming from Cue Sheets are inside one big music file.
+                            let amp = src.inner_mut().inner_mut();
+                            amp.set_factor(*volume.lock().unwrap());
+
+                            let pausable = amp.inner_mut();
+                            pausable.set_paused(pause.load(Ordering::SeqCst));
+
+                            if let Some(seek) = must_seek.lock().unwrap().take() {
+                                if let Err(err) = amp.try_seek(seek) {
+                                    error!("start_time > 0 try_seek() error. {:?}", err)
+                                }
+                            }
+                        }
+                    })
+                    .convert_samples();
+
                 if start_time > Duration::ZERO {
-                    debug!("start_time > Duration::ZERO. start_time={:?}, sink.get_pos()={:?}", start_time, sink.get_pos());
-                    sink.try_seek(start_time).unwrap();
-                    thread::sleep(Duration::from_millis(15));
-                    debug!("start_time > Duration::ZERO. start_time={:?}, sink.get_pos() after try_seek ={:?}", start_time, sink.get_pos());
+                    debug!("start_time > Duration::ZERO, {:?}", start_time);
+                    if let Err(err) = source.inner_mut().inner_mut().try_seek(start_time) {
+                        error!("start_time > 0 try_seek() error. {:?}", err)
+                    }
+                    *position.lock().unwrap() = start_time;
+                }
+
+                debug!("s.play_raw()");
+                if let Err(err) = output_stream.play_raw(source) {
+                    error!("os.play_raw error! {:?}", err);
+                    continue;
                 }
 
                 // Start looping until the current song ends OR something wakes us up.
@@ -127,43 +179,34 @@ impl Player {
                 // If we don't, we recalculate the remaining time until the song ends,
                 // and then go back to bed.
                 loop {
-                    if sink.empty() {
-                        debug!("sink.empty(). breaking out of inner loop.");
-                        break;
-                    }
-
-                    let sleepy_time = if sink.is_paused() {
+                    let sleepy_time = if pause.load(Ordering::SeqCst) {
                         Duration::MAX
                     } else {
-                        let true_pos = sink.get_pos().saturating_sub(start_time);
-                        if true_pos >= length {
-                            debug!("inner loop: pos >= length, {:?} > {:?}; sink.empty()={}", true_pos, length, sink.empty());
+                        let abs_pos = position.lock().unwrap().saturating_sub(start_time);
+                        if abs_pos >= length {
+                            debug!("inner loop: pos >= length, {:?} > {:?}", abs_pos, length);
                             break;
                         }
-                        length - true_pos
+                        length - abs_pos
                     };
 
-                    debug!("inner loop: sleepy_time! {:?}", sleepy_time);
+                    // debug!("inner loop: sleepy_time! {:?}", sleepy_time);
 
                     match recv.recv_timeout(sleepy_time) {
                         Ok(command) => {
-                            debug!("{:?}", command);
+                            // debug!("{:?}", command);
                             match command {
                                 Command::Play => {
-
+                                    pause.store(false, Ordering::SeqCst);
                                 }
                                 Command::Pause => {
-
+                                    pause.store(true, Ordering::SeqCst);
                                 }
                                 Command::Stop => {
                                     break;
                                 }
                                 Command::Seek(seek) => {
-                                    if sink.empty() || is_stopped.load(Ordering::SeqCst) {
-                                        continue;
-                                    }
-
-                                    // TODO: "intense" seek causes `ALSA lib pcm.c:8740:(snd_pcm_recover) underrun occurred`.
+                                    // NOTE: "intense" seek causes `ALSA lib pcm.c:8740:(snd_pcm_recover) underrun occurred`.
                                     // See https://github.com/RustAudio/cpal/pull/909
 
                                     if seek == 0 {
@@ -171,8 +214,12 @@ impl Player {
                                         continue;
                                     }
 
+                                    if is_stopped.load(Ordering::SeqCst) || must_stop.load(Ordering::SeqCst) {
+                                        continue;
+                                    }
+
                                     let seek_abs = Duration::from_secs(seek.abs() as u64);
-                                    let pos = sink.get_pos();
+                                    let pos = position.lock().unwrap();
 
                                     let target = if seek > 0 {
                                         pos.saturating_add(seek_abs)
@@ -182,11 +229,13 @@ impl Player {
 
                                     // If we'd seek past song end, skip seeking and just move to next song instead.
                                     if target > length + start_time {
+                                        debug!("Seeking past end");
                                         break;
                                     }
 
                                     debug!("Seek({:?})", target);
-                                    sink.try_seek(target).unwrap();
+                                    *must_seek.lock().unwrap() = Some(target);
+
                                 }
                             }
                         }
@@ -205,9 +254,10 @@ impl Player {
                 }
 
                 set_currently_playing(None);
-                is_stopped.store(true, Ordering::SeqCst);
-                sink.clear();
-                thread::sleep(Duration::from_millis(15));
+                must_stop.store(true, Ordering::SeqCst);
+                if let Err(err) = ender_recv.recv() {
+                    error!("ender_recv.recv {:?}", err);
+                }
             }
         }).unwrap();
     }
@@ -230,29 +280,20 @@ impl Player {
     }
 
     pub fn toggle(&self) {
-        if self.is_stopped.load(Ordering::SeqCst) {
-            return;
-        }
-        if self.sink.is_paused() {
-            self.sink.play();
+        if self.pause.load(Ordering::SeqCst) {
             self.command_sender.send(Command::Play).unwrap();
         } else {
-            self.sink.pause();
             self.command_sender.send(Command::Pause).unwrap();
         }
     }
 
     pub fn stop(&self) {
-        // Avoid queueing stop commands
-        if self.is_stopped.swap(true, Ordering::SeqCst) {
-            return;
-        }
         self.command_sender.send(Command::Stop).unwrap()
     }
 
     pub fn seek(&self, seek: i32) {
         // Avoid queueing seek commands if nothing is playing
-        if self.is_stopped.load(Ordering::SeqCst) || self.sink.len() == 0 {
+        if self.is_stopped.load(Ordering::SeqCst) {
             return;
         }
         // Note: Symphonia seems to be the only decoder that supports seeking in Rodio (that we really care about), but it can fail.
@@ -270,12 +311,18 @@ impl Player {
     }
 
     pub fn change_volume(&self, amount: f32) {
-        let mut volume = self.sink.volume() + amount;
+        let mut volume = *self.volume.lock().unwrap() + amount;
         if volume < 0. {
             volume = 0.;
         } else if volume > 1. {
             volume = 1.;
         }
-        self.sink.set_volume(volume)
+        *self.volume.lock().unwrap() = volume;
+    }
+}
+
+impl Drop for Player {
+    fn drop(&mut self) {
+        let _ = self.command_sender.send(Command::Stop);
     }
 }

@@ -5,8 +5,6 @@ use std::sync::{
 use std::time::Duration;
 use std::collections::VecDeque;
 
-use log::error;
-
 use crate::structs::Song;
 
 pub struct Queue {
