@@ -47,10 +47,6 @@ impl Queue {
         self.songs().len()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.length() == 0
-    }
-
     pub fn total_time(&self) -> Duration {
         self.total_time.lock().unwrap().clone()
     }

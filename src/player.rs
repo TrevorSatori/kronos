@@ -1,10 +1,13 @@
-use std::fs::File;
-use std::io::BufReader;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
-use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time::Duration;
+use std::{
+    sync::{
+        Arc,
+        Mutex,
+        atomic::{AtomicBool, AtomicU64, Ordering},
+        mpsc::{channel, Receiver, RecvTimeoutError, Sender},
+    },
+    thread,
+    time::Duration,
+};
 
 use log::{debug, error};
 use rodio::{Decoder, OutputStreamHandle, Source};
@@ -12,6 +15,7 @@ use rodio::{Decoder, OutputStreamHandle, Source};
 use crate::{
     cue::CueSheet,
     structs::{Queue, Song},
+    sample::{create_source_from_file, FullSource},
 };
 
 pub struct Player {
@@ -71,14 +75,15 @@ impl Player {
     pub fn spawn(&self) {
         let output_stream = self.output_stream.clone();
         let recv = self.command_receiver.clone().lock().unwrap().take().unwrap();
-        let is_stopped = self.is_stopped.clone();
         let queue_items = self.queue_items.clone();
         let currently_playing = self.currently_playing.clone();
         let song_start_time = self.currently_playing_start_time.clone();
+
         let position = self.position.clone();
         let volume = self.volume.clone();
         let pause = self.pause.clone();
 
+        let is_stopped = self.is_stopped.clone();
         let must_stop = Arc::new(AtomicBool::new(false));
         let (ended_sender, ender_recv) = channel::<()>();
         let must_seek = Arc::new(Mutex::new(None));
@@ -116,49 +121,41 @@ impl Player {
 
                 set_currently_playing(Some(song));
 
-                let file = BufReader::new(File::open(path).unwrap());
-                let source = Decoder::new(file).unwrap();
-                let mut source = source
-                    .speed(1.0)
-                    .track_position()
-                    .pausable(false)
-                    .amplify(1.0)
-                    .skippable()
-                    .stoppable()
-                    .periodic_access(Duration::from_millis(5), {
-                        let is_stopped = is_stopped.clone();
-                        let must_stop = must_stop.clone();
-                        let ended_sender = ended_sender.clone();
-                        let position = position.clone();
-                        let volume = volume.clone();
-                        let pause = pause.clone();
-                        let must_seek = must_seek.clone();
+                let periodic_access = {
+                    let is_stopped = is_stopped.clone();
+                    let must_stop = must_stop.clone();
+                    let ended_sender = ended_sender.clone();
+                    let position = position.clone();
+                    let volume = volume.clone();
+                    let pause = pause.clone();
+                    let must_seek = must_seek.clone();
 
-                        move |src| {
-                            if must_stop.swap(false, Ordering::SeqCst) {
-                                src.stop();
-                                src.inner_mut().skip();
-                                *position.lock().unwrap() = Duration::ZERO;
-                                is_stopped.store(true, Ordering::SeqCst);
-                                let _ = ended_sender.send(());
-                            } else {
-                                *position.lock().unwrap() = src.inner().inner().inner().inner().get_pos();
-                            }
+                    move |src: &mut FullSource| {
+                        if must_stop.swap(false, Ordering::SeqCst) {
+                            src.stop();
+                            src.inner_mut().skip();
+                            *position.lock().unwrap() = Duration::ZERO;
+                            is_stopped.store(true, Ordering::SeqCst);
+                            let _ = ended_sender.send(());
+                        } else {
+                            *position.lock().unwrap() = src.inner().inner().inner().inner().get_pos();
+                        }
 
-                            let amp = src.inner_mut().inner_mut();
-                            amp.set_factor(*volume.lock().unwrap());
+                        let amp = src.inner_mut().inner_mut();
+                        amp.set_factor(*volume.lock().unwrap());
 
-                            let pausable = amp.inner_mut();
-                            pausable.set_paused(pause.load(Ordering::SeqCst));
+                        let pausable = amp.inner_mut();
+                        pausable.set_paused(pause.load(Ordering::SeqCst));
 
-                            if let Some(seek) = must_seek.lock().unwrap().take() {
-                                if let Err(err) = amp.try_seek(seek) {
-                                    error!("start_time > 0 try_seek() error. {:?}", err)
-                                }
+                        if let Some(seek) = must_seek.lock().unwrap().take() {
+                            if let Err(err) = amp.try_seek(seek) {
+                                error!("start_time > 0 try_seek() error. {:?}", err)
                             }
                         }
-                    })
-                    .convert_samples();
+                    }
+                };
+
+                let mut source = create_source_from_file(path, periodic_access);
 
                 if start_time > Duration::ZERO {
                     debug!("start_time > Duration::ZERO, {:?}", start_time);
