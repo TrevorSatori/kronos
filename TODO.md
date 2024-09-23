@@ -65,3 +65,18 @@ we could just store the millis as an AtomicU64, and do `Duration::from_millis()`
 There are 86_400_000 millis in a day. The u64 max is 18446744073709551615... that is 213_503_982_334 days? Should be fine lol 
 Even a U32 should give us more than 40 days, in which case we'd be using a single AtomicU32, which is what a Mutex is already using inside,
 so, at worst, we'd have the same performance of the Mutex.
+
+## Thread-Safe Output Stream
+
+OutputStream is !Send + !Sync, meaning we can't pass it around. We can't drop it either. We just have to hold on to it.
+It's really pretty much a wrapper around a cpal Stream.
+
+OutputStreamHandle, on the other hand, is thread-safe, because it doesn't contain the cpal Stream in it.
+
+It'd be nice if we could have a thread-safe cpal Stream. It seems that it only is !Sync and !Send only for Android... and this is future-proofing.
+
+> Streams cannot be `Send` or `Sync` if we plan to support Android's AAudio API. This is
+> because the stream API is not thread-safe, and the API prohibits calling certain
+> functions within the callback.
+
+See https://github.com/RustAudio/cpal/blob/bbb58ab76787d090d32ed56964bfcf194b8f6a3d/src/platform/mod.rs#L67

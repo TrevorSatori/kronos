@@ -49,10 +49,9 @@ pub struct App<'a> {
     help_tab: ui::HelpTab<'a>,
     player_command_receiver: Arc<Mutex<Receiver<Command>>>,
     player: Arc<Player>,
-    #[allow(dead_code)]
-    music_output: OutputStream,
+    _music_output: OutputStream,
     playlist: Arc<ui::Playlists<'a>>,
-    media_library: Arc<Mutex<Vec<Song>>>,
+    library: Arc<ui::Library<'a>>,
 }
 
 impl<'a> App<'a> {
@@ -61,20 +60,25 @@ impl<'a> App<'a> {
         let state = State::from_file();
 
         let (output_stream, output_stream_handle) = OutputStream::try_default().unwrap(); // Indirectly this spawns the cpal_alsa_out thread, and creates the mixer tied to it
-        // output_stream is !Send + !Sync, and we want Player to be Send+Sync, so
-        // App will own it and pass just the weak reference to it.
-        // output_stream_handle is roughly a Weak<output_stream> that IS Send+Sync (because it doesn't contain the cpal stream in it)
-        // See https://github.com/RustAudio/cpal/blob/bbb58ab76787d090d32ed56964bfcf194b8f6a3d/src/platform/mod.rs#L67
-        // Note: if this is only true for Android, it'd be nice to just drop this requirement.
 
         let player = Arc::new(Player::new(state.queue_items, output_stream_handle));
-
-        let media_library = Arc::new(Mutex::new(Vec::new()));
 
         let current_directory = match &state.last_visited_path {
             Some(s) => PathBuf::from(s),
             None => env::current_dir().unwrap(),
         };
+
+        let library = Arc::new(ui::Library::new(config.theme, vec![]));
+        library.on_select({
+            let player = player.clone();
+            move |(song, key)| {
+                if key.code == KeyCode::Enter {
+                    player.play_song(song);
+                } else if key.code == KeyCode::Char('a') {
+                    player.enqueue_song(song);
+                }
+            }
+        });
 
         let playlist = Arc::new(ui::Playlists::new(config.theme, state.playlists));
         playlist.on_select({
@@ -92,7 +96,7 @@ impl<'a> App<'a> {
         browser.on_select({
             let player = player.clone();
             let playlists = playlist.clone();
-            let media_library = Arc::clone(&media_library);
+            let media_library = Arc::clone(&library);
 
             move |(s, key_event)| {
                 Self::on_file_browser_key(player.as_ref(), playlists.as_ref(), media_library.as_ref(), s, key_event);
@@ -100,7 +104,7 @@ impl<'a> App<'a> {
         });
 
         Self {
-            music_output: output_stream,
+            _music_output: output_stream,
             must_quit: false,
             config,
             focused_element: FocusedElement::Library,
@@ -110,7 +114,7 @@ impl<'a> App<'a> {
             player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
             player,
             playlist,
-            media_library,
+            library,
         }
     }
 
@@ -179,7 +183,7 @@ impl<'a> App<'a> {
     fn on_file_browser_key(
         player: &Player,
         playlists: &ui::Playlists,
-        media_library: &Mutex<Vec<Song>>,
+        media_library: &ui::Library,
         file_browser_selection: FileBrowserSelection,
         key_event: KeyEvent,
     ) {
@@ -193,7 +197,7 @@ impl<'a> App<'a> {
             }
             (FileBrowserSelection::Song(song), KeyCode::Char('j')) => {
                 log::debug!("TODO: browser.on_select(Song({}), j)", song.title);
-                media_library.lock().unwrap().push(song.clone());
+                media_library.add_song(song.clone());
             }
             (FileBrowserSelection::Song(song), KeyCode::Char('a')) => {
                 player.enqueue_song(song);
@@ -231,7 +235,7 @@ impl<'a> App<'a> {
 
         if !handled {
             match self.focused_element {
-                FocusedElement::Library =>{},
+                FocusedElement::Library => { self.library.on_key_event(key) },
                 FocusedElement::Playlists => { self.playlist.on_key_event(key) },
                 FocusedElement::Browser => self.browser.on_key_event(key),
                 FocusedElement::Queue => self.handle_queue_key_events(key),
@@ -338,7 +342,9 @@ impl<'a> App<'a> {
         ui::render_top_bar(frame, &self.config, area_top, self.active_tab);
 
         match self.active_tab {
-            AppTab::Library => {},
+            AppTab::Library => {
+                frame.render_widget(&*self.library, area_center);
+            },
             AppTab::Playlists => {
                 frame.render_widget(&*self.playlist, area_center); // &*...? Is this ok?
             },
