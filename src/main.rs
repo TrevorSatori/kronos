@@ -11,7 +11,7 @@ mod structs;
 mod term;
 mod toml;
 mod ui;
-mod sample;
+mod source;
 
 use std::error::Error;
 use std::io::stdout;

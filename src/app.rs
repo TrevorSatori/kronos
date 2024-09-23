@@ -56,7 +56,7 @@ impl<'a> App<'a> {
         let config = Config::from_file();
         let state = State::from_file();
 
-        let (output_stream, output_stream_handle) = OutputStream::try_default().unwrap();
+        let (output_stream, output_stream_handle) = OutputStream::try_default().unwrap(); // Indirectly this spawns the cpal_alsa_out thread, and creates the mixer tied to it
         // output_stream is !Send + !Sync, and we want Player to be Send+Sync, so
         // App will own it and pass just the weak reference to it.
         // output_stream_handle is roughly a Weak<output_stream> that IS Send+Sync (because it doesn't contain the cpal stream in it)

@@ -10,12 +10,12 @@ use std::{
 };
 
 use log::{debug, error};
-use rodio::{Decoder, OutputStreamHandle, Source};
+use rodio::{OutputStreamHandle};
 
 use crate::{
     cue::CueSheet,
     structs::{Queue, Song},
-    sample::{create_source_from_file, FullSource},
+    source::{Source, Controls},
 };
 
 pub struct Player {
@@ -125,48 +125,41 @@ impl Player {
                     let is_stopped = is_stopped.clone();
                     let must_stop = must_stop.clone();
                     let ended_sender = ended_sender.clone();
-                    let position = position.clone();
                     let volume = volume.clone();
                     let pause = pause.clone();
                     let must_seek = must_seek.clone();
 
-                    move |src: &mut FullSource| {
+                    move |controls: &mut Controls| {
                         if must_stop.swap(false, Ordering::SeqCst) {
-                            src.stop();
-                            src.inner_mut().skip();
-                            *position.lock().unwrap() = Duration::ZERO;
+                            controls.stop();
+                            controls.skip();
                             is_stopped.store(true, Ordering::SeqCst);
                             let _ = ended_sender.send(());
-                        } else {
-                            *position.lock().unwrap() = src.inner().inner().inner().inner().get_pos();
                         }
 
-                        let amp = src.inner_mut().inner_mut();
-                        amp.set_factor(*volume.lock().unwrap());
-
-                        let pausable = amp.inner_mut();
-                        pausable.set_paused(pause.load(Ordering::SeqCst));
+                        controls.set_volume(*volume.lock().unwrap());
+                        controls.set_paused(pause.load(Ordering::SeqCst));
 
                         if let Some(seek) = must_seek.lock().unwrap().take() {
-                            if let Err(err) = amp.try_seek(seek) {
-                                error!("start_time > 0 try_seek() error. {:?}", err)
+                            if let Err(err) = controls.seek(seek) {
+                                error!("periodic_access.try_seek() error. {:?}", err)
                             }
                         }
                     }
                 };
 
-                let mut source = create_source_from_file(path, periodic_access);
+                let mut source = Source::from_file(path, periodic_access, position.clone());
 
                 if start_time > Duration::ZERO {
                     debug!("start_time > Duration::ZERO, {:?}", start_time);
-                    if let Err(err) = source.inner_mut().inner_mut().try_seek(start_time) {
+                    if let Err(err) = source.seek(start_time) {
                         error!("start_time > 0 try_seek() error. {:?}", err)
                     }
                     *position.lock().unwrap() = start_time;
                 }
 
                 debug!("s.play_raw()");
-                if let Err(err) = output_stream.play_raw(source) {
+                if let Err(err) = output_stream.play_raw(source) { // Does `mixer.add(source)`. Mixer is tied to the CPAL thread, which starts consuming the source automatically.
                     error!("os.play_raw error! {:?}", err);
                     continue;
                 }
