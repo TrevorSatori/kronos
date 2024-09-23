@@ -233,7 +233,9 @@ impl<'a> Browser<'a> {
 
 fn directory_to_songs_and_folders(path: &PathBuf) -> Vec<String> {
     // TODO: .cue
-    let entries = path.read_dir().unwrap(); // TODO: .unwrap
+    let Ok(entries) = path.read_dir() else {
+        return vec![];
+    };
 
     let mut items: Vec<String> = entries
         .filter_map(|e| e.ok())
