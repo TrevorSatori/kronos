@@ -14,6 +14,7 @@ use rodio::OutputStream;
 
 use crate::{
     config::Config,
+    structs::Song,
     file_browser::{Browser, FileBrowserSelection},
     player::Player,
     state::State,
@@ -28,12 +29,14 @@ pub enum FocusedElement {
     Queue,
     HelpControls,
     Playlists,
+    Library,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum AppTab {
-    FileBrowser = 0,
+    Library = 0,
     Playlists,
+    FileBrowser,
     Help,
 }
 
@@ -49,6 +52,7 @@ pub struct App<'a> {
     #[allow(dead_code)]
     music_output: OutputStream,
     playlist: Arc<ui::Playlists<'a>>,
+    media_library: Arc<Mutex<Vec<Song>>>,
 }
 
 impl<'a> App<'a> {
@@ -65,34 +69,37 @@ impl<'a> App<'a> {
 
         let player = Arc::new(Player::new(state.queue_items, output_stream_handle));
         let playlist = Arc::new(ui::Playlists::new(config.theme, state.playlists));
+        let media_library = Arc::new(Mutex::new(Vec::new()));
 
         let current_directory = match &state.last_visited_path {
             Some(s) => PathBuf::from(s),
             None => env::current_dir().unwrap(),
         };
-        let browser = Browser::new(current_directory);
 
-        let mut app = Self {
+        let mut browser = Browser::new(current_directory);
+        browser.on_select({
+            let player = player.clone();
+            let playlists = playlist.clone();
+            let media_library = Arc::clone(&media_library);
+
+            move |(s, key_event)| {
+                Self::on_file_browser_key(player.as_ref(), playlists.as_ref(), media_library.as_ref(), s, key_event);
+            }
+        });
+
+        let app = Self {
             music_output: output_stream,
             must_quit: false,
             config,
-            focused_element: FocusedElement::Browser,
-            active_tab: AppTab::FileBrowser,
+            focused_element: FocusedElement::Library,
+            active_tab: AppTab::Library,
             browser,
             help_tab: ui::HelpTab::new(config),
             player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
             player,
             playlist,
+            media_library,
         };
-
-        app.browser.on_select({
-            let player = app.player.clone();
-            let playlists = app.playlist.clone();
-
-            move |(s, key_event)| {
-                Self::on_file_browser_key(player.as_ref(), playlists.as_ref(), s, key_event);
-            }
-        });
 
         app.playlist.on_select({
             let player = app.player.clone();
@@ -170,7 +177,13 @@ impl<'a> App<'a> {
         }).unwrap();
     }
 
-    fn on_file_browser_key(player: &Player, playlists: &ui::Playlists, file_browser_selection: FileBrowserSelection, key_event: KeyEvent) {
+    fn on_file_browser_key(
+        player: &Player,
+        playlists: &ui::Playlists,
+        media_library: &Mutex<Vec<Song>>,
+        file_browser_selection: FileBrowserSelection,
+        key_event: KeyEvent,
+    ) {
         log::debug!("browser.on_select({:?}, {:?})", file_browser_selection, key_event);
         match (file_browser_selection, key_event.code) {
             (FileBrowserSelection::Song(song), KeyCode::Enter) => {
@@ -178,6 +191,10 @@ impl<'a> App<'a> {
             }
             (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Enter) => {
                 player.enqueue_cue(cue_sheet);
+            }
+            (FileBrowserSelection::Song(song), KeyCode::Char('j')) => {
+                log::debug!("TODO: browser.on_select(Song({}), j)", song.title);
+                media_library.lock().unwrap().push(song.clone());
             }
             (FileBrowserSelection::Song(song), KeyCode::Char('a')) => {
                 player.enqueue_song(song);
@@ -199,6 +216,12 @@ impl<'a> App<'a> {
                 log::debug!("TODO: browser.on_select(Directory({}), y)", path.display());
                 // directory_to_songs_and_folders
             }
+            (FileBrowserSelection::Directory(path), KeyCode::Char('j')) => {
+                log::debug!("TODO: browser.on_select(Directory({}), j)", path.display());
+                // let songs = path_to
+                // media_library.lock().unwrap().push(song.clone());
+                // directory_to_songs_and_folders
+            }
             _ => {}
         }
     }
@@ -209,9 +232,10 @@ impl<'a> App<'a> {
 
         if !handled {
             match self.focused_element {
+                FocusedElement::Library =>{},
+                FocusedElement::Playlists => { self.playlist.on_key_event(key) },
                 FocusedElement::Browser => self.browser.on_key_event(key),
                 FocusedElement::Queue => self.handle_queue_key_events(key),
-                FocusedElement::Playlists => { self.playlist.on_key_event(key) },
                 FocusedElement::HelpControls => self.handle_help_key_events(key),
             }
         }
@@ -224,14 +248,18 @@ impl<'a> App<'a> {
                 self.must_quit = true;
             }
             KeyCode::Char('1') => {
-                self.active_tab = AppTab::FileBrowser;
-                self.focused_element = FocusedElement::Browser;
+                self.active_tab = AppTab::Library;
+                self.focused_element = FocusedElement::Library;
             }
             KeyCode::Char('2') => {
                 self.active_tab = AppTab::Playlists;
                 self.focused_element = FocusedElement::Playlists;
             }
             KeyCode::Char('3') => {
+                self.active_tab = AppTab::FileBrowser;
+                self.focused_element = FocusedElement::Browser;
+            }
+            KeyCode::Char('4') => {
                 self.active_tab = AppTab::Help;
                 self.focused_element = FocusedElement::HelpControls;
             }
@@ -311,10 +339,11 @@ impl<'a> App<'a> {
         ui::render_top_bar(frame, &self.config, area_top, self.active_tab);
 
         match self.active_tab {
-            AppTab::FileBrowser => self.browser.render(frame, &self.player.queue(), area_center, &self.config),
+            AppTab::Library => {},
             AppTab::Playlists => {
                 frame.render_widget(&*self.playlist, area_center); // &*...? Is this ok?
             },
+            AppTab::FileBrowser => self.browser.render(frame, &self.player.queue(), area_center, &self.config),
             AppTab::Help => self.help_tab.render(frame, area_center),
         };
 

@@ -180,8 +180,8 @@ impl<'a> Browser<'a> {
         match key.code {
             // KeyCode::Enter => { self.enter_selection(key); },
             KeyCode::Backspace => self.navigate_up(),
-            KeyCode::Down | KeyCode::Char('j') => self.items.next(),
-            KeyCode::Up | KeyCode::Char('k') => self.items.previous(),
+            KeyCode::Down => self.items.next(),
+            KeyCode::Up => self.items.previous(),
             KeyCode::PageUp => self.items.previous_by(5),
             KeyCode::PageDown => self.items.next_by(5),
             KeyCode::End => self.select_last(),
