@@ -68,13 +68,25 @@ impl<'a> App<'a> {
         // Note: if this is only true for Android, it'd be nice to just drop this requirement.
 
         let player = Arc::new(Player::new(state.queue_items, output_stream_handle));
-        let playlist = Arc::new(ui::Playlists::new(config.theme, state.playlists));
+
         let media_library = Arc::new(Mutex::new(Vec::new()));
 
         let current_directory = match &state.last_visited_path {
             Some(s) => PathBuf::from(s),
             None => env::current_dir().unwrap(),
         };
+
+        let playlist = Arc::new(ui::Playlists::new(config.theme, state.playlists));
+        playlist.on_select({
+            let player = player.clone();
+            move |(song, key)| {
+                if key.code == KeyCode::Enter {
+                    player.play_song(song);
+                } else if key.code == KeyCode::Char('a') {
+                    player.enqueue_song(song);
+                }
+            }
+        });
 
         let mut browser = Browser::new(current_directory);
         browser.on_select({
@@ -87,7 +99,7 @@ impl<'a> App<'a> {
             }
         });
 
-        let app = Self {
+        Self {
             music_output: output_stream,
             must_quit: false,
             config,
@@ -99,20 +111,7 @@ impl<'a> App<'a> {
             player,
             playlist,
             media_library,
-        };
-
-        app.playlist.on_select({
-            let player = app.player.clone();
-            move |(song, key)| {
-                if key.code == KeyCode::Enter {
-                    player.play_song(song);
-                } else if key.code == KeyCode::Char('a') {
-                    player.enqueue_song(song);
-                }
-           }
-        });
-
-        app
+        }
     }
 
     fn to_state(&self) -> State {
