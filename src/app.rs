@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::sync::{mpsc::Receiver, Arc, Mutex};
 use std::{env, path::PathBuf, thread, time::Duration};
-
+use std::io::BufRead;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use log::error;
 use ratatui::{
@@ -301,7 +301,34 @@ impl<'a> App<'a> {
             KeyCode::Char('p') if key.modifiers == KeyModifiers::CONTROL => self.player.toggle(),
             KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => self.player.stop(),
             KeyCode::Char('c') if key.modifiers == KeyModifiers::ALT => {
-                let _ = env::set_current_dir(self.browser.current_directory());
+                let cwd = self.browser.current_directory().clone();
+
+                if let Err(err) = thread::Builder::new().name("term".to_string()).spawn(move || {
+                    log::debug!("spawning child process");
+
+                    let proc = std::process::Command::new("kitty")
+                        .current_dir(cwd)
+                        .stdout(std::process::Stdio::piped())
+                        .stderr(std::process::Stdio::piped())
+                        .spawn();
+
+                    if let Ok(mut proc) = proc {
+                        log::debug!("spawned child process");
+
+                        let stdout = proc.stdout.as_mut().unwrap();
+                        let stdout_reader = std::io::BufReader::new(stdout);
+
+                        for line in stdout_reader.lines() {
+                            log::debug!("stdout: {:?}", line);
+                        }
+
+                        log::debug!("child process exited");
+                    } else if let Err(err) = proc {
+                        log::error!("error spawning thread {:?}", err);
+                    }
+                }) {
+                    log::error!("Error spawning thread! {:?}", err);
+                }
             }
             _ => {
                 handled = false;
