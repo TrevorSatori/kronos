@@ -43,15 +43,18 @@ pub enum AppTab {
 pub struct App<'a> {
     must_quit: bool,
     config: Config,
+
+    _music_output: OutputStream,
+    player: Arc<Player>,
+    player_command_receiver: Arc<Mutex<Receiver<Command>>>,
+
     focused_element: FocusedElement,
     active_tab: AppTab,
+
+    library: Arc<ui::Library<'a>>,
+    playlist: Arc<ui::Playlists<'a>>,
     browser: Browser<'a>,
     help_tab: ui::HelpTab<'a>,
-    player_command_receiver: Arc<Mutex<Receiver<Command>>>,
-    player: Arc<Player>,
-    _music_output: OutputStream,
-    playlist: Arc<ui::Playlists<'a>>,
-    library: Arc<ui::Library<'a>>,
 }
 
 impl<'a> App<'a> {
