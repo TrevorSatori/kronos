@@ -36,7 +36,6 @@ pub enum Command {
 
 pub fn log_format(w: &mut dyn std::io::Write, _now: &mut DeferredNow, record: &Record) -> Result<(), std::io::Error> {
     write!(w, "{: <12}", thread::current().name().unwrap_or("<unnamed>"),)?;
-
     write!(w, "{}", record.args())
 }
 
@@ -51,7 +50,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .use_utc()
         .start()?;
 
-    info!("Starting");
+    info!("\n\n\n\n");
+    info!("Starting\n\n");
 
     let (player_command_sender, player_command_receiver) = channel();
 

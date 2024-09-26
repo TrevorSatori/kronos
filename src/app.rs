@@ -300,36 +300,7 @@ impl<'a> App<'a> {
             KeyCode::Char('+') => self.player.change_volume(0.05),
             KeyCode::Char('p') if key.modifiers == KeyModifiers::CONTROL => self.player.toggle(),
             KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => self.player.stop(),
-            KeyCode::Char('c') if key.modifiers == KeyModifiers::ALT => {
-                let cwd = self.browser.current_directory().clone();
-
-                if let Err(err) = thread::Builder::new().name("term".to_string()).spawn(move || {
-                    log::debug!("spawning child process");
-
-                    let proc = std::process::Command::new("kitty")
-                        .current_dir(cwd)
-                        .stdout(std::process::Stdio::piped())
-                        .stderr(std::process::Stdio::piped())
-                        .spawn();
-
-                    if let Ok(mut proc) = proc {
-                        log::debug!("spawned child process");
-
-                        let stdout = proc.stdout.as_mut().unwrap();
-                        let stdout_reader = std::io::BufReader::new(stdout);
-
-                        for line in stdout_reader.lines() {
-                            log::debug!("stdout: {:?}", line);
-                        }
-
-                        log::debug!("child process exited");
-                    } else if let Err(err) = proc {
-                        log::error!("error spawning thread {:?}", err);
-                    }
-                }) {
-                    log::error!("Error spawning thread! {:?}", err);
-                }
-            }
+            KeyCode::Char('c') if key.modifiers == KeyModifiers::ALT => self.spawn_terminal(),
             _ => {
                 handled = false;
             }
@@ -356,6 +327,37 @@ impl<'a> App<'a> {
             KeyCode::Down | KeyCode::Char('j') => self.help_tab.next(),
             KeyCode::Up | KeyCode::Char('k') => self.help_tab.previous(),
             _ => {}
+        }
+    }
+
+    fn spawn_terminal(&self) {
+        let cwd = self.browser.current_directory().clone();
+
+        if let Err(err) = thread::Builder::new().name("term".to_string()).spawn(move || {
+            log::debug!("spawning child process");
+
+            let proc = std::process::Command::new("kitty")
+                .current_dir(cwd)
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .spawn();
+
+            if let Ok(mut proc) = proc {
+                log::debug!("spawned child process");
+
+                let stdout = proc.stdout.as_mut().unwrap();
+                let stdout_reader = std::io::BufReader::new(stdout);
+
+                for line in stdout_reader.lines() {
+                    log::debug!("stdout: {:?}", line);
+                }
+
+                log::debug!("child process exited");
+            } else if let Err(err) = proc {
+                log::error!("error spawning thread {:?}", err);
+            }
+        }) {
+            log::error!("Error spawning thread! {:?}", err);
         }
     }
 
