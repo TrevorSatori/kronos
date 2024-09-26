@@ -9,6 +9,7 @@ use std::{
     time::Duration,
 };
 
+use crossterm::event::{KeyCode, KeyEvent};
 use log::{debug, error};
 use rodio::{OutputStreamHandle};
 
@@ -16,6 +17,7 @@ use crate::{
     cue::CueSheet,
     structs::{Queue, Song},
     source::{Source, Controls},
+    ui::KeyboardHandler,
 };
 
 pub struct Player {
@@ -314,5 +316,22 @@ impl Player {
 impl Drop for Player {
     fn drop(&mut self) {
         let _ = self.command_sender.send(Command::Stop);
+    }
+}
+
+impl KeyboardHandler for Player {
+    fn on_key(&self, key: KeyEvent) -> bool {
+        match key.code {
+            KeyCode::Enter => {
+                if let Some(song) = self.queue().selected_song() {
+                    self.play_song(song);
+                };
+            }
+            KeyCode::Down | KeyCode::Char('j') => self.queue().select_next(),
+            KeyCode::Up | KeyCode::Char('k') => self.queue().select_previous(),
+            KeyCode::Delete => self.queue().remove_selected(),
+            _ => {}
+        };
+        true
     }
 }

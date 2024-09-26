@@ -14,12 +14,12 @@ use rodio::OutputStream;
 
 use crate::{
     config::Config,
-    structs::Song,
     file_browser::{Browser, FileBrowserSelection},
     player::Player,
     state::State,
     term::set_terminal,
     ui,
+    ui::KeyboardHandler,
     Command,
 };
 
@@ -231,21 +231,29 @@ impl<'a> App<'a> {
 
     fn handle_key_event(&mut self, key: KeyEvent) {
         let focus_trapped = self.focused_element == FocusedElement::Browser && self.browser.filter().is_some();
-        let handled = !focus_trapped && self.handle_app_key_event(key);
 
-        if !handled {
-            match self.focused_element {
-                FocusedElement::Library => { self.library.on_key_event(key) },
-                FocusedElement::Playlists => { self.playlist.on_key_event(key) },
-                FocusedElement::Browser => self.browser.on_key_event(key),
-                FocusedElement::Queue => self.handle_queue_key_events(key),
-                FocusedElement::HelpControls => self.handle_help_key_events(key),
+        if !focus_trapped {
+            if self.on_key_mut(key) || self.on_key(key) {
+                return;
             }
+        };
+
+        let target: Option<&dyn KeyboardHandler> = match self.focused_element {
+            FocusedElement::Library => Some(&*self.library),
+            FocusedElement::Playlists => Some(&*self.playlist),
+            FocusedElement::Queue => Some(&*self.player),
+            FocusedElement::HelpControls => Some(&self.help_tab),
+            _ => None,
+        };
+
+        if let Some(target) = target {
+            target.on_key(key);
+        } else {
+            self.browser.on_key_event(key);
         }
     }
 
-    fn handle_app_key_event(&mut self, key: KeyEvent) -> bool {
-        let mut handled = true;
+    fn on_key_mut(&mut self, key: KeyEvent) -> bool {
         match key.code {
             KeyCode::Char('q') if key.modifiers == KeyModifiers::CONTROL => {
                 self.must_quit = true;
@@ -288,46 +296,16 @@ impl<'a> App<'a> {
                             _ => {}
                         };
                     }
-                    AppTab::Playlists => {
-                        self.playlist.on_key_event(key);
+                    _ => {
+                        return false;
                     }
-                    _ => {}
                 }
             }
-            KeyCode::Right => self.player.seek_forward(),
-            KeyCode::Left => self.player.seek_backward(),
-            KeyCode::Char('-') => self.player.change_volume(-0.05),
-            KeyCode::Char('+') => self.player.change_volume(0.05),
-            KeyCode::Char('p') if key.modifiers == KeyModifiers::CONTROL => self.player.toggle(),
-            KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => self.player.stop(),
-            KeyCode::Char('c') if key.modifiers == KeyModifiers::ALT => self.spawn_terminal(),
             _ => {
-                handled = false;
+                return false;
             }
         }
-        handled
-    }
-
-    fn handle_queue_key_events(&mut self, key: KeyEvent) {
-        match key.code {
-            KeyCode::Enter => {
-                if let Some(song) = self.player.queue().selected_song() {
-                    self.player.play_song(song);
-                };
-            }
-            KeyCode::Down | KeyCode::Char('j') => self.player.queue().select_next(),
-            KeyCode::Up | KeyCode::Char('k') => self.player.queue().select_previous(),
-            KeyCode::Delete => self.player.queue().remove_selected(),
-            _ => {}
-        }
-    }
-
-    fn handle_help_key_events(&mut self, key: KeyEvent) {
-        match key.code {
-            KeyCode::Down | KeyCode::Char('j') => self.help_tab.next(),
-            KeyCode::Up | KeyCode::Char('k') => self.help_tab.previous(),
-            _ => {}
-        }
+        true
     }
 
     fn spawn_terminal(&self) {
@@ -381,10 +359,8 @@ impl<'a> App<'a> {
             AppTab::Help => self.help_tab.render(frame, area_center),
         };
 
-        // log::debug!("ui acquiring currently_playing");
         let currently_playing = self.player.currently_playing();
         let currently_playing = currently_playing.lock().unwrap();
-        // log::debug!("ui acquired currently_playing");
 
         ui::render_playing_gauge(
             frame,
@@ -395,7 +371,23 @@ impl<'a> App<'a> {
             self.player.queue().total_time(),
             self.player.queue().length(),
         );
+    }
+}
 
-        // log::debug!("ui released currently_playing");
+impl<'a> KeyboardHandler for App<'a> {
+    fn on_key(&self, key: KeyEvent) -> bool {
+        match key.code {
+            KeyCode::Right => self.player.seek_forward(),
+            KeyCode::Left => self.player.seek_backward(),
+            KeyCode::Char('-') => self.player.change_volume(-0.05),
+            KeyCode::Char('+') => self.player.change_volume(0.05),
+            KeyCode::Char('p') if key.modifiers == KeyModifiers::CONTROL => self.player.toggle(),
+            KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => self.player.stop(),
+            KeyCode::Char('c') if key.modifiers == KeyModifiers::ALT => self.spawn_terminal(),
+            _ => {
+                return false;
+            }
+        }
+        true
     }
 }

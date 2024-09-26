@@ -1,3 +1,4 @@
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
@@ -6,6 +7,7 @@ use ratatui::{
 };
 
 use crate::config::Config;
+use crate::ui::KeyboardHandler;
 
 pub struct HelpTab<'a> {
     config: Config,
@@ -122,5 +124,18 @@ impl<'a> HelpTab<'a> {
             )
             .widths(&[Constraint::Percentage(50), Constraint::Length(30), Constraint::Min(10)]);
         f.render_stateful_widget(&table, layout[0], &mut self.state);
+    }
+}
+
+impl KeyboardHandler for HelpTab<'_> {
+    fn on_key(&self, key: KeyEvent) -> bool {
+        match key.code {
+            // KeyCode::Down | KeyCode::Char('j') => self.next(),
+            // KeyCode::Up | KeyCode::Char('k') => self.previous(),
+            _ => {
+                return false;
+            }
+        }
+        true
     }
 }

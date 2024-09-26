@@ -18,8 +18,8 @@ use crate::{
     structs::{Song},
     config::Theme,
     cue::CueSheet,
-    ui::song_to_string,
 };
+use crate::ui::KeyboardHandler;
 
 #[derive(Eq, PartialEq)]
 enum LibraryScreenElement {
@@ -91,26 +91,6 @@ impl<'a> Library<'a> {
         //     let mut songs = Song::from_cue_sheet(cue_sheet);
         //     pl.songs.append(&mut songs);
         // });
-    }
-
-    pub fn on_key_event(&self, key: KeyEvent) {
-        let mut focused_element_guard = self.focused_element.lock().unwrap();
-
-        match key.code {
-            // KeyCode::Tab => {
-            //     *focused_element_guard = match *focused_element_guard {
-            //         PlaylistScreenElement::PlaylistList => PlaylistScreenElement::SongList,
-            //         PlaylistScreenElement::SongList => PlaylistScreenElement::PlaylistList,
-            //     };
-            // }
-            _ if *focused_element_guard == LibraryScreenElement::ArtistList  => {
-                self.on_key_event_artist_list(key);
-            },
-            _ if *focused_element_guard == LibraryScreenElement::SongList  => {
-                self.on_key_event_song_list(key);
-            },
-            _ => {},
-        }
     }
 
     pub fn on_key_event_artist_list(&self, key: KeyEvent) {
@@ -188,7 +168,7 @@ impl<'a> Widget for Library<'a> {
 
 impl<'a> WidgetRef for Library<'a> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
-        let [area_left, _, area_right] = Layout::horizontal([
+        let [area_left, _, _area_right] = Layout::horizontal([
             Constraint::Percentage(50),
             Constraint::Length(5),
             Constraint::Percentage(50),
@@ -233,5 +213,32 @@ impl<'a> WidgetRef for Library<'a> {
         //     return;
         // }
 
+    }
+}
+
+impl KeyboardHandler for Library<'_> {
+
+    fn on_key(&self, key: KeyEvent) -> bool {
+        let focused_element_guard = self.focused_element.lock().unwrap();
+
+        match key.code {
+            // KeyCode::Tab => {
+            //     *focused_element_guard = match *focused_element_guard {
+            //         PlaylistScreenElement::PlaylistList => PlaylistScreenElement::SongList,
+            //         PlaylistScreenElement::SongList => PlaylistScreenElement::PlaylistList,
+            //     };
+            // }
+            _ if *focused_element_guard == LibraryScreenElement::ArtistList  => {
+                self.on_key_event_artist_list(key);
+            },
+            _ if *focused_element_guard == LibraryScreenElement::SongList  => {
+                self.on_key_event_song_list(key);
+            },
+            _ => {
+                return false;
+            },
+        }
+
+        true
     }
 }
