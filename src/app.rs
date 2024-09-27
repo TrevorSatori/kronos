@@ -28,12 +28,9 @@ use crate::ui::KeyboardHandlerMut;
 pub enum FocusedElement {
     Browser,
     Queue,
-    HelpControls,
-    Playlists,
-    Library,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppTab {
     Library = 0,
     Playlists,
@@ -112,7 +109,7 @@ impl<'a> App<'a> {
             _music_output: output_stream,
             must_quit: false,
             config,
-            focused_element: FocusedElement::Library,
+            focused_element: FocusedElement::Browser,
             active_tab: AppTab::Library,
             browser: Arc::new(Mutex::new(browser)),
             help_tab: Arc::new(Mutex::new(ui::HelpTab::new(config))),
@@ -330,24 +327,6 @@ impl<'a> App<'a> {
     }
 }
 
-// impl<'a> KeyboardHandler<'a> for App<'a> {
-//     fn on_key(&self, key: KeyEvent) -> bool {
-//         match key.code {
-//             KeyCode::Right => self.player.seek_forward(),
-//             KeyCode::Left => self.player.seek_backward(),
-//             KeyCode::Char('-') => self.player.change_volume(-0.05),
-//             KeyCode::Char('+') => self.player.change_volume(0.05),
-//             KeyCode::Char('p') if key.modifiers == KeyModifiers::CONTROL => self.player.toggle(),
-//             KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => self.player.stop(),
-//             KeyCode::Char('c') if key.modifiers == KeyModifiers::ALT => self.spawn_terminal(),
-//             _ => {
-//                 return false;
-//             }
-//         }
-//         true
-//     }
-// }
-
 impl<'a> KeyboardHandlerMut<'a> for App<'a> {
     fn on_key(&mut self, key: KeyEvent) -> bool {
         match key.code {
@@ -363,50 +342,39 @@ impl<'a> KeyboardHandlerMut<'a> for App<'a> {
             }
             KeyCode::Char('1') => {
                 self.active_tab = AppTab::Library;
-                self.focused_element = FocusedElement::Library;
                 self.target = Some(KeyboardHandlerEnum::Immut(self.library.clone()));
             }
             KeyCode::Char('2') => {
                 self.active_tab = AppTab::Playlists;
-                self.focused_element = FocusedElement::Playlists;
                 self.target = Some(KeyboardHandlerEnum::Immut(self.playlist.clone()));
             }
             KeyCode::Char('3') => {
                 self.active_tab = AppTab::FileBrowser;
-                self.focused_element = FocusedElement::Browser;
                 self.target = Some(KeyboardHandlerEnum::Mut(self.browser.clone()));
             }
             KeyCode::Char('4') => {
                 self.active_tab = AppTab::Help;
-                self.focused_element = FocusedElement::HelpControls;
                 self.target = Some(KeyboardHandlerEnum::Mut(self.help_tab.clone()));
             }
-            KeyCode::Tab if self.file_browser().filter().is_none() => {
-                match self.active_tab {
-                    AppTab::FileBrowser => {
-                        self.focused_element = match self.focused_element {
-                            FocusedElement::Browser => FocusedElement::Queue,
-                            FocusedElement::Queue => FocusedElement::Browser,
-                            e => e,
-                        };
+            KeyCode::Tab if self.active_tab == AppTab::FileBrowser && self.file_browser().filter().is_none() => {
+                self.focused_element = match self.focused_element {
+                    FocusedElement::Browser => FocusedElement::Queue,
+                    _ => FocusedElement::Browser,
+                };
 
-                        // TODO: focus/blur colors
-                        match self.focused_element {
-                            FocusedElement::Browser => {
-                                self.file_browser().focus();
-                                self.player.queue().select_none();
-                            }
-                            FocusedElement::Queue => {
-                                self.file_browser().blur();
-                                self.player.queue().select_next();
-                            }
-                            _ => {}
-                        };
+                // TODO: focus/blur colors
+                match self.focused_element {
+                    FocusedElement::Browser => {
+                        self.file_browser().focus();
+                        self.player.queue().select_none();
+                        self.target = Some(KeyboardHandlerEnum::Mut(self.browser.clone()));
                     }
-                    _ => {
-                        return false;
+                    FocusedElement::Queue => {
+                        self.file_browser().blur();
+                        self.player.queue().select_next();
+                        self.target = Some(KeyboardHandlerEnum::Immut(self.player.clone()));
                     }
-                }
+                };
             }
             _ => {
                 return false;
