@@ -21,10 +21,9 @@ use crate::{
     state::State,
     term::set_terminal,
     ui,
-    ui::{KeyboardHandler, KeyboardHandlerEnum},
+    ui::{KeyboardHandler, KeyboardHandlerEnum, CurrentlyPlaying, KeyboardHandlerMut, TopBar},
     Command,
 };
-use crate::ui::{CurrentlyPlaying, KeyboardHandlerMut, TopBar};
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum FocusedElement {
