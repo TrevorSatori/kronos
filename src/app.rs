@@ -21,8 +21,8 @@ use crate::{
     ui,
     ui::{CurrentlyPlaying, KeyboardHandlerEnum, KeyboardHandlerMut, TopBar},
     Command,
+    components::{FileBrowser, FileBrowserSelection},
 };
-use crate::ui::file_browser::{Browser, FileBrowserSelection};
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum FocusedElement {
@@ -52,7 +52,7 @@ pub struct App<'a> {
 
     library: Arc<ui::Library<'a>>,
     playlist: Arc<ui::Playlists<'a>>,
-    browser: Arc<Mutex<Browser<'a>>>,
+    browser: Arc<Mutex<FileBrowser<'a>>>,
     help_tab: Arc<Mutex<ui::HelpTab<'a>>>,
 }
 
@@ -94,7 +94,7 @@ impl<'a> App<'a> {
             }
         });
 
-        let mut browser = Browser::new(config.theme, current_directory, player.queue());
+        let mut browser = FileBrowser::new(config.theme, current_directory, player.queue());
         browser.on_select({
             let player = player.clone();
             let playlists = playlist.clone();
@@ -121,7 +121,7 @@ impl<'a> App<'a> {
         }
     }
 
-    fn file_browser(&self) -> MutexGuard<Browser<'a>>  {
+    fn file_browser(&self) -> MutexGuard<FileBrowser<'a>>  {
         self.browser.lock().unwrap()
     }
 

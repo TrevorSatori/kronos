@@ -11,6 +11,7 @@ mod term;
 mod toml;
 mod ui;
 mod source;
+mod components;
 
 use std::error::Error;
 use std::io::stdout;
