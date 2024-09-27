@@ -29,6 +29,61 @@ pub enum FileBrowserSelection {
     Directory(PathBuf),
 }
 
+fn directory_to_songs_and_folders(path: &PathBuf) -> Vec<String> {
+    // TODO: .cue
+    let Ok(entries) = path.read_dir() else {
+        return vec![];
+    };
+
+    let mut items: Vec<String> = entries
+        .filter_map(|e| e.ok())
+        .filter(|entry| dir_entry_is_dir(&entry) || dir_entry_is_song(&entry))
+        .map(|entry| entry.path())
+        .filter(path_is_not_hidden)
+        .filter_map(|path| path.file_name().and_then(|e| e.to_str()).map(|e| e.to_string()))
+        .collect();
+
+    items.sort_unstable();
+    items
+}
+
+fn dir_entry_is_file(dir_entry: &DirEntry) -> bool {
+    // TODO: resolve symlinks
+    dir_entry.file_type().is_ok_and(|ft| ft.is_file())
+}
+
+fn dir_entry_is_dir(dir_entry: &DirEntry) -> bool {
+    let Ok(ft) = dir_entry.file_type() else {
+        log::error!("dir_entry_is_dir: .file_type() returned error for {:?}", dir_entry.path());
+        return false;
+    };
+
+    if ft.is_symlink() {
+        let ln = fs::canonicalize(dir_entry.path());
+        ln.is_ok_and(|ln| ln.is_dir())
+    } else {
+        ft.is_dir()
+    }
+}
+
+fn path_is_not_hidden(path: &PathBuf) -> bool {
+    path.file_name()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_string())
+        .is_some_and(|d| !d.starts_with('.'))
+}
+
+fn dir_entry_has_song_extension(dir_entry: &DirEntry) -> bool {
+    dir_entry
+        .path()
+        .extension()
+        .is_some_and(|e| VALID_EXTENSIONS.contains(&e.to_str().unwrap()))
+}
+
+fn dir_entry_is_song(dir_entry: &DirEntry) -> bool {
+    dir_entry_is_file(dir_entry) && dir_entry_has_song_extension(dir_entry)
+}
+
 impl<'a> Browser<'a> {
     pub fn new(current_directory: PathBuf) -> Self {
         let mut items = StatefulList::with_items(directory_to_songs_and_folders(&current_directory));
@@ -229,60 +284,4 @@ impl<'a> Browser<'a> {
             _ => {}
         }
     }
-}
-
-fn directory_to_songs_and_folders(path: &PathBuf) -> Vec<String> {
-    // TODO: .cue
-    let Ok(entries) = path.read_dir() else {
-        return vec![];
-    };
-
-    let mut items: Vec<String> = entries
-        .filter_map(|e| e.ok())
-        .filter(|entry| dir_entry_is_dir(&entry) || dir_entry_is_song(&entry))
-        .map(|entry| entry.path())
-        .filter(path_is_not_hidden)
-        .filter_map(|path| path.file_name().and_then(|e| e.to_str()).map(|e| e.to_string()))
-        .collect();
-
-    items.sort_unstable();
-    items
-}
-
-
-fn dir_entry_is_file(dir_entry: &DirEntry) -> bool {
-    // TODO: resolve symlinks
-    dir_entry.file_type().is_ok_and(|ft| ft.is_file())
-}
-
-fn dir_entry_is_dir(dir_entry: &DirEntry) -> bool {
-    let Ok(ft) = dir_entry.file_type() else {
-        log::error!("dir_entry_is_dir: .file_type() returned error for {:?}", dir_entry.path());
-        return false;
-    };
-
-    if ft.is_symlink() {
-        let ln = fs::canonicalize(dir_entry.path());
-        ln.is_ok_and(|ln| ln.is_dir())
-    } else {
-        ft.is_dir()
-    }
-}
-
-fn path_is_not_hidden(path: &PathBuf) -> bool {
-    path.file_name()
-        .and_then(|e| e.to_str())
-        .map(|e| e.to_string())
-        .is_some_and(|d| !d.starts_with('.'))
-}
-
-fn dir_entry_has_song_extension(dir_entry: &DirEntry) -> bool {
-    dir_entry
-        .path()
-        .extension()
-        .is_some_and(|e| VALID_EXTENSIONS.contains(&e.to_str().unwrap()))
-}
-
-fn dir_entry_is_song(dir_entry: &DirEntry) -> bool {
-    dir_entry_is_file(dir_entry) && dir_entry_has_song_extension(dir_entry)
 }
