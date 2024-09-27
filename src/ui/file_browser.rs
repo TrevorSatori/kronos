@@ -19,6 +19,8 @@ use ratatui::{
         Borders,
         List,
         WidgetRef,
+        StatefulWidget,
+        StatefulWidgetRef,
     },
 };
 
@@ -129,10 +131,6 @@ impl<'a> Browser<'a> {
 
     pub fn filter(&self) -> &Option<String> {
         &self.filter
-    }
-
-    pub fn set_height(&mut self, height: u16) {
-        self.items.height = height;
     }
 
     pub fn blur(&mut self) {
@@ -323,12 +321,18 @@ impl<'a> WidgetRef for &Browser<'a> {
         let (area_top, area_main_left, area_main_separator, area_main_right) = create_areas(area);
 
         // self.set_height(area_main_left.height);
+        // TODO: not use stateful list
 
         let tb = top_bar(&self.theme, self.current_directory(), &self.filter);
         tb.render_ref(area_top, buf);
 
         let fl = file_list(&self.theme, self.items(), &self.filter());
-        fl.render_ref(area_main_left, buf);
+        StatefulWidget::render(
+            fl,
+            area_main_left,
+            buf,
+            &mut self.items.state(),
+        );
 
         let [_separator_left, separator_middle, _separator_right] = Layout::horizontal([Constraint::Min(1), Constraint::Length(1), Constraint::Min(1)])
             .areas(area_main_separator);
@@ -337,8 +341,12 @@ impl<'a> WidgetRef for &Browser<'a> {
         vertical_separator.render_ref(separator_middle, buf);
 
         let ql = queue_list(&self.theme, &self.queue_items);
-        ql.render_ref(area_main_right, buf);
-        // ql.render_ref(area_main_right, buf, &mut ListState::default().with_selected(queue_items.selected_song_index()));
+        StatefulWidget::render(
+            ql,
+            area_main_right,
+            buf,
+            &mut ratatui::widgets::ListState::default().with_selected(self.queue_items.selected_song_index())
+        );
 
     }
 }

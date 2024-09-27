@@ -11,6 +11,7 @@ use ratatui::{
     prelude::{Style, Widget},
     widgets::{Block, WidgetRef},
 };
+use ratatui::widgets::StatefulWidgetRef;
 use rodio::OutputStream;
 
 use crate::{
