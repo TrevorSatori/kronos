@@ -10,6 +10,7 @@ use crate::{
     structs::Song,
     ui::stateful_list::StatefulList,
 };
+use crate::ui::KeyboardHandlerMut;
 
 const VALID_EXTENSIONS: [&str; 8] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac", "cue"];
 
@@ -223,65 +224,72 @@ impl<'a> Browser<'a> {
         }
     }
 
-    pub fn on_key_event(&mut self, key: KeyEvent) {
+}
+
+impl<'a> KeyboardHandlerMut<'a> for Browser<'a> {
+    fn on_key(&mut self, key: KeyEvent) -> bool {
         if !self.filter.is_some() {
-            self.on_normal_key_event(key);
+            on_normal_key_event(self, key);
         } else {
-            self.on_filter_key_event(key);
+            on_filter_key_event(self, key);
         }
-    }
 
-    fn on_normal_key_event(&mut self, key: KeyEvent) {
-        match key.code {
-            // KeyCode::Enter => { self.enter_selection(key); },
-            KeyCode::Backspace => self.navigate_up(),
-            KeyCode::Down => self.items.next(),
-            KeyCode::Up => self.items.previous(),
-            KeyCode::PageUp => self.items.previous_by(5),
-            KeyCode::PageDown => self.items.next_by(5),
-            KeyCode::End => self.select_last(),
-            KeyCode::Home => self.items.select(0),
-            KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
-                self.filter = Some("".to_string());
-            }
-            KeyCode::Enter | KeyCode::Char(_) => {
-                self.enter_selection(key);
-            },
-            _ => {}
-        }
+        true
     }
+}
 
-    fn on_filter_key_event(&mut self, key: KeyEvent) {
-        match key.code {
-            KeyCode::Enter if key.modifiers == KeyModifiers::ALT => {
-                self.enter_selection(key);
-            }
-            KeyCode::Enter => {
-                self.filter = None;
-                self.enter_selection(key);
-            }
-            KeyCode::Esc => {
-                self.filter = None;
-            }
-            KeyCode::Down => {
-                self.select_next_match();
-            }
-            KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
-                self.select_next_match();
-            }
-            KeyCode::Up => {
-                self.select_previous_match();
-            }
-            KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => {
-                self.select_previous_match();
-            }
-            KeyCode::Backspace => {
-                self.filter_delete();
-            }
-            KeyCode::Char(char) => {
-                self.filter_append(char);
-            }
-            _ => {}
+fn on_normal_key_event(browser: &mut Browser, key: KeyEvent) {
+    match key.code {
+        // KeyCode::Enter => { browser.enter_selection(key); },
+        KeyCode::Backspace => browser.navigate_up(),
+        KeyCode::Down => browser.items.next(),
+        KeyCode::Up => browser.items.previous(),
+        KeyCode::PageUp => browser.items.previous_by(5),
+        KeyCode::PageDown => browser.items.next_by(5),
+        KeyCode::End => browser.select_last(),
+        KeyCode::Home => browser.items.select(0),
+        KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
+            browser.filter = Some("".to_string());
         }
+        KeyCode::Enter | KeyCode::Char(_) => {
+            browser.enter_selection(key);
+        },
+        _ => {}
+    }
+}
+
+
+
+fn on_filter_key_event(browser: &mut Browser, key: KeyEvent) {
+    match key.code {
+        KeyCode::Enter if key.modifiers == KeyModifiers::ALT => {
+            browser.enter_selection(key);
+        }
+        KeyCode::Enter => {
+            browser.filter = None;
+            browser.enter_selection(key);
+        }
+        KeyCode::Esc => {
+            browser.filter = None;
+        }
+        KeyCode::Down => {
+            browser.select_next_match();
+        }
+        KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
+            browser.select_next_match();
+        }
+        KeyCode::Up => {
+            browser.select_previous_match();
+        }
+        KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => {
+            browser.select_previous_match();
+        }
+        KeyCode::Backspace => {
+            browser.filter_delete();
+        }
+        KeyCode::Char(char) => {
+            browser.filter_append(char);
+        }
+        _ => {}
     }
 }

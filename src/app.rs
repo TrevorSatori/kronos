@@ -250,7 +250,7 @@ impl<'a> App<'a> {
             FocusedElement::Playlists => Some(KeyboardHandlerEnum::Immut(self.playlist.clone())),
             FocusedElement::Queue => Some(KeyboardHandlerEnum::Immut(self.player.clone())),
             FocusedElement::HelpControls => Some(KeyboardHandlerEnum::Mut(self.help_tab.clone())),
-            _ => None,
+            FocusedElement::Browser => Some(KeyboardHandlerEnum::Mut(self.browser.clone())),
         };
 
         if let Some(target) = target {
@@ -262,8 +262,6 @@ impl<'a> App<'a> {
                     target.lock().unwrap().on_key(key);
                 }
             }
-        } else {
-            self.file_browser().on_key_event(key);
         }
     }
 
