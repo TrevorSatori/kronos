@@ -1,21 +1,14 @@
-use std::time::Duration;
-
 use chrono::prelude::*;
-use log::error;
 use ratatui::{
-    layout::{Constraint, Direction, Layout},
     prelude::*,
     style::{Modifier, Style},
     text::{Span, Line},
-    widgets::{Block, Borders, Gauge, Tabs},
-    Frame,
+    widgets::{Block, Tabs},
 };
 
 use crate::{
     app::AppTab,
-    config::Config,
-    constants::{MAIN_SECTIONS, SECONDS_PER_HOUR, SECONDS_PER_MINUTE},
-    structs::Song,
+    constants::MAIN_SECTIONS,
 };
 
 // static TIME_FORMAT: &str = "%A %-l:%M%P, %B %-e | %F";
