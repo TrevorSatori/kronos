@@ -205,7 +205,7 @@ impl<'a> WidgetRef for Playlists<'a> {
     }
 }
 
-impl KeyboardHandler for Playlists<'_> {
+impl<'a> KeyboardHandler<'a> for Playlists<'a> {
 
     fn on_key(&self, key: KeyEvent) -> bool {
         let mut focused_element_guard = self.focused_element.lock().unwrap();

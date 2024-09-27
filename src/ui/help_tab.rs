@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::config::Config;
-use crate::ui::KeyboardHandler;
+use crate::ui::KeyboardHandlerMut;
 
 pub struct HelpTab<'a> {
     config: Config,
@@ -127,11 +127,12 @@ impl<'a> HelpTab<'a> {
     }
 }
 
-impl KeyboardHandler for HelpTab<'_> {
-    fn on_key(&self, key: KeyEvent) -> bool {
+impl<'a> KeyboardHandlerMut<'a> for HelpTab<'a> {
+    fn on_key(&mut self, key: KeyEvent) -> bool {
+        log::debug!("ola q ase");
         match key.code {
-            // KeyCode::Down | KeyCode::Char('j') => self.next(),
-            // KeyCode::Up | KeyCode::Char('k') => self.previous(),
+            KeyCode::Down | KeyCode::Char('j') => self.next(),
+            KeyCode::Up | KeyCode::Char('k') => self.previous(),
             _ => {
                 return false;
             }

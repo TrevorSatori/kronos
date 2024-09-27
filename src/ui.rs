@@ -10,4 +10,4 @@ pub use help_tab::*;
 pub use ui::*;
 pub use playlist::*;
 pub use library::*;
-pub use keyboard_handler::KeyboardHandler;
+pub use keyboard_handler::{KeyboardHandler, KeyboardHandlerEnum, KeyboardHandlerMut};

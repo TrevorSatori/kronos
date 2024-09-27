@@ -1,12 +1,12 @@
 use std::error::Error;
-use std::sync::{mpsc::Receiver, Arc, Mutex};
+use std::sync::{mpsc::Receiver, Arc, Mutex, MutexGuard};
 use std::{env, path::PathBuf, thread, time::Duration};
 use std::io::BufRead;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use log::error;
 use ratatui::{
     layout::{Constraint, Layout},
-    prelude::Style,
+    prelude::{Style, Widget},
     widgets::Block,
     Frame,
 };
@@ -19,7 +19,7 @@ use crate::{
     state::State,
     term::set_terminal,
     ui,
-    ui::KeyboardHandler,
+    ui::{KeyboardHandler, KeyboardHandlerEnum},
     Command,
 };
 
@@ -53,8 +53,8 @@ pub struct App<'a> {
 
     library: Arc<ui::Library<'a>>,
     playlist: Arc<ui::Playlists<'a>>,
-    browser: Browser<'a>,
-    help_tab: ui::HelpTab<'a>,
+    browser: Arc<Mutex<Browser<'a>>>,
+    help_tab: Arc<Mutex<ui::HelpTab<'a>>>,
 }
 
 impl<'a> App<'a> {
@@ -112,8 +112,8 @@ impl<'a> App<'a> {
             config,
             focused_element: FocusedElement::Library,
             active_tab: AppTab::Library,
-            browser,
-            help_tab: ui::HelpTab::new(config),
+            browser: Arc::new(Mutex::new(browser)),
+            help_tab: Arc::new(Mutex::new(ui::HelpTab::new(config))),
             player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
             player,
             playlist,
@@ -121,12 +121,16 @@ impl<'a> App<'a> {
         }
     }
 
+    fn file_browser(&self) -> MutexGuard<Browser<'a>>  {
+        self.browser.lock().unwrap()
+    }
+
     fn to_state(&self) -> State {
         let queue_items = self.player.queue().songs().clone();
         let playlists = self.playlist.playlists();
 
         State {
-            last_visited_path: self.browser.current_directory().to_str().map(String::from),
+            last_visited_path: self.file_browser().current_directory().to_str().map(String::from),
             queue_items: Vec::from(queue_items),
             playlists,
         }
@@ -190,7 +194,7 @@ impl<'a> App<'a> {
         file_browser_selection: FileBrowserSelection,
         key_event: KeyEvent,
     ) {
-        log::debug!("browser.on_select({:?}, {:?})", file_browser_selection, key_event);
+        log::debug!("file_browser().on_select({:?}, {:?})", file_browser_selection, key_event);
         match (file_browser_selection, key_event.code) {
             (FileBrowserSelection::Song(song), KeyCode::Enter) => {
                 player.play_song(song);
@@ -199,7 +203,7 @@ impl<'a> App<'a> {
                 player.enqueue_cue(cue_sheet);
             }
             (FileBrowserSelection::Song(song), KeyCode::Char('j')) => {
-                log::debug!("TODO: browser.on_select(Song({}), j)", song.title);
+                log::debug!("TODO: file_browser().on_select(Song({}), j)", song.title);
                 media_library.add_song(song.clone());
             }
             (FileBrowserSelection::Song(song), KeyCode::Char('a')) => {
@@ -209,7 +213,7 @@ impl<'a> App<'a> {
                 player.enqueue_cue(cue_sheet);
             }
             (FileBrowserSelection::Directory(path), KeyCode::Char('a')) => {
-                log::debug!("TODO: browser.on_select(Directory({}), a)", path.display());
+                log::debug!("TODO: file_browser().on_select(Directory({}), a)", path.display());
                 // directory_to_songs_and_folders
             }
             (FileBrowserSelection::Song(song), KeyCode::Char('y')) => {
@@ -219,11 +223,11 @@ impl<'a> App<'a> {
                 playlists.add_cue(cue_sheet);
             }
             (FileBrowserSelection::Directory(path), KeyCode::Char('y')) => {
-                log::debug!("TODO: browser.on_select(Directory({}), y)", path.display());
+                log::debug!("TODO: file_browser().on_select(Directory({}), y)", path.display());
                 // directory_to_songs_and_folders
             }
             (FileBrowserSelection::Directory(path), KeyCode::Char('j')) => {
-                log::debug!("TODO: browser.on_select(Directory({}), j)", path.display());
+                log::debug!("TODO: file_browser().on_select(Directory({}), j)", path.display());
                 // let songs = path_to
                 // media_library.lock().unwrap().push(song.clone());
                 // directory_to_songs_and_folders
@@ -233,7 +237,7 @@ impl<'a> App<'a> {
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) {
-        let focus_trapped = self.focused_element == FocusedElement::Browser && self.browser.filter().is_some();
+        let focus_trapped = self.focused_element == FocusedElement::Browser && self.file_browser().filter().is_some();
 
         if !focus_trapped {
             if self.on_key_mut(key) || self.on_key(key) {
@@ -241,18 +245,25 @@ impl<'a> App<'a> {
             }
         };
 
-        let target: Option<&dyn KeyboardHandler> = match self.focused_element {
-            FocusedElement::Library => Some(&*self.library),
-            FocusedElement::Playlists => Some(&*self.playlist),
-            FocusedElement::Queue => Some(&*self.player),
-            FocusedElement::HelpControls => Some(&self.help_tab),
+        let target: Option<KeyboardHandlerEnum> = match self.focused_element {
+            FocusedElement::Library => Some(KeyboardHandlerEnum::Immut(self.library.clone())),
+            FocusedElement::Playlists => Some(KeyboardHandlerEnum::Immut(self.playlist.clone())),
+            FocusedElement::Queue => Some(KeyboardHandlerEnum::Immut(self.player.clone())),
+            FocusedElement::HelpControls => Some(KeyboardHandlerEnum::Mut(self.help_tab.clone())),
             _ => None,
         };
 
         if let Some(target) = target {
-            target.on_key(key);
+            match target {
+                KeyboardHandlerEnum::Immut(target) => {
+                    target.on_key(key);
+                }
+                KeyboardHandlerEnum::Mut(target) => {
+                    target.lock().unwrap().on_key(key);
+                }
+            }
         } else {
-            self.browser.on_key_event(key);
+            self.file_browser().on_key_event(key);
         }
     }
 
@@ -277,7 +288,7 @@ impl<'a> App<'a> {
                 self.active_tab = AppTab::Help;
                 self.focused_element = FocusedElement::HelpControls;
             }
-            KeyCode::Tab if self.browser.filter().is_none() => {
+            KeyCode::Tab if self.file_browser().filter().is_none() => {
                 match self.active_tab {
                     AppTab::FileBrowser => {
                         self.focused_element = match self.focused_element {
@@ -289,11 +300,11 @@ impl<'a> App<'a> {
                         // TODO: focus/blur colors
                         match self.focused_element {
                             FocusedElement::Browser => {
-                                self.browser.focus();
+                                self.file_browser().focus();
                                 self.player.queue().select_none();
                             }
                             FocusedElement::Queue => {
-                                self.browser.blur();
+                                self.file_browser().blur();
                                 self.player.queue().select_next();
                             }
                             _ => {}
@@ -312,7 +323,7 @@ impl<'a> App<'a> {
     }
 
     fn spawn_terminal(&self) {
-        let cwd = self.browser.current_directory().clone();
+        let cwd = self.file_browser().current_directory().clone();
 
         if let Err(err) = thread::Builder::new().name("term".to_string()).spawn(move || {
             log::debug!("spawning child process");
@@ -358,8 +369,12 @@ impl<'a> App<'a> {
             AppTab::Playlists => {
                 frame.render_widget(&*self.playlist, area_center); // &*...? Is this ok?
             },
-            AppTab::FileBrowser => self.browser.render(frame, &self.player.queue(), area_center, &self.config),
-            AppTab::Help => self.help_tab.render(frame, area_center),
+            AppTab::FileBrowser => {
+                self.file_browser().render(frame, &self.player.queue(), area_center, &self.config);
+            },
+            AppTab::Help => {
+                self.help_tab.lock().unwrap().render(frame, area_center);
+            },
         };
 
         let currently_playing = self.player.currently_playing();
@@ -377,7 +392,7 @@ impl<'a> App<'a> {
     }
 }
 
-impl<'a> KeyboardHandler for App<'a> {
+impl<'a> KeyboardHandler<'a> for App<'a> {
     fn on_key(&self, key: KeyEvent) -> bool {
         match key.code {
             KeyCode::Right => self.player.seek_forward(),

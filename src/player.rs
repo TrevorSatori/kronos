@@ -319,7 +319,7 @@ impl Drop for Player {
     }
 }
 
-impl KeyboardHandler for Player {
+impl KeyboardHandler<'_> for Player {
     fn on_key(&self, key: KeyEvent) -> bool {
         match key.code {
             KeyCode::Enter => {

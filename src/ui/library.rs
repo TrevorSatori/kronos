@@ -216,7 +216,7 @@ impl<'a> WidgetRef for Library<'a> {
     }
 }
 
-impl KeyboardHandler for Library<'_> {
+impl<'a> KeyboardHandler<'a> for Library<'a> {
 
     fn on_key(&self, key: KeyEvent) -> bool {
         let focused_element_guard = self.focused_element.lock().unwrap();
