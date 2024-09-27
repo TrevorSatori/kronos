@@ -2,12 +2,14 @@ use std::error::Error;
 use std::sync::{mpsc::Receiver, Arc, Mutex, MutexGuard};
 use std::{env, path::PathBuf, thread, time::Duration};
 use std::io::BufRead;
+
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use log::error;
 use ratatui::{
-    layout::{Constraint, Layout},
+    layout::{Constraint, Layout, Rect},
     prelude::{Style, Widget},
-    widgets::Block,
+    widgets::{WidgetRef, Block},
+    buffer::Buffer,
     Frame,
 };
 use rodio::OutputStream;
@@ -22,7 +24,7 @@ use crate::{
     ui::{KeyboardHandler, KeyboardHandlerEnum},
     Command,
 };
-use crate::ui::KeyboardHandlerMut;
+use crate::ui::{CurrentlyPlaying, KeyboardHandlerMut, TopBar};
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum FocusedElement {
@@ -94,7 +96,7 @@ impl<'a> App<'a> {
             }
         });
 
-        let mut browser = Browser::new(current_directory);
+        let mut browser = Browser::new(config.theme, current_directory, player.queue());
         browser.on_select({
             let player = player.clone();
             let playlists = playlist.clone();
@@ -147,7 +149,9 @@ impl<'a> App<'a> {
         self.player.spawn();
 
         while !self.must_quit {
-            terminal.draw(|frame| self.render(frame))?;
+            terminal.draw(|frame| {
+                frame.render_widget_ref(&*self, frame.size());
+            })?;
 
             let timeout = tick_rate.saturating_sub(last_tick.elapsed());
 
@@ -267,43 +271,6 @@ impl<'a> App<'a> {
         }
     }
 
-    fn render(&mut self, frame: &mut Frame) {
-        let block = Block::default().style(Style::default().bg(self.config.theme.background));
-        frame.render_widget(block, frame.size());
-
-        let [area_top, _, area_center, area_bottom] =
-            Layout::vertical([Constraint::Length(1), Constraint::Length(1), Constraint::Min(0), Constraint::Length(3)]).areas(frame.size());
-
-        ui::render_top_bar(frame, &self.config, area_top, self.active_tab);
-
-        match self.active_tab {
-            AppTab::Library => {
-                frame.render_widget(&*self.library, area_center);
-            },
-            AppTab::Playlists => {
-                frame.render_widget(&*self.playlist, area_center); // &*...? Is this ok?
-            },
-            AppTab::FileBrowser => {
-                self.file_browser().render(frame, &self.player.queue(), area_center, &self.config);
-            },
-            AppTab::Help => {
-                frame.render_widget_ref(&*self.help_tab.lock().unwrap(), area_center);
-            },
-        };
-
-        let currently_playing = self.player.currently_playing();
-        let currently_playing = currently_playing.lock().unwrap();
-
-        ui::render_playing_gauge(
-            frame,
-            &self.config,
-            area_bottom,
-            &currently_playing,
-            self.player.get_pos(),
-            self.player.queue().total_time(),
-            self.player.queue().length(),
-        );
-    }
 }
 
 impl<'a> KeyboardHandlerMut<'a> for App<'a> {
@@ -379,5 +346,43 @@ impl<'a> KeyboardHandlerMut<'a> for App<'a> {
         }
 
         true
+    }
+}
+
+impl<'a> WidgetRef for &App<'a> {
+    fn render_ref(&self, area: Rect, buf: &mut Buffer) {
+        let block = Block::default().style(Style::default().bg(self.config.theme.background));
+        block.render(area, buf);
+
+        let [area_top, _, area_center, area_bottom] =
+            Layout::vertical([Constraint::Length(1), Constraint::Length(1), Constraint::Min(0), Constraint::Length(3)]).areas(area);
+
+        let top_bar = TopBar::new(self.config.theme, self.active_tab);
+        top_bar.render(area_top, buf);
+
+        match self.active_tab {
+            AppTab::Library => {
+                self.library.render_ref(area_center, buf);
+            },
+            AppTab::Playlists => {
+                self.playlist.render_ref(area_center, buf);
+            },
+            AppTab::FileBrowser => {
+                let file_browser = &*self.file_browser();
+                file_browser.render_ref(area_center, buf);
+            },
+            AppTab::Help => {
+                self.help_tab.lock().unwrap().render_ref(area_center, buf);
+            },
+        };
+
+        let currently_playing = CurrentlyPlaying::new(
+            self.config.theme,
+            self.player.currently_playing().lock().unwrap().clone(),
+            self.player.get_pos(),
+            self.player.queue().total_time(),
+            self.player.queue().length(),
+        );
+        currently_playing.render(area_bottom, buf);
     }
 }
