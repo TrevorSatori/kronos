@@ -49,6 +49,7 @@ pub struct App<'a> {
     player_command_receiver: Arc<Mutex<Receiver<Command>>>,
 
     focused_element: FocusedElement,
+    target: Option<KeyboardHandlerEnum<'a>>,
     active_tab: AppTab,
 
     library: Arc<ui::Library<'a>>,
@@ -118,6 +119,7 @@ impl<'a> App<'a> {
             player,
             playlist,
             library,
+            target: None,
         }
     }
 
@@ -245,15 +247,7 @@ impl<'a> App<'a> {
             }
         };
 
-        let target: Option<KeyboardHandlerEnum> = match self.focused_element {
-            FocusedElement::Library => Some(KeyboardHandlerEnum::Immut(self.library.clone())),
-            FocusedElement::Playlists => Some(KeyboardHandlerEnum::Immut(self.playlist.clone())),
-            FocusedElement::Queue => Some(KeyboardHandlerEnum::Immut(self.player.clone())),
-            FocusedElement::HelpControls => Some(KeyboardHandlerEnum::Mut(self.help_tab.clone())),
-            FocusedElement::Browser => Some(KeyboardHandlerEnum::Mut(self.browser.clone())),
-        };
-
-        if let Some(target) = target {
+        if let Some(target) = &self.target {
             match target {
                 KeyboardHandlerEnum::Immut(target) => {
                     target.on_key(key);
@@ -273,18 +267,22 @@ impl<'a> App<'a> {
             KeyCode::Char('1') => {
                 self.active_tab = AppTab::Library;
                 self.focused_element = FocusedElement::Library;
+                self.target = Some(KeyboardHandlerEnum::Immut(self.library.clone()));
             }
             KeyCode::Char('2') => {
                 self.active_tab = AppTab::Playlists;
                 self.focused_element = FocusedElement::Playlists;
+                self.target = Some(KeyboardHandlerEnum::Immut(self.playlist.clone()));
             }
             KeyCode::Char('3') => {
                 self.active_tab = AppTab::FileBrowser;
                 self.focused_element = FocusedElement::Browser;
+                self.target = Some(KeyboardHandlerEnum::Mut(self.browser.clone()));
             }
             KeyCode::Char('4') => {
                 self.active_tab = AppTab::Help;
                 self.focused_element = FocusedElement::HelpControls;
+                self.target = Some(KeyboardHandlerEnum::Mut(self.help_tab.clone()));
             }
             KeyCode::Tab if self.file_browser().filter().is_none() => {
                 match self.active_tab {
