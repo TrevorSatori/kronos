@@ -2,7 +2,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    widgets::{Block, BorderType, Borders, Cell, Row, Table, TableState, StatefulWidgetRef, WidgetRef},
+    widgets::{Block, BorderType, Borders, Cell, Row, Table, TableState, WidgetRef},
     buffer::Buffer,
 };
 

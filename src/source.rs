@@ -105,7 +105,7 @@ where
 {
 
     #[inline]
-    pub fn inner_mut(&mut self) -> &mut PeriodicRodioSource<F> {
+    pub fn _inner_mut(&mut self) -> &mut PeriodicRodioSource<F> {
         &mut self.input
     }
 
@@ -114,7 +114,7 @@ where
         i.try_seek(pos)
     }
 
-    pub fn skip(&mut self) -> () {
+    pub fn _skip(&mut self) -> () {
         let i = self.input.inner_mut().inner_mut().inner_mut();
         i.skip()
     }

@@ -1,20 +1,15 @@
 use std::time::Duration;
 
-use chrono::prelude::*;
 use log::error;
 use ratatui::{
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Layout},
     prelude::*,
-    style::{Modifier, Style},
-    text::{Span, Line},
-    widgets::{Block, Borders, Gauge, Tabs},
-    Frame,
+    style::{Style},
+    widgets::{Block, Borders, Gauge},
 };
 
 use crate::{
-    app::AppTab,
-    config::Config,
-    constants::{MAIN_SECTIONS, SECONDS_PER_HOUR, SECONDS_PER_MINUTE},
+    constants::{SECONDS_PER_HOUR, SECONDS_PER_MINUTE},
     structs::Song,
 };
 

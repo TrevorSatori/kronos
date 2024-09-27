@@ -2,16 +2,25 @@ use std::fs;
 use std::fs::DirEntry;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use log::error;
-use ratatui::buffer::Buffer;
-use ratatui::Frame;
-use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
-use ratatui::prelude::{Line, Modifier, Span, Style};
-use ratatui::style::Color;
-use ratatui::text::Text;
-use ratatui::widgets::{Block, BorderType, Borders, List, ListState, WidgetRef};
-use ratatui::widgets::block::Position;
+
+use ratatui::{
+    buffer::Buffer,
+    layout::{Alignment, Constraint, Layout, Rect},
+    prelude::{Line, Modifier, Span, Style},
+    style::Color,
+    text::Text,
+    widgets::{
+        block::Position,
+        Block,
+        BorderType,
+        Borders,
+        List,
+        WidgetRef,
+    },
+};
 
 use crate::{
     cue::CueSheet,
@@ -19,7 +28,7 @@ use crate::{
     ui,
     ui::KeyboardHandlerMut,
     ui::stateful_list::StatefulList,
-    config::{Config, Theme},
+    config::{Theme},
 
 };
 
@@ -335,29 +344,17 @@ impl<'a> WidgetRef for &Browser<'a> {
 }
 
 fn create_areas(area: Rect) -> (Rect, Rect, Rect, Rect) {
-    let [area_top, area_main] = *Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(2), Constraint::Min(1)].as_ref())
+    let [area_top, area_main] = Layout::vertical([Constraint::Length(2), Constraint::Min(1)])
         .horizontal_margin(2)
-        .split(area)
-    else {
-        panic!("Layout.split() failed");
-    };
+        .areas(area);
 
-    let [area_main_left, area_main_separator, area_main_right] = *Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(
-            [
-                Constraint::Percentage(50),
-                Constraint::Length(5),
-                Constraint::Percentage(50),
-            ]
-                .as_ref(),
-        )
-        .split(area_main)
-    else {
-        panic!("Layout.split() failed");
-    };
+    let [area_main_left, area_main_separator, area_main_right] =
+        Layout::horizontal([
+            Constraint::Percentage(50),
+            Constraint::Length(5),
+            Constraint::Percentage(50),
+        ])
+        .areas(area_main);
 
     (area_top, area_main_left, area_main_separator, area_main_right)
 }
@@ -413,19 +410,6 @@ fn file_list(theme: &Theme, items: &StatefulList<String>, filter: &Option<String
         .highlight_symbol("");
 
     browser_list
-}
-
-fn render_separator(frame: &mut Frame, area_main_separator: Rect) {
-    let [_separator_left, separator_middle, _separator_right] = *Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Min(1), Constraint::Length(1), Constraint::Min(1)].as_ref())
-        .split(area_main_separator)
-    else {
-        panic!("Layout.split() failed");
-    };
-
-    let vertical_separator = Block::default().borders(Borders::RIGHT).border_type(BorderType::Double);
-    frame.render_widget(vertical_separator, separator_middle);
 }
 
 fn queue_list<'a>(theme: &Theme, queue_items: &Queue) -> List<'a> {

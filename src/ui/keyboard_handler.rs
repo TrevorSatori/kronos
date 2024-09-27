@@ -2,10 +2,10 @@ use std::sync::{Arc, Mutex};
 use crossterm::event::KeyEvent;
 
 pub trait KeyboardHandler<'a>: 'a {
-    fn on_key(&self, key: KeyEvent) -> bool { false }
+    fn on_key(&self, key: KeyEvent) -> bool;
 }
 pub trait KeyboardHandlerMut<'a>: 'a {
-    fn on_key(&mut self, key: KeyEvent) -> bool { false }
+    fn on_key(&mut self, key: KeyEvent) -> bool;
 }
 
 pub enum KeyboardHandlerEnum<'a> {

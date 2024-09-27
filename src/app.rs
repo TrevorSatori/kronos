@@ -10,7 +10,6 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     prelude::{Style, Widget},
     widgets::{Block, WidgetRef},
-    Frame,
 };
 use rodio::OutputStream;
 
@@ -20,7 +19,7 @@ use crate::{
     state::State,
     term::set_terminal,
     ui,
-    ui::{CurrentlyPlaying, KeyboardHandler, KeyboardHandlerEnum, KeyboardHandlerMut, TopBar},
+    ui::{CurrentlyPlaying, KeyboardHandlerEnum, KeyboardHandlerMut, TopBar},
     Command,
 };
 use crate::ui::file_browser::{Browser, FileBrowserSelection};
