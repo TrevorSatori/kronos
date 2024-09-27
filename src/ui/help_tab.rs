@@ -2,12 +2,12 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    widgets::{Block, BorderType, Borders, Cell, Row, Table, TableState},
-    Frame,
+    widgets::{Block, BorderType, Borders, Cell, Row, Table, TableState, StatefulWidgetRef, WidgetRef},
+    buffer::Buffer,
 };
 
 use crate::config::Config;
-use crate::ui::KeyboardHandlerMut;
+use crate::ui::{KeyboardHandlerMut};
 
 pub struct HelpTab<'a> {
     config: Config,
@@ -67,8 +67,23 @@ impl<'a> HelpTab<'a> {
         };
         self.state.select(Some(i));
     }
+}
 
-    pub fn render(&mut self, f: &mut Frame, area: Rect) {
+impl<'a> KeyboardHandlerMut<'a> for HelpTab<'a> {
+    fn on_key(&mut self, key: KeyEvent) -> bool {
+        match key.code {
+            KeyCode::Down | KeyCode::Char('j') => self.next(),
+            KeyCode::Up | KeyCode::Char('k') => self.previous(),
+            _ => {
+                return false;
+            }
+        }
+        true
+    }
+}
+
+impl<'a> WidgetRef for &HelpTab<'a> {
+    fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         let layout = Layout::default()
             .direction(Direction::Horizontal)
             .horizontal_margin(1)
@@ -123,19 +138,9 @@ impl<'a> HelpTab<'a> {
                     .fg(self.config.theme.highlight_foreground),
             )
             .widths(&[Constraint::Percentage(50), Constraint::Length(30), Constraint::Min(10)]);
-        f.render_stateful_widget(&table, layout[0], &mut self.state);
-    }
-}
 
-impl<'a> KeyboardHandlerMut<'a> for HelpTab<'a> {
-    fn on_key(&mut self, key: KeyEvent) -> bool {
-        match key.code {
-            KeyCode::Down | KeyCode::Char('j') => self.next(),
-            KeyCode::Up | KeyCode::Char('k') => self.previous(),
-            _ => {
-                return false;
-            }
-        }
-        true
+        ratatui::widgets::StatefulWidgetRef::render_ref(&table, layout[0], buf, &mut self.state.clone());
+        // table.render_ref(layout[0], buf, &mut self.state.clone());
+
     }
 }

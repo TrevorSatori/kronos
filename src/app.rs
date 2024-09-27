@@ -308,7 +308,7 @@ impl<'a> App<'a> {
                 self.file_browser().render(frame, &self.player.queue(), area_center, &self.config);
             },
             AppTab::Help => {
-                self.help_tab.lock().unwrap().render(frame, area_center);
+                frame.render_widget_ref(&*self.help_tab.lock().unwrap(), area_center);
             },
         };
 
