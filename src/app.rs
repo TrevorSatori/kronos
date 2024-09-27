@@ -6,24 +6,24 @@ use std::io::BufRead;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use log::error;
 use ratatui::{
+    buffer::Buffer,
     layout::{Constraint, Layout, Rect},
     prelude::{Style, Widget},
-    widgets::{WidgetRef, Block},
-    buffer::Buffer,
+    widgets::{Block, WidgetRef},
     Frame,
 };
 use rodio::OutputStream;
 
 use crate::{
     config::Config,
-    file_browser::{Browser, FileBrowserSelection},
     player::Player,
     state::State,
     term::set_terminal,
     ui,
-    ui::{KeyboardHandler, KeyboardHandlerEnum, CurrentlyPlaying, KeyboardHandlerMut, TopBar},
+    ui::{CurrentlyPlaying, KeyboardHandler, KeyboardHandlerEnum, KeyboardHandlerMut, TopBar},
     Command,
 };
+use crate::ui::file_browser::{Browser, FileBrowserSelection};
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum FocusedElement {

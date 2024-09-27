@@ -3,7 +3,6 @@ mod config;
 mod constants;
 mod cue;
 mod extensions;
-mod file_browser;
 mod mpris;
 mod player;
 mod state;

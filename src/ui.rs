@@ -5,6 +5,7 @@ mod playlist;
 mod library;
 mod keyboard_handler;
 mod top_bar;
+pub mod file_browser;
 
 pub use help_tab::*;
 pub use currently_playing::*;
