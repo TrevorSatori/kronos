@@ -153,7 +153,7 @@ impl<'a> App<'a> {
 
             if event::poll(timeout)? {
                 if let Event::Key(key) = event::read()? {
-                    self.handle_key_event(key);
+                    self.on_key(key);
                 }
             }
 
@@ -236,27 +236,6 @@ impl<'a> App<'a> {
         }
     }
 
-    fn handle_key_event(&mut self, key: KeyEvent) {
-        let focus_trapped = self.focused_element == FocusedElement::Browser && self.file_browser().filter().is_some();
-
-        if !focus_trapped {
-            if self.on_key(key) {
-                return;
-            }
-        };
-
-        if let Some(target) = &self.target {
-            match target {
-                KeyboardHandlerEnum::Immut(target) => {
-                    target.on_key(key);
-                }
-                KeyboardHandlerEnum::Mut(target) => {
-                    target.lock().unwrap().on_key(key);
-                }
-            }
-        }
-    }
-
     fn spawn_terminal(&self) {
         let cwd = self.file_browser().current_directory().clone();
 
@@ -329,57 +308,76 @@ impl<'a> App<'a> {
 
 impl<'a> KeyboardHandlerMut<'a> for App<'a> {
     fn on_key(&mut self, key: KeyEvent) -> bool {
-        match key.code {
-            KeyCode::Right => self.player.seek_forward(),
-            KeyCode::Left => self.player.seek_backward(),
-            KeyCode::Char('-') => self.player.change_volume(-0.05),
-            KeyCode::Char('+') => self.player.change_volume(0.05),
-            KeyCode::Char('p') if key.modifiers == KeyModifiers::CONTROL => self.player.toggle(),
-            KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => self.player.stop(),
-            KeyCode::Char('c') if key.modifiers == KeyModifiers::ALT => self.spawn_terminal(),
-            KeyCode::Char('q') if key.modifiers == KeyModifiers::CONTROL => {
-                self.must_quit = true;
-            }
-            KeyCode::Char('1') => {
-                self.active_tab = AppTab::Library;
-                self.target = Some(KeyboardHandlerEnum::Immut(self.library.clone()));
-            }
-            KeyCode::Char('2') => {
-                self.active_tab = AppTab::Playlists;
-                self.target = Some(KeyboardHandlerEnum::Immut(self.playlist.clone()));
-            }
-            KeyCode::Char('3') => {
-                self.active_tab = AppTab::FileBrowser;
-                self.target = Some(KeyboardHandlerEnum::Mut(self.browser.clone()));
-            }
-            KeyCode::Char('4') => {
-                self.active_tab = AppTab::Help;
-                self.target = Some(KeyboardHandlerEnum::Mut(self.help_tab.clone()));
-            }
-            KeyCode::Tab if self.active_tab == AppTab::FileBrowser && self.file_browser().filter().is_none() => {
-                self.focused_element = match self.focused_element {
-                    FocusedElement::Browser => FocusedElement::Queue,
-                    _ => FocusedElement::Browser,
-                };
+        let mut handled = true;
 
-                // TODO: focus/blur colors
-                match self.focused_element {
-                    FocusedElement::Browser => {
-                        self.file_browser().focus();
-                        self.player.queue().select_none();
-                        self.target = Some(KeyboardHandlerEnum::Mut(self.browser.clone()));
+        let focus_trapped = self.focused_element == FocusedElement::Browser && self.file_browser().filter().is_some();
+        if !focus_trapped {
+            match key.code {
+                KeyCode::Right => self.player.seek_forward(),
+                KeyCode::Left => self.player.seek_backward(),
+                KeyCode::Char('-') => self.player.change_volume(-0.05),
+                KeyCode::Char('+') => self.player.change_volume(0.05),
+                KeyCode::Char('p') if key.modifiers == KeyModifiers::CONTROL => self.player.toggle(),
+                KeyCode::Char('g') if key.modifiers == KeyModifiers::CONTROL => self.player.stop(),
+                KeyCode::Char('c') if key.modifiers == KeyModifiers::ALT => self.spawn_terminal(),
+                KeyCode::Char('q') if key.modifiers == KeyModifiers::CONTROL => {
+                    self.must_quit = true;
+                }
+                KeyCode::Char('1') => {
+                    self.active_tab = AppTab::Library;
+                    self.target = Some(KeyboardHandlerEnum::Immut(self.library.clone()));
+                }
+                KeyCode::Char('2') => {
+                    self.active_tab = AppTab::Playlists;
+                    self.target = Some(KeyboardHandlerEnum::Immut(self.playlist.clone()));
+                }
+                KeyCode::Char('3') => {
+                    self.active_tab = AppTab::FileBrowser;
+                    self.target = Some(KeyboardHandlerEnum::Mut(self.browser.clone()));
+                }
+                KeyCode::Char('4') => {
+                    self.active_tab = AppTab::Help;
+                    self.target = Some(KeyboardHandlerEnum::Mut(self.help_tab.clone()));
+                }
+                KeyCode::Tab if self.active_tab == AppTab::FileBrowser && self.file_browser().filter().is_none() => {
+                    self.focused_element = match self.focused_element {
+                        FocusedElement::Browser => FocusedElement::Queue,
+                        _ => FocusedElement::Browser,
+                    };
+
+                    // TODO: focus/blur colors
+                    match self.focused_element {
+                        FocusedElement::Browser => {
+                            self.file_browser().focus();
+                            self.player.queue().select_none();
+                            self.target = Some(KeyboardHandlerEnum::Mut(self.browser.clone()));
+                        }
+                        FocusedElement::Queue => {
+                            self.file_browser().blur();
+                            self.player.queue().select_next();
+                            self.target = Some(KeyboardHandlerEnum::Immut(self.player.clone()));
+                        }
+                    };
+                }
+                _ => {
+                    handled = false;
+                }
+            };
+        };
+
+        if focus_trapped || !handled {
+            if let Some(target) = &self.target {
+                match target {
+                    KeyboardHandlerEnum::Immut(target) => {
+                        target.on_key(key);
                     }
-                    FocusedElement::Queue => {
-                        self.file_browser().blur();
-                        self.player.queue().select_next();
-                        self.target = Some(KeyboardHandlerEnum::Immut(self.player.clone()));
+                    KeyboardHandlerEnum::Mut(target) => {
+                        target.lock().unwrap().on_key(key);
                     }
-                };
-            }
-            _ => {
-                return false;
+                }
             }
         }
+
         true
     }
 }
