@@ -20,7 +20,6 @@ use ratatui::{
         List,
         WidgetRef,
         StatefulWidget,
-        StatefulWidgetRef,
     },
 };
 
