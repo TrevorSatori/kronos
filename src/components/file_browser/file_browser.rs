@@ -3,7 +3,7 @@ use std::fs::DirEntry;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use log::error;
 
 use crate::{
@@ -12,6 +12,7 @@ use crate::{
     ui::stateful_list::StatefulList,
     config::{Theme},
 };
+use crate::ui::KeyboardHandlerMut;
 
 const VALID_EXTENSIONS: [&str; 8] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac", "cue"];
 
