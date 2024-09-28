@@ -18,8 +18,8 @@ use crate::{
     structs::{Song},
     config::Theme,
     cue::CueSheet,
+    ui::KeyboardHandlerRef,
 };
-use crate::ui::KeyboardHandler;
 
 #[derive(Eq, PartialEq)]
 enum LibraryScreenElement {
@@ -216,7 +216,7 @@ impl<'a> WidgetRef for Library<'a> {
     }
 }
 
-impl<'a> KeyboardHandler<'a> for Library<'a> {
+impl<'a> KeyboardHandlerRef<'a> for Library<'a> {
 
     fn on_key(&self, key: KeyEvent) -> bool {
         let focused_element_guard = self.focused_element.lock().unwrap();

@@ -20,7 +20,7 @@ use crate::{
     structs::{Song, Playlist},
     config::Theme,
     cue::CueSheet,
-    ui::{song_to_string, KeyboardHandler},
+    ui::{song_to_string, KeyboardHandlerRef},
 };
 
 #[derive(Eq, PartialEq)]
@@ -205,7 +205,7 @@ impl<'a> WidgetRef for Playlists<'a> {
     }
 }
 
-impl<'a> KeyboardHandler<'a> for Playlists<'a> {
+impl<'a> KeyboardHandlerRef<'a> for Playlists<'a> {
 
     fn on_key(&self, key: KeyEvent) -> bool {
         let mut focused_element_guard = self.focused_element.lock().unwrap();

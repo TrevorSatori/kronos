@@ -19,7 +19,7 @@ use crate::{
     state::State,
     term::set_terminal,
     ui,
-    ui::{CurrentlyPlaying, KeyboardHandlerEnum, KeyboardHandlerMut, TopBar},
+    ui::{CurrentlyPlaying, KeyboardHandler, KeyboardHandlerMut, TopBar},
     Command,
     components::{FileBrowser, FileBrowserSelection},
 };
@@ -47,7 +47,7 @@ pub struct App<'a> {
     player_command_receiver: Arc<Mutex<Receiver<Command>>>,
 
     focused_element: FocusedElement,
-    target: Option<KeyboardHandlerEnum<'a>>,
+    target: Option<KeyboardHandler<'a>>,
     active_tab: AppTab,
 
     library: Arc<ui::Library<'a>>,
@@ -290,19 +290,19 @@ impl<'a> KeyboardHandlerMut<'a> for App<'a> {
                 }
                 KeyCode::Char('1') => {
                     self.active_tab = AppTab::Library;
-                    self.target = Some(KeyboardHandlerEnum::Immut(self.library.clone()));
+                    self.target = Some(KeyboardHandler::Ref(self.library.clone()));
                 }
                 KeyCode::Char('2') => {
                     self.active_tab = AppTab::Playlists;
-                    self.target = Some(KeyboardHandlerEnum::Immut(self.playlist.clone()));
+                    self.target = Some(KeyboardHandler::Ref(self.playlist.clone()));
                 }
                 KeyCode::Char('3') => {
                     self.active_tab = AppTab::FileBrowser;
-                    self.target = Some(KeyboardHandlerEnum::Mut(self.browser.clone()));
+                    self.target = Some(KeyboardHandler::Mut(self.browser.clone()));
                 }
                 KeyCode::Char('4') => {
                     self.active_tab = AppTab::Help;
-                    self.target = Some(KeyboardHandlerEnum::Mut(self.help_tab.clone()));
+                    self.target = Some(KeyboardHandler::Mut(self.help_tab.clone()));
                 }
                 KeyCode::Tab if self.active_tab == AppTab::FileBrowser && self.file_browser().filter().is_none() => {
                     self.focused_element = match self.focused_element {
@@ -315,12 +315,12 @@ impl<'a> KeyboardHandlerMut<'a> for App<'a> {
                         FocusedElement::Browser => {
                             self.file_browser().focus();
                             self.player.queue().select_none();
-                            self.target = Some(KeyboardHandlerEnum::Mut(self.browser.clone()));
+                            self.target = Some(KeyboardHandler::Mut(self.browser.clone()));
                         }
                         FocusedElement::Queue => {
                             self.file_browser().blur();
                             self.player.queue().select_next();
-                            self.target = Some(KeyboardHandlerEnum::Immut(self.player.clone()));
+                            self.target = Some(KeyboardHandler::Ref(self.player.clone()));
                         }
                     };
                 }
@@ -333,10 +333,10 @@ impl<'a> KeyboardHandlerMut<'a> for App<'a> {
         if focus_trapped || !handled {
             if let Some(target) = &self.target {
                 match target {
-                    KeyboardHandlerEnum::Immut(target) => {
+                    KeyboardHandler::Ref(target) => {
                         target.on_key(key);
                     }
-                    KeyboardHandlerEnum::Mut(target) => {
+                    KeyboardHandler::Mut(target) => {
                         target.lock().unwrap().on_key(key);
                     }
                 }

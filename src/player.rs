@@ -17,7 +17,7 @@ use crate::{
     cue::CueSheet,
     structs::{Queue, Song},
     source::{Source, Controls},
-    ui::KeyboardHandler,
+    ui::KeyboardHandlerRef,
 };
 
 pub struct Player {
@@ -319,7 +319,7 @@ impl Drop for Player {
     }
 }
 
-impl KeyboardHandler<'_> for Player {
+impl KeyboardHandlerRef<'_> for Player {
     fn on_key(&self, key: KeyEvent) -> bool {
         match key.code {
             KeyCode::Enter => {

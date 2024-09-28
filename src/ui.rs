@@ -10,5 +10,5 @@ pub use help_tab::*;
 pub use currently_playing::*;
 pub use playlist::*;
 pub use library::*;
-pub use keyboard_handler::{KeyboardHandler, KeyboardHandlerEnum, KeyboardHandlerMut};
+pub use keyboard_handler::{KeyboardHandlerRef, KeyboardHandler, KeyboardHandlerMut};
 pub use top_bar::TopBar;
