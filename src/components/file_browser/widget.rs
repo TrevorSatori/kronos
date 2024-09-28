@@ -26,7 +26,7 @@ use crate::{
 
 use super::FileBrowser;
 
-impl<'a> WidgetRef for &FileBrowser<'a> {
+impl<'a> WidgetRef for FileBrowser<'a> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         let (area_top, area_main_left, area_main_separator, area_main_right) = create_areas(area);
 

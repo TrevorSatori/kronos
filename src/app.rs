@@ -366,8 +366,8 @@ impl<'a> WidgetRef for &App<'a> {
                 self.playlist.render_ref(area_center, buf);
             },
             AppTab::FileBrowser => {
-                let file_browser = &*self.file_browser();
-                file_browser.render_ref(area_center, buf);
+                let file_browser = self.browser.lock().unwrap();
+                (*file_browser).render_ref(area_center, buf);
             },
             AppTab::Help => {
                 self.help_tab.lock().unwrap().render_ref(area_center, buf);
