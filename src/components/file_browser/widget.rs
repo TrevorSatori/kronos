@@ -14,13 +14,13 @@ use ratatui::{
         List,
         WidgetRef,
         StatefulWidget,
+        ListState,
     },
 };
 
 use crate::{
     structs::{Queue},
     ui,
-    ui::stateful_list::StatefulList,
     config::{Theme},
 };
 
@@ -30,18 +30,17 @@ impl<'a> WidgetRef for FileBrowser<'a> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         let (area_top, area_main_left, area_main_separator, area_main_right) = create_areas(area);
 
-        // self.set_height(area_main_left.height);
-        // TODO: not use stateful list
+        *self.height.lock().unwrap() = area_main_left.height as usize;
 
         let tb = top_bar(&self.theme, self.current_directory(), &self.filter);
         tb.render_ref(area_top, buf);
 
-        let fl = file_list(&self.theme, self.items(), &self.filter());
+        let fl = file_list(&self.theme, &self.items, self.filter());
         StatefulWidget::render(
             fl,
             area_main_left,
             buf,
-            &mut self.items.state(),
+            &mut ListState::default().with_offset(0).with_selected(Some(self.selected_index)),
         );
 
         let [_separator_left, separator_middle, _separator_right] = Layout::horizontal([Constraint::Min(1), Constraint::Length(1), Constraint::Min(1)])
@@ -55,7 +54,7 @@ impl<'a> WidgetRef for FileBrowser<'a> {
             ql,
             area_main_right,
             buf,
-            &mut ratatui::widgets::ListState::default().with_selected(self.queue_items.selected_song_index())
+            &mut ListState::default().with_selected(self.queue_items.selected_song_index())
         );
 
     }
@@ -103,9 +102,8 @@ fn top_bar(theme: &Theme, current_directory: &Path, filter: &Option<String>) -> 
     top_bar
 }
 
-fn file_list(theme: &Theme, items: &StatefulList<String>, filter: &Option<String>) -> List<'static> {
+fn file_list(theme: &Theme, items: &Vec<String>, filter: &Option<String>) -> List<'static> {
     let browser_items: Vec<ratatui::widgets::ListItem> = items
-        .items()
         .iter()
         .map(|i| {
             let fg = match filter.as_ref() {

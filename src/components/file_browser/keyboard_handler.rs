@@ -19,14 +19,17 @@ impl<'a> KeyboardHandlerMut<'a> for FileBrowser<'a> {
 impl<'a> FileBrowser<'a> {
     fn on_normal_key_event(&mut self, key: KeyEvent) {
         match key.code {
-            // KeyCode::Enter => { browser.enter_selection(key); },
             KeyCode::Backspace => self.navigate_up(),
-            KeyCode::Down => self.items.next(),
-            KeyCode::Up => self.items.previous(),
-            KeyCode::PageUp => self.items.previous_by(5),
-            KeyCode::PageDown => self.items.next_by(5),
+            KeyCode::Down => {
+                self.select_next();
+            },
+            KeyCode::Up => {
+                self.select_previous();
+            },
+            // KeyCode::PageUp => self.items.previous_by(5),
+            // KeyCode::PageDown => self.items.next_by(5),
             KeyCode::End => self.select_last(),
-            KeyCode::Home => self.items.select(0),
+            KeyCode::Home => self.select_first(),
             KeyCode::Char('f') if key.modifiers == KeyModifiers::CONTROL => {
                 self.filter = Some("".to_string());
             }

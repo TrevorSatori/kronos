@@ -1,5 +1,4 @@
 mod help_tab;
-pub mod stateful_list;
 mod currently_playing;
 mod playlist;
 mod library;
