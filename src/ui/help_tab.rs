@@ -208,3 +208,11 @@ impl<'a> WidgetRef for HelpTab<'a> {
 
     }
 }
+
+
+
+impl Drop for HelpTab<'_> {
+    fn drop(&mut self) {
+        log::trace!("HelpTab.drop()");
+    }
+}

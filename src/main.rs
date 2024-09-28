@@ -12,6 +12,7 @@ mod toml;
 mod ui;
 mod source;
 mod components;
+mod bye;
 
 use std::error::Error;
 use std::io::stdout;
@@ -19,65 +20,93 @@ use std::sync::mpsc::channel;
 use std::thread;
 
 use async_std::task;
-use flexi_logger::{DeferredNow, FileSpec, Logger, WriteMode};
+use colored::Colorize;
+use flexi_logger::{DeferredNow, FileSpec, Logger, WriteMode, style};
 use futures::{
     future::FutureExt, // for `.fuse()`
     pin_mut,
     select,
 };
-use log::{debug, error, info, Record};
+use log::{debug, error, info, Log, Record};
 
-use crate::{app::App, mpris::run_mpris, term::reset_terminal};
+use crate::{app::App, mpris::create_mpris_player, term::reset_terminal, bye::bye};
 
 pub enum Command {
     PlayPause,
     Next,
+    Quit,
 }
 
-pub fn log_format(w: &mut dyn std::io::Write, _now: &mut DeferredNow, record: &Record) -> Result<(), std::io::Error> {
-    write!(w, "{: <12}", thread::current().name().unwrap_or("<unnamed>"),)?;
-    write!(w, "{}", record.args())
+pub fn log_format(w: &mut dyn std::io::Write, now: &mut DeferredNow, record: &Record) -> Result<(), std::io::Error> {
+    write!(w, "{}   ", now.format("%-l:%M:%S%P").to_string())?;
+
+    let level = format!("{: <8}", record.level());
+    write!(w, "{}", style(record.level()).paint(level))?;
+
+    write!(w, "{: <16}", thread::current().name().unwrap_or("<unnamed>"),)?;
+
+    let module = record.module_path().unwrap_or("").to_string();
+    write!(w, "{:28}", module[..module.len().min(25)].green())?;
+
+    write!(w, "{}", record.args())?;
+    Ok(())
 }
 
 #[async_std::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     set_panic_hook();
 
-    let _logger = Logger::try_with_str("jolteon=debug")?
+    let _logger = Logger::try_with_str("jolteon=trace,warn")?
         .format(log_format)
         .log_to_file(FileSpec::default().suppress_timestamp())
         .write_mode(WriteMode::Direct)
         .use_utc()
         .start()?;
 
-    info!("\n\n\n\n");
-    info!("Starting\n\n");
+    info!("Starting");
 
     let (player_command_sender, player_command_receiver) = channel();
 
     debug!("Starting mpris and player");
 
-    let task_player = task::spawn_blocking(|| {
-        let mut app = App::new(player_command_receiver);
-        app.start()
-            .unwrap_or_else(|err| error!("app.start error :( \n{:#?}", err));
+    let task_player = task::spawn_blocking({
+        let player_command_sender = player_command_sender.clone();
+        move || {
+            let mut app = App::new(player_command_receiver);
+            app.start()
+                .unwrap_or_else(|err| error!("app.start error :( \n{:#?}", err));
+            log::trace!("Player.start() finished");
+
+            if let Err(err) = player_command_sender.send(Command::Quit) {
+                log::warn!("player_command_sender.send(Stop) failed {:?}", err);
+            }
+        }
     })
     .fuse();
 
-    let task_mpris = run_mpris(player_command_sender).fuse();
+    let mpris_player = create_mpris_player(player_command_sender.clone()).await?;
+    let task_mpris = mpris_player.run().fuse();
 
     pin_mut!(task_player, task_mpris);
 
     debug!("Awaiting mpris and player tasks");
     select! {
-        _ = task_player => (),
-        _ = task_mpris => (),
+        _ = task_player => {
+            log::trace!("player task finish");
+            ()
+        },
+        _ = task_mpris => {
+            log::trace!("mpris task finish");
+            ()
+        },
     }
+
+    debug!("Quitting Jolteon");
 
     debug!("Resetting terminal");
     reset_terminal(&mut stdout());
 
-    debug!("kthxbye");
+    info!("{}", bye());
     Ok(())
 }
 

@@ -348,3 +348,9 @@ fn on_key_event_song_list(s: &Playlists, key: KeyEvent) {
         _ => {},
     }
 }
+
+impl Drop for Playlists<'_> {
+    fn drop(&mut self) {
+        log::trace!("Playlists.drop()");
+    }
+}

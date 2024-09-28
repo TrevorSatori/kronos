@@ -2,6 +2,7 @@ use std::error::Error;
 use std::sync::{mpsc::Receiver, Arc, Mutex, MutexGuard};
 use std::{env, path::PathBuf, thread, time::Duration};
 use std::io::BufRead;
+use std::thread::JoinHandle;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use log::error;
@@ -45,6 +46,7 @@ pub struct App<'a> {
     _music_output: OutputStream,
     player: Arc<Player>,
     player_command_receiver: Arc<Mutex<Receiver<Command>>>,
+    media_rec_t: Option<JoinHandle<()>>,
 
     focused_element: FocusedElement,
     target: Option<KeyboardHandler<'a>>,
@@ -106,18 +108,22 @@ impl<'a> App<'a> {
         });
 
         Self {
-            _music_output: output_stream,
             must_quit: false,
             config,
+
+            _music_output: output_stream,
+            player,
+            player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
+            media_rec_t: None,
+
             focused_element: FocusedElement::Browser,
+            target: None,
             active_tab: AppTab::Library,
+
+            library,
+            playlist,
             browser: Arc::new(Mutex::new(browser)),
             help_tab: Arc::new(Mutex::new(ui::HelpTab::new(config))),
-            player_command_receiver: Arc::new(Mutex::new(player_command_receiver)),
-            player,
-            playlist,
-            library,
-            target: None,
         }
     }
 
@@ -164,29 +170,40 @@ impl<'a> App<'a> {
             }
         }
 
+        log::trace!("App.start() -> exiting");
+
         self.to_state().to_file()?;
 
         Ok(())
     }
 
-    fn spawn_media_key_receiver_thread(&self) {
+    fn spawn_media_key_receiver_thread(&mut self) {
         let player_command_receiver = self.player_command_receiver.clone();
         let player = self.player.clone();
 
-        thread::Builder::new().name("media_key_receiver".to_string()).spawn(move || loop {
-            match player_command_receiver.lock().unwrap().recv() {
-                Ok(Command::PlayPause) => {
-                    player.toggle();
-                }
-                Ok(Command::Next) => {
-                    player.stop();
-                }
-                Err(err) => {
-                    error!("error receiving! {}", err);
-                    break;
+        let t = thread::Builder::new().name("media_key_rx".to_string()).spawn(move || {
+            loop {
+                match player_command_receiver.lock().unwrap().recv() {
+                    Ok(Command::PlayPause) => {
+                        player.toggle();
+                    }
+                    Ok(Command::Next) => {
+                        player.stop();
+                    }
+                    Ok(Command::Quit) => {
+                        log::debug!("Received Command::Quit");
+                        break;
+                    }
+                    Err(err) => {
+                        log::error!("Channel error: {}", err);
+                        break;
+                    }
                 }
             }
+            log::trace!("spawn_media_key_receiver_thread loop exit");
         }).unwrap();
+
+        self.media_rec_t = Some(t);
     }
 
     fn on_file_browser_key(
@@ -196,7 +213,8 @@ impl<'a> App<'a> {
         file_browser_selection: FileBrowserSelection,
         key_event: KeyEvent,
     ) {
-        log::debug!("file_browser().on_select({:?}, {:?})", file_browser_selection, key_event);
+        // log::debug!("on_file_browser_key({:?}, {:?})", key_event.code, file_browser_selection);
+        log::debug!("on_file_browser_key({:?})", key_event.code);
         match (file_browser_selection, key_event.code) {
             (FileBrowserSelection::Song(song), KeyCode::Enter) => {
                 player.play_song(song);
@@ -382,5 +400,27 @@ impl<'a> WidgetRef for &App<'a> {
             self.player.queue().length(),
         );
         currently_playing.render(area_bottom, buf);
+    }
+}
+
+impl Drop for App<'_> {
+    fn drop(&mut self) {
+        log::trace!("App.drop");
+
+        if let Some(a) = self.media_rec_t.take() {
+            log::trace!("App.drop: joining media_key_rx thread");
+            match a.join() {
+                Ok(_) => {
+                    // log::trace!("ok");
+                }
+                Err(err) => {
+                    log::error!("{:?}", err);
+                }
+            }
+        } else {
+            log::warn!("No media_key_rx thread!?");
+        }
+
+        log::trace!("media_key_rx thread joined successfully");
     }
 }

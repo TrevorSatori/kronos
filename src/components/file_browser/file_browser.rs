@@ -15,15 +15,19 @@ use crate::{
 const VALID_EXTENSIONS: [&str; 8] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac", "cue"];
 
 pub struct FileBrowser<'a> {
-    pub(super) theme: Theme,
-    pub(super) items: Vec<String>,
-    current_directory: PathBuf,
-    pub(super) filter: Option<String>,
-    last_offset: usize,
     on_select_fn: Box<dyn FnMut((FileBrowserSelection, KeyEvent)) + 'a>,
-    pub(super) queue_items: Arc<Queue>,
+
+    current_directory: PathBuf,
+    pub(super) items: Vec<String>,
     pub(super) selected_index: usize,
-    pub(super) height: Mutex<usize>,
+    pub(super) filter: Option<String>,
+
+    pub(super) queue_items: Arc<Queue>,
+
+    pub(super) theme: Theme,
+    padding: u16,
+    pub(super) height: Mutex<u16>,
+    pub(super) offset: u16,
 }
 
 #[allow(dead_code, unused_variables)]
@@ -91,16 +95,22 @@ fn dir_entry_is_song(dir_entry: &DirEntry) -> bool {
 
 impl<'a> FileBrowser<'a> {
     pub fn new(theme: Theme, current_directory: PathBuf, queue_items: Arc<Queue>) -> Self {
+        let items = directory_to_songs_and_folders(&current_directory);
+
         Self {
-            theme,
-            items: directory_to_songs_and_folders(&current_directory),
-            current_directory,
-            filter: None,
-            last_offset: 0,
             on_select_fn: Box::new(|_| {}) as _,
-            queue_items,
+
+            current_directory,
+            items,
             selected_index: 0,
+            filter: None,
+
+            queue_items,
+
+            theme,
+            padding: 6,
             height: Mutex::new(0),
+            offset: 0,
         }
     }
 
@@ -109,11 +119,11 @@ impl<'a> FileBrowser<'a> {
     }
 
     pub fn blur(&mut self) {
-
+        log::warn!("FileBrowser.blur() unimplemented");
     }
 
     pub fn focus(&mut self) {
-
+        log::warn!("FileBrowser.focus() unimplemented");
     }
 
     pub fn current_directory(&self) -> &PathBuf {
@@ -170,7 +180,6 @@ impl<'a> FileBrowser<'a> {
 
         if path.is_dir() {
             self.current_directory = path.clone();
-            // self.last_offset = self.offset;
             self.items = directory_to_songs_and_folders(&path);
             self.select_next();
         }
@@ -180,28 +189,37 @@ impl<'a> FileBrowser<'a> {
         let Some(parent) = self.current_directory.as_path().parent().map(|p| p.to_path_buf()) else { return };
         self.items = directory_to_songs_and_folders(&parent);
         self.select_by_path();
-        // self.offset = self.last_offset;
         self.current_directory = parent;
     }
 
     pub fn select_next(&mut self) {
         if self.selected_index < self.items.len().saturating_sub(1) {
             self.selected_index = self.selected_index.saturating_add(1);
+
+            if self.selected_index as u16 > self.offset + self.padding_bottom() {
+                self.set_offset(self.selected_index as u16, self.padding_bottom());
+            }
         }
     }
 
     pub fn select_previous(&mut self) {
         if self.selected_index > 0 {
             self.selected_index = self.selected_index.saturating_sub(1);
+
+            if (self.selected_index as u16) < self.offset + self.padding_top() {
+                self.set_offset(self.selected_index as u16, self.padding_top());
+            }
         }
     }
 
     pub fn select_first(&mut self) {
         self.selected_index = 0;
+        self.set_offset(self.selected_index as u16, self.padding_bottom());
     }
 
     pub fn select_last(&mut self) {
         self.selected_index = self.items.len().saturating_sub(1).max(0);
+        self.set_offset(self.selected_index as u16, self.padding_top());
     }
 
     pub fn next_index_wrapped(&self, i: usize) -> usize {
@@ -303,4 +321,28 @@ impl<'a> FileBrowser<'a> {
         };
     }
 
+
+
+    fn padding_top(&self) -> u16 {
+        6
+    }
+
+    fn padding_bottom(&self) -> u16 {
+        self.height.lock().unwrap().saturating_sub(self.padding)
+    }
+
+    pub fn set_offset(&mut self, i: u16, padding: u16) {
+        self.offset = if i > padding {
+            (i - padding).min(self.items.len() as u16 - *self.height.lock().unwrap())
+        } else {
+            0
+        };
+    }
+
+}
+
+impl Drop for FileBrowser<'_> {
+    fn drop(&mut self) {
+        log::trace!("FileBrowser.drop()");
+    }
 }

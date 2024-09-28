@@ -4,6 +4,7 @@ use std::sync::{
 };
 use std::time::Duration;
 use std::collections::VecDeque;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::structs::Song;
 
@@ -13,6 +14,7 @@ pub struct Queue {
     total_time: Arc<Mutex<Duration>>,
     tx: Arc<Mutex<Sender<()>>>,
     rx: Arc<Mutex<Receiver<()>>>,
+    must_exit_pop_loop: AtomicBool, // TODO: enum in tx/rx
 }
 
 fn song_list_to_duration(items: &VecDeque<Song>) -> Duration {
@@ -32,10 +34,19 @@ impl Queue {
             total_time: Arc::new(Mutex::new(total_time)),
             tx: Arc::new(Mutex::new(tx)),
             rx: Arc::new(Mutex::new(rx)),
+            must_exit_pop_loop: AtomicBool::new(false),
         }
     }
 
-    fn notify_queue_change(&self) {
+    pub fn quit(&self) {
+        log::trace!("Queue.quit()");
+        self.must_exit_pop_loop.store(true, Ordering::SeqCst);
+        if let Err(err) = self.tx.lock().unwrap().send(()) {
+            log::warn!("Queue.quit().send(Stop) failed {:?}", err);
+        }
+    }
+
+    pub fn notify_queue_change(&self) {
         self.tx.lock().unwrap().send(()).unwrap();
     }
 
@@ -71,25 +82,28 @@ impl Queue {
 
     /// Retrieves the first item of the queue, removing it in the process.
     /// This function will block if there is no item available, until there is one.
-    pub fn pop(&self) -> Song {
+    pub fn pop(&self) -> Result<Song, ()> {
         loop {
-            let item = {
+            let song = {
                 let mut items = self.items.lock().unwrap();
                 items.pop_front()
             };
-            if let Some(l) = item {
+            if let Some(song) = song {
                 self.refresh_total_time();
-                return l;
+                return Ok(song);
             }
-            self.rx.lock().unwrap().recv().unwrap_or_else(|e| {
-                log::error!("queue.pop() - no more messages. {:#?}", e);
-                // TODO(BUG):
-                //   If we're here, then rx.lock will keep returning an error,
-                //   so this loop will start spinning.
-                //   Yet we own the channel sender, so, if we're here, we're being dropped.
-                //   Does the drop exit the loop automagically?
-            });
+            if let Err(err) = self.rx.lock().unwrap().recv() {
+                log::warn!("Queue.pop() {:#?}", err);
+                break;
+            }
+            if self.must_exit_pop_loop.load(Ordering::SeqCst) {
+                log::debug!("Queue.pop() exit");
+                break;
+            }
+            log::trace!("Queue.pop() iteration");
         }
+
+        Err(())
     }
 
     pub fn select_next(&self) {
@@ -164,5 +178,11 @@ impl Queue {
             drop(items);
             self.refresh_total_time();
         }
+    }
+}
+
+impl Drop for Queue {
+    fn drop(&mut self) {
+        log::trace!("Player.Queue drop");
     }
 }

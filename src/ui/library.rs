@@ -242,3 +242,9 @@ impl<'a> KeyboardHandlerRef<'a> for Library<'a> {
         true
     }
 }
+
+impl Drop for Library<'_> {
+    fn drop(&mut self) {
+        log::trace!("Library.drop()");
+    }
+}

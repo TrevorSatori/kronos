@@ -3,14 +3,16 @@ use std::{
         Arc,
         Mutex,
         atomic::{AtomicBool, AtomicU64, Ordering},
-        mpsc::{channel, Receiver, RecvTimeoutError, Sender},
+        mpsc::{channel, Receiver, RecvTimeoutError, Sender, sync_channel, SyncSender},
     },
     thread,
+    thread::JoinHandle,
     time::Duration,
 };
 
 use crossterm::event::{KeyCode, KeyEvent};
 use log::{debug, error};
+use mpris_server::zbus::CacheProperties::No;
 use rodio::{OutputStreamHandle};
 
 use crate::{
@@ -22,10 +24,13 @@ use crate::{
 
 pub struct Player {
     output_stream: OutputStreamHandle,
+    main_thread: Mutex<Option<JoinHandle<()>>>,
+
     queue_items: Arc<Queue>,
     currently_playing: Arc<Mutex<Option<Song>>>,
     currently_playing_start_time: Arc<AtomicU64>,
-    command_sender: Sender<Command>,
+    // command_sender: Option<Sender<Command>>,
+    command_sender: Option<SyncSender<Command>>, // hmm...
     command_receiver: Arc<Mutex<Option<Receiver<Command>>>>,
     is_stopped: Arc<AtomicBool>,
     volume: Arc<Mutex<f32>>,
@@ -40,24 +45,35 @@ enum Command {
     Pause,
     Stop,
     Seek(i32),
+    Quit,
 }
 
 impl Player {
     pub fn new(queue: Vec<Song>, output_stream: OutputStreamHandle) -> Self {
-        let (command_sender, command_receiver) = channel();
+        let (command_sender, command_receiver) = sync_channel(1);
 
         Self {
             output_stream,
+            main_thread: Mutex::new(None),
+
             queue_items: Arc::new(Queue::new(queue)),
             currently_playing: Arc::new(Mutex::new(None)),
             currently_playing_start_time: Arc::new(AtomicU64::new(0)),
-            command_sender,
+            command_sender: Some(command_sender),
             command_receiver: Arc::new(Mutex::new(Some(command_receiver))),
             is_stopped: Arc::new(AtomicBool::new(true)),
             volume: Arc::new(Mutex::new(1.0)),
             pause: Arc::new(AtomicBool::new(false)),
             position: Arc::new(Mutex::new(Duration::ZERO)),
         }
+    }
+
+    fn send_command(&self, command: Command) {
+        self.command_sender.as_ref().map(|tx| {
+            if let Err(err) = tx.send(command) {
+                log::warn!("Player.send_command() failure: {:?}", err);
+            }
+        });
     }
 
     pub fn queue(&self) -> Arc<Queue> {
@@ -76,7 +92,7 @@ impl Player {
 
     pub fn spawn(&self) {
         let output_stream = self.output_stream.clone();
-        let recv = self.command_receiver.clone().lock().unwrap().take().unwrap();
+        let command_receiver = self.command_receiver.lock().unwrap().take().unwrap();
         let queue_items = self.queue_items.clone();
         let currently_playing = self.currently_playing.clone();
         let song_start_time = self.currently_playing_start_time.clone();
@@ -100,7 +116,7 @@ impl Player {
 
             match currently_playing.lock() {
                 Ok(mut s) => {
-                    debug!("currently_playing = {:?}", song);
+                    // debug!("currently_playing = {:?}", song);
                     *s = song;
                 }
                 Err(err) => {
@@ -109,13 +125,16 @@ impl Player {
             };
         };
 
-        thread::Builder::new().name("player".to_string()).spawn(move || {
+        let thread = thread::Builder::new().name("player".to_string()).spawn(move || {
             loop {
                 // Grab the next song in the queue. If there isn't one, we block until one comes in.
-                debug!("queue_items.pop()...");
-                let song = queue_items.pop();
+                debug!("Queue.pop()...");
+                let Ok(song) = queue_items.pop() else {
+                    log::debug!("queue_items.pop() returned an error");
+                    break;
+                };
                 is_stopped.store(false, Ordering::SeqCst);
-                debug!("queue_items.pop() -> popped {:?}", song.title);
+                debug!("Queue.pop() -> popped {:?}", song.title);
 
                 let path = song.path.clone();
                 let start_time = song.start_time.clone();
@@ -184,10 +203,14 @@ impl Player {
 
                     // debug!("inner loop: sleepy_time! {:?}", sleepy_time);
 
-                    match recv.recv_timeout(sleepy_time) {
+                    match command_receiver.recv_timeout(sleepy_time) {
                         Ok(command) => {
-                            // debug!("{:?}", command);
+                            debug!("Player.Command({:?})", command);
                             match command {
+                                Command::Quit => {
+                                    log::trace!("Player: quitting main loop");
+                                    return;
+                                }
                                 Command::Play => {
                                     pause.store(false, Ordering::SeqCst);
                                 }
@@ -233,13 +256,13 @@ impl Player {
                         }
                         Err(RecvTimeoutError::Timeout) => {
                             // Playing song reached its end. We want to move on to the next song.
-                            debug!("RecvTimeoutError::Timeout");
+                            log::trace!("RecvTimeoutError::Timeout");
                             break;
                         }
                         Err(RecvTimeoutError::Disconnected) => {
                             // Most of the time, not a real error. This happens because the command_sender was dropped,
                             // which happens when the player itself was dropped, so we just want to exit.
-                            debug!("RecvTimeoutError::Disconnected");
+                            log::warn!("RecvTimeoutError::Disconnected");
                             return;
                         }
                     }
@@ -251,7 +274,10 @@ impl Player {
                     error!("ender_recv.recv {:?}", err);
                 }
             }
+            log::trace!("Player loop exit");
         }).unwrap();
+
+        *self.main_thread.lock().unwrap() = Some(thread);
     }
 
     pub fn play_song(&self, song: Song) {
@@ -273,14 +299,14 @@ impl Player {
 
     pub fn toggle(&self) {
         if self.pause.load(Ordering::SeqCst) {
-            self.command_sender.send(Command::Play).unwrap();
+            self.send_command(Command::Play);
         } else {
-            self.command_sender.send(Command::Pause).unwrap();
+            self.send_command(Command::Pause);
         }
     }
 
     pub fn stop(&self) {
-        self.command_sender.send(Command::Stop).unwrap()
+        self.send_command(Command::Stop);
     }
 
     pub fn seek(&self, seek: i32) {
@@ -291,7 +317,7 @@ impl Player {
         // Note: Symphonia seems to be the only decoder that supports seeking in Rodio (that we really care about), but it can fail.
         // Rodio's `Source for TrackPosition` does have its own `try_seek`, though, as well as `Source for SamplesBuffer`.
         // Are we using those (indirectly), or just Symphonia?
-        self.command_sender.send(Command::Seek(seek)).unwrap()
+        self.send_command(Command::Seek(seek));
     }
 
     pub fn seek_forward(&self) {
@@ -315,7 +341,26 @@ impl Player {
 
 impl Drop for Player {
     fn drop(&mut self) {
-        let _ = self.command_sender.send(Command::Stop);
+        log::trace!("Player.drop()");
+
+        self.send_command(Command::Quit);
+        self.queue_items.quit();
+
+        if let Some(thread) = self.main_thread.lock().unwrap().take() {
+            log::trace!("Player.drop: joining main_thread thread");
+            match thread.join() {
+                Ok(_) => {
+                    log::trace!("Player.drop: main_thread joined successfully");
+                }
+                Err(err) => {
+                    log::error!("Player.drop: {:?}", err);
+                }
+            }
+        } else {
+            log::error!("No main_thread thread!?");
+        }
+
+        log::trace!("Player.drop()'ed");
     }
 }
 

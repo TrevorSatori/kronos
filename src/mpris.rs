@@ -1,12 +1,9 @@
 use std::error::Error;
 use std::sync::mpsc::Sender;
 
-use log::error;
-use mpris_server;
-
 use crate::Command;
 
-pub async fn run_mpris(player_command_sender: Sender<Command>) -> Result<(), Box<dyn Error>> {
+pub async fn create_mpris_player(player_command_sender: Sender<Command>) -> Result<mpris_server::Player, Box<dyn Error>> {
     let player = mpris_server::Player::builder("com.taro-codes.jolteon")
         .can_play(true)
         .can_pause(true)
@@ -18,7 +15,7 @@ pub async fn run_mpris(player_command_sender: Sender<Command>) -> Result<(), Box
         let player_command_sender = player_command_sender.clone();
         move |_player| {
             if let Err(err) = player_command_sender.send(Command::PlayPause) {
-                error!("mpris: Failed to send play_pause! {:?}", err);
+                log::warn!("mpris: Failed to send play_pause! {:?}", err);
             }
         }
     });
@@ -27,12 +24,24 @@ pub async fn run_mpris(player_command_sender: Sender<Command>) -> Result<(), Box
         let player_command_sender = player_command_sender.clone();
         move |_player| {
             if let Err(err) = player_command_sender.send(Command::Next) {
-                error!("mpris: Failed to send next! {:?}", err);
+                log::warn!("mpris: Failed to send next! {:?}", err);
             }
         }
     });
 
-    player.run().await;
+    player.connect_quit(|_player| {
+       log::trace!("mpris quit");
+    });
 
-    Ok(())
+    player.connect_stop({
+        let player_command_sender = player_command_sender.clone();
+        move |_player| {
+            log::trace!("mpris stop");
+            if let Err(err) = player_command_sender.send(Command::Next) {
+                log::warn!("mpris: Failed to send next! {:?}", err);
+            }
+        }
+    });
+
+    Ok(player)
 }
