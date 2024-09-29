@@ -61,6 +61,7 @@ impl<'a> App<'a> {
     pub fn new(player_command_receiver: Receiver<Command>) -> Self {
         let config = Config::from_file();
         let state = State::from_file();
+        let library_songs = crate::files::Library::from_file();
 
         let (output_stream, output_stream_handle) = OutputStream::try_default().unwrap(); // Indirectly this spawns the cpal_alsa_out thread, and creates the mixer tied to it
 
@@ -71,7 +72,7 @@ impl<'a> App<'a> {
             None => env::current_dir().unwrap(),
         };
 
-        let library = Arc::new(Library::new(config.theme, vec![]));
+        let library = Arc::new(Library::new(config.theme, library_songs.songs));
         library.on_select({
             let player = player.clone();
             move |(song, key)| {
@@ -172,6 +173,12 @@ impl<'a> App<'a> {
         log::trace!("App.start() -> exiting");
 
         self.to_state().to_file()?;
+
+        let library_songs = self.library.songs();
+
+        crate::files::Library::to_file(&crate::files::Library {
+           songs: library_songs,
+        })?;
 
         Ok(())
     }

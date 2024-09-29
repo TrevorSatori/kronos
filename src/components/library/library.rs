@@ -43,6 +43,10 @@ impl<'a> Library<'a> {
         }
     }
 
+    pub fn songs(&self) -> Vec<Song> {
+        self.songs.lock().unwrap().clone()
+    }
+
     pub fn on_select(&self, cb: impl FnMut((Song, KeyEvent)) + 'a) {
         *self.on_select_fn.lock().unwrap() = Box::new(cb);
     }

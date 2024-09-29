@@ -13,6 +13,7 @@ mod ui;
 mod source;
 mod components;
 mod bye;
+mod files;
 
 use std::error::Error;
 use std::io::stdout;
