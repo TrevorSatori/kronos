@@ -21,7 +21,7 @@ use crate::{
     ui,
     ui::{CurrentlyPlaying, KeyboardHandler, KeyboardHandlerMut, TopBar},
     Command,
-    components::{FileBrowser, FileBrowserSelection},
+    components::{FileBrowser, FileBrowserSelection, Library},
 };
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -51,7 +51,7 @@ pub struct App<'a> {
     target: Option<KeyboardHandler<'a>>,
     active_tab: AppTab,
 
-    library: Arc<ui::Library<'a>>,
+    library: Arc<Library<'a>>,
     playlist: Arc<ui::Playlists<'a>>,
     browser: Arc<Mutex<FileBrowser<'a>>>,
     help_tab: Arc<Mutex<ui::HelpTab<'a>>>,
@@ -71,7 +71,7 @@ impl<'a> App<'a> {
             None => env::current_dir().unwrap(),
         };
 
-        let library = Arc::new(ui::Library::new(config.theme, vec![]));
+        let library = Arc::new(Library::new(config.theme, vec![]));
         library.on_select({
             let player = player.clone();
             move |(song, key)| {
@@ -208,7 +208,7 @@ impl<'a> App<'a> {
     fn on_file_browser_key(
         player: &Player,
         playlists: &ui::Playlists,
-        media_library: &ui::Library,
+        media_library: &Library,
         file_browser_selection: FileBrowserSelection,
         key_event: KeyEvent,
     ) {
