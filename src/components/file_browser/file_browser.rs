@@ -25,9 +25,9 @@ pub struct FileBrowser<'a> {
     pub(super) queue_items: Arc<Queue>,
 
     pub(super) theme: Theme,
-    padding: u16,
-    pub(super) height: Mutex<u16>,
-    pub(super) offset: u16,
+    padding: usize,
+    pub(super) height: Mutex<usize>,
+    pub(super) offset: usize,
 }
 
 #[allow(dead_code, unused_variables)]
@@ -133,6 +133,9 @@ impl<'a> FileBrowser<'a> {
     pub fn selected_item(&self) -> PathBuf {
         if self.items.is_empty() {
             self.current_directory.clone()
+        } else if self.selected_index >= self.items.len() {
+            log::error!("self.selected_index >= self.items.len()");
+            self.current_directory.clone()
         } else {
             self.current_directory.join(&self.items[self.selected_index])
         }
@@ -156,7 +159,6 @@ impl<'a> FileBrowser<'a> {
                 Ok(cue_sheet) => {
                     (self.on_select_fn)((FileBrowserSelection::CueSheet(cue_sheet), key_event));
                     self.select_next();
-
                 }
                 Err(err) => {
                     error!("Filed to read CueSheet {:#?}", err);
@@ -181,14 +183,14 @@ impl<'a> FileBrowser<'a> {
         if path.is_dir() {
             self.current_directory = path.clone();
             self.items = directory_to_songs_and_folders(&path);
-            self.select_next();
+            self.selected_index = 0;
         }
     }
 
     pub fn navigate_up(&mut self) {
         let Some(parent) = self.current_directory.as_path().parent().map(|p| p.to_path_buf()) else { return };
         self.items = directory_to_songs_and_folders(&parent);
-        self.select_by_path();
+        self.select_current_directory();
         self.current_directory = parent;
     }
 
@@ -196,8 +198,8 @@ impl<'a> FileBrowser<'a> {
         if self.selected_index < self.items.len().saturating_sub(1) {
             self.selected_index = self.selected_index.saturating_add(1);
 
-            if self.selected_index as u16 > self.offset + self.padding_bottom() {
-                self.set_offset(self.selected_index as u16, self.padding_bottom());
+            if self.selected_index > self.offset + self.padding_bottom() {
+                self.set_offset(self.selected_index, self.padding_bottom());
             }
         }
     }
@@ -206,20 +208,20 @@ impl<'a> FileBrowser<'a> {
         if self.selected_index > 0 {
             self.selected_index = self.selected_index.saturating_sub(1);
 
-            if (self.selected_index as u16) < self.offset + self.padding_top() {
-                self.set_offset(self.selected_index as u16, self.padding_top());
+            if self.selected_index < self.offset + self.padding_top() {
+                self.set_offset(self.selected_index, self.padding_top());
             }
         }
     }
 
     pub fn select_first(&mut self) {
         self.selected_index = 0;
-        self.set_offset(self.selected_index as u16, self.padding_bottom());
+        self.set_offset(self.selected_index, self.padding_bottom());
     }
 
     pub fn select_last(&mut self) {
         self.selected_index = self.items.len().saturating_sub(1).max(0);
-        self.set_offset(self.selected_index as u16, self.padding_top());
+        self.set_offset(self.selected_index, self.padding_top());
     }
 
     pub fn next_index_wrapped(&self, i: usize) -> usize {
@@ -251,7 +253,7 @@ impl<'a> FileBrowser<'a> {
         i
     }
 
-    pub fn select_by_path(&mut self) {
+    pub fn select_current_directory(&mut self) {
         self.selected_index = self.find_by_path(&self.current_directory);
     }
 
@@ -323,17 +325,17 @@ impl<'a> FileBrowser<'a> {
 
 
 
-    fn padding_top(&self) -> u16 {
+    fn padding_top(&self) -> usize {
         6
     }
 
-    fn padding_bottom(&self) -> u16 {
+    fn padding_bottom(&self) -> usize {
         self.height.lock().unwrap().saturating_sub(self.padding)
     }
 
-    pub fn set_offset(&mut self, i: u16, padding: u16) {
+    pub fn set_offset(&mut self, i: usize, padding: usize) {
         self.offset = if i > padding {
-            (i - padding).min(self.items.len() as u16 - *self.height.lock().unwrap())
+            i.saturating_sub(padding).min(self.items.len().saturating_sub(*self.height.lock().unwrap()))
         } else {
             0
         };

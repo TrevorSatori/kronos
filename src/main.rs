@@ -27,7 +27,7 @@ use futures::{
     pin_mut,
     select,
 };
-use log::{debug, error, info, Log, Record};
+use log::{debug, error, info, Record};
 
 use crate::{app::App, mpris::create_mpris_player, term::reset_terminal, bye::bye};
 

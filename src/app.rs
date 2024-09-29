@@ -5,7 +5,6 @@ use std::io::BufRead;
 use std::thread::JoinHandle;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
-use log::error;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},

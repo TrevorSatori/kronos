@@ -12,7 +12,6 @@ use std::{
 
 use crossterm::event::{KeyCode, KeyEvent};
 use log::{debug, error};
-use mpris_server::zbus::CacheProperties::No;
 use rodio::{OutputStreamHandle};
 
 use crate::{

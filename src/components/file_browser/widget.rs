@@ -30,7 +30,7 @@ impl<'a> WidgetRef for FileBrowser<'a> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         let (area_top, area_main_left, area_main_separator, area_main_right) = create_areas(area);
 
-        *self.height.lock().unwrap() = area_main_left.height;
+        *self.height.lock().unwrap() = area_main_left.height as usize;
 
         let tb = top_bar(&self.theme, self.current_directory(), &self.filter);
         tb.render_ref(area_top, buf);
