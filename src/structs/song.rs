@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::cue::CueSheet;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Song {
     pub path: PathBuf,
     pub length: Duration,

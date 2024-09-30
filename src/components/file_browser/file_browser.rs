@@ -1,24 +1,25 @@
-use std::fs;
-use std::fs::DirEntry;
-use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
 use crossterm::event::{KeyCode, KeyEvent};
-use log::error;
 
 use crate::{
-    cue::CueSheet,
-    structs::{Song, Queue},
+    structs::Queue,
     config::{Theme},
 };
 
-const VALID_EXTENSIONS: [&str; 8] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac", "cue"];
+use super::file_browser_selection::{
+    FileBrowserSelection,
+    directory_to_songs_and_folders,
+};
 
 pub struct FileBrowser<'a> {
     on_select_fn: Box<dyn FnMut((FileBrowserSelection, KeyEvent)) + 'a>,
 
     current_directory: PathBuf,
-    pub(super) items: Vec<String>,
+    pub(super) items: Vec<FileBrowserSelection>,
     pub(super) selected_index: usize,
     pub(super) filter: Option<String>,
 
@@ -28,69 +29,6 @@ pub struct FileBrowser<'a> {
     padding: usize,
     pub(super) height: Mutex<usize>,
     pub(super) offset: usize,
-}
-
-#[allow(dead_code, unused_variables)]
-#[derive(Debug)]
-pub enum FileBrowserSelection {
-    Song(Song),
-    CueSheet(CueSheet),
-    Directory(PathBuf),
-}
-
-fn directory_to_songs_and_folders(path: &PathBuf) -> Vec<String> {
-    // TODO: .cue
-    let Ok(entries) = path.read_dir() else {
-        return vec![];
-    };
-
-    let mut items: Vec<String> = entries
-        .filter_map(|e| e.ok())
-        .filter(|entry| dir_entry_is_dir(&entry) || dir_entry_is_song(&entry))
-        .map(|entry| entry.path())
-        .filter(path_is_not_hidden)
-        .filter_map(|path| path.file_name().and_then(|e| e.to_str()).map(|e| e.to_string()))
-        .collect();
-
-    items.sort_unstable();
-    items
-}
-
-fn dir_entry_is_file(dir_entry: &DirEntry) -> bool {
-    // TODO: resolve symlinks
-    dir_entry.file_type().is_ok_and(|ft| ft.is_file())
-}
-
-fn dir_entry_is_dir(dir_entry: &DirEntry) -> bool {
-    let Ok(ft) = dir_entry.file_type() else {
-        log::error!("dir_entry_is_dir: .file_type() returned error for {:?}", dir_entry.path());
-        return false;
-    };
-
-    if ft.is_symlink() {
-        let ln = fs::canonicalize(dir_entry.path());
-        ln.is_ok_and(|ln| ln.is_dir())
-    } else {
-        ft.is_dir()
-    }
-}
-
-fn path_is_not_hidden(path: &PathBuf) -> bool {
-    path.file_name()
-        .and_then(|e| e.to_str())
-        .map(|e| e.to_string())
-        .is_some_and(|d| !d.starts_with('.'))
-}
-
-fn dir_entry_has_song_extension(dir_entry: &DirEntry) -> bool {
-    dir_entry
-        .path()
-        .extension()
-        .is_some_and(|e| VALID_EXTENSIONS.contains(&e.to_str().unwrap()))
-}
-
-fn dir_entry_is_song(dir_entry: &DirEntry) -> bool {
-    dir_entry_is_file(dir_entry) && dir_entry_has_song_extension(dir_entry)
 }
 
 impl<'a> FileBrowser<'a> {
@@ -130,14 +68,16 @@ impl<'a> FileBrowser<'a> {
         &self.current_directory
     }
 
-    pub fn selected_item(&self) -> PathBuf {
+    pub fn selected_item(&self) -> FileBrowserSelection {
         if self.items.is_empty() {
-            self.current_directory.clone()
+            log::error!("self.selected_index -> self.items.is_empty()");
+            FileBrowserSelection::from_path(self.current_directory.clone()).unwrap()
         } else if self.selected_index >= self.items.len() {
             log::error!("self.selected_index >= self.items.len()");
-            self.current_directory.clone()
+            FileBrowserSelection::from_path(self.current_directory.clone()).unwrap()
         } else {
-            self.current_directory.join(&self.items[self.selected_index])
+            self.items[self.selected_index].clone()
+            // self.current_directory.join(&self.items[self.selected_index])
         }
     }
 
@@ -146,45 +86,22 @@ impl<'a> FileBrowser<'a> {
     }
 
     pub(super) fn enter_selection(&mut self, key_event: KeyEvent) {
-        let path = self.selected_item();
+        let fbs = self.selected_item();
 
-        if path.is_dir() {
-            if key_event.code == KeyCode::Enter {
-                self.navigate_into();
-            } else {
-                (self.on_select_fn)((FileBrowserSelection::Directory(path), key_event));
+        match fbs {
+            FileBrowserSelection::Directory(path) if key_event.code == KeyCode::Enter => {
+                self.navigate_into(path);
             }
-        } else if path.extension().is_some_and(|e| e == "cue") {
-            match CueSheet::from_file(&path) {
-                Ok(cue_sheet) => {
-                    (self.on_select_fn)((FileBrowserSelection::CueSheet(cue_sheet), key_event));
-                    self.select_next();
-                }
-                Err(err) => {
-                    error!("Filed to read CueSheet {:#?}", err);
-                }
-            }
-        } else {
-            match Song::from_file(&path) {
-                Ok(song) => {
-                    (self.on_select_fn)((FileBrowserSelection::Song(song), key_event));
-                    self.select_next();
-                }
-                Err(err) => {
-                    error!("Failed to read Song {:#?}", err);
-                }
+            _ => {
+                (self.on_select_fn)((fbs, key_event));
             }
         }
     }
 
-    pub fn navigate_into(&mut self) {
-        let path = self.selected_item();
-
-        if path.is_dir() {
-            self.current_directory = path.clone();
-            self.items = directory_to_songs_and_folders(&path);
-            self.selected_index = 0;
-        }
+    pub fn navigate_into(&mut self, path: PathBuf) {
+        self.current_directory = path.clone();
+        self.items = directory_to_songs_and_folders(&path);
+        self.selected_index = 0;
     }
 
     pub fn navigate_up(&mut self) {
@@ -244,7 +161,7 @@ impl<'a> FileBrowser<'a> {
         let mut i = 0;
 
         for n in 0..self.items.len() {
-            if s.ends_with(self.items[n].to_string()) {
+            if s.ends_with(self.items[n].to_path().as_path()) {
                 i = n;
                 break;
             }
@@ -271,7 +188,7 @@ impl<'a> FileBrowser<'a> {
                 return None;
             }
 
-            if self.items[i].to_string().to_lowercase().contains(&s.to_lowercase()) {
+            if self.items[i].to_path().to_string_lossy().to_lowercase().contains(&s.to_lowercase()) {
                 return Some(i);
             }
         }
@@ -308,6 +225,7 @@ impl<'a> FileBrowser<'a> {
 
         if !self
             .selected_item()
+            .to_path()
             .to_string_lossy()
             .to_lowercase()
             .contains(&self.filter.clone().unwrap().to_lowercase())

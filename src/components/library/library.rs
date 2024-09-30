@@ -3,6 +3,7 @@ use std::{
         atomic::{AtomicUsize},
         Mutex,
     },
+    path::PathBuf,
 };
 
 use crossterm::event::KeyEvent;
@@ -77,19 +78,23 @@ impl<'a> Library<'a> {
     // }
 
     pub fn add_song(&self, song: Song) {
-        self.songs.lock().unwrap().push(song);
-        // self.selected_playlist_mut(move |pl| {
-        //     pl.songs.push(song.clone());
-        // });
+        let mut songs = self.songs.lock().unwrap();
+
+        if songs.iter().find(|p| p.path == song.path).is_some() {
+            log::debug!("Library.add_song(): already in library! {}", song.path.display());
+            return;
+        }
+
+        songs.push(song);
     }
 
     pub fn add_cue(&self, cue_sheet: CueSheet) {
         let mut songs = Song::from_cue_sheet(cue_sheet);
         self.songs.lock().unwrap().append(&mut songs);
-        // self.selected_playlist_mut(move |pl| {
-        //     let mut songs = Song::from_cue_sheet(cue_sheet);
-        //     pl.songs.append(&mut songs);
-        // });
+    }
+
+    pub fn add_directory(&self, path: PathBuf) {
+
     }
 
 }

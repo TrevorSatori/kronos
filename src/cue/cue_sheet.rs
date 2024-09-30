@@ -7,7 +7,8 @@ use crate::cue::cue_line::CueLine;
 use crate::cue::cue_line_node::CueLineNode;
 use crate::cue::cue_sheet_item::CueSheetItem;
 
-#[derive(Debug, PartialEq, Eq, Default)]
+#[allow(dead_code)]
+#[derive(Debug, Default, Clone)]
 pub struct CueSheet {
     cue_sheet_file_path: PathBuf,
     unknown: Vec<String>,
@@ -111,7 +112,7 @@ impl Track {
 
 impl CueSheet {
     pub fn from_file(path: &Path) -> io::Result<CueSheet> {
-        let cue_lines = CueLine::from_file(&path).unwrap();
+        let cue_lines = CueLine::from_file(&path)?;
         let cue_nodes = CueLineNode::from_lines(VecDeque::from(cue_lines));
         let mut top_cue_items: Vec<CueSheetItem> =
             cue_nodes.iter().map(|n| CueSheetItem::from_cue_line_node(n)).collect();

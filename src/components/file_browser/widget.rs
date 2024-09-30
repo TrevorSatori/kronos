@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::path::Path;
 
 use ratatui::{
@@ -17,14 +18,29 @@ use ratatui::{
         ListState,
     },
 };
-
+use ratatui::widgets::ListItem;
 use crate::{
     structs::{Queue},
     ui,
     config::{Theme},
 };
 
-use super::FileBrowser;
+use super::{FileBrowser, FileBrowserSelection};
+
+impl Display for FileBrowserSelection {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let path = self.to_path();
+        let file_name = path.file_name().map(|p| p.to_string_lossy());
+        f.write_str(file_name.unwrap_or(path.to_string_lossy()).as_ref())?;
+        Ok(())
+    }
+}
+
+impl From<&FileBrowserSelection> for Text<'_> {
+    fn from(value: &FileBrowserSelection) -> Self {
+        Text::raw(value.to_string())
+    }
+}
 
 impl<'a> WidgetRef for FileBrowser<'a> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
@@ -40,7 +56,7 @@ impl<'a> WidgetRef for FileBrowser<'a> {
             fl,
             area_main_left,
             buf,
-            &mut ListState::default().with_offset(self.offset as usize).with_selected(Some(self.selected_index)),
+            &mut ListState::default().with_offset(self.offset).with_selected(Some(self.selected_index)),
         );
 
         let [_separator_left, separator_middle, _separator_right] = Layout::horizontal([Constraint::Min(1), Constraint::Length(1), Constraint::Min(1)])
@@ -102,15 +118,16 @@ fn top_bar(theme: &Theme, current_directory: &Path, filter: &Option<String>) -> 
     top_bar
 }
 
-fn file_list(theme: &Theme, items: &Vec<String>, filter: &Option<String>) -> List<'static> {
-    let browser_items: Vec<ratatui::widgets::ListItem> = items
+fn file_list(theme: &Theme, items: &Vec<FileBrowserSelection>, filter: &Option<String>) -> List<'static> {
+    let browser_items: Vec<ListItem> = items
         .iter()
+        // .map(|i| i.to_path().to_string_lossy().to_string())
         .map(|i| {
             let fg = match filter.as_ref() {
-                Some(s) if i.to_lowercase().contains(&s.to_lowercase()) => theme.search,
+                Some(s) if i.to_path().to_string_lossy().to_lowercase().contains(&s.to_lowercase()) => theme.search,
                 _ => Color::Reset,
             };
-            ratatui::widgets::ListItem::new(Text::from(i.to_owned())).style(Style::default().fg(fg))
+            ListItem::new(Text::from(i)).style(Style::default().fg(fg))
         })
         .collect();
 
