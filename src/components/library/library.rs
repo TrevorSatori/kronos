@@ -1,7 +1,9 @@
 use std::{
+    collections::{HashMap, HashSet},
     sync::{
         atomic::{AtomicUsize},
         Mutex,
+        Arc,
     },
     path::PathBuf,
 };
@@ -22,7 +24,9 @@ pub(super) enum LibraryScreenElement {
 
 pub struct Library<'a> {
     pub(super) theme: Theme,
-    pub(super) songs: Mutex<Vec<Song>>,
+
+    pub(super) artists: Arc<Mutex<Vec<String>>>, // TODO: songs: Vec<Song>, other stuff: weak ref, etc
+    pub(super) songs: Mutex<HashMap<String, Vec<Song>>>,
 
     pub(super) focused_element: Mutex<LibraryScreenElement>,
 
@@ -34,63 +38,69 @@ pub struct Library<'a> {
 
 impl<'a> Library<'a> {
     pub fn new(theme: Theme, songs: Vec<Song>) -> Self {
-        Self {
-            songs: Mutex::new(songs),
-            selected_artist_index: AtomicUsize::new(0),
-            selected_song_index: AtomicUsize::new(0),
+        let lib = Self {
             theme,
             focused_element: Mutex::new(LibraryScreenElement::SongList),
-            on_select_fn: Mutex::new(Box::new(|_| {}) as _),
-        }
-    }
 
-    pub fn songs(&self) -> Vec<Song> {
-        self.songs.lock().unwrap().clone()
+            on_select_fn: Mutex::new(Box::new(|_| {}) as _),
+
+            artists: Arc::new(Mutex::new(vec![])),
+            songs: Mutex::new(HashMap::new()),
+            selected_artist_index: AtomicUsize::new(0),
+            selected_song_index: AtomicUsize::new(0),
+        };
+
+        lib.add_songs(songs);
+
+        lib
     }
 
     pub fn on_select(&self, cb: impl FnMut((Song, KeyEvent)) + 'a) {
         *self.on_select_fn.lock().unwrap() = Box::new(cb);
     }
 
-    // pub fn artists(&self) -> Vec<Song> {
-    //     let artists = self.artists.lock().unwrap();
-    //     artists.clone()
-    // }
+    pub fn songs(&self) -> Vec<Song> {
+        let mut songs = vec![];
 
-    // pub fn selected_artist<T>(&self, f: impl FnOnce(&Playlist) -> T) -> Option<T> {
-    //     let selected_playlist_index = self.selected_artist_index.load(Ordering::Relaxed);
-    //     let mut playlists = self.playlists.lock().unwrap();
-    //
-    //     if let Some(selected_playlist) = playlists.get_mut(selected_playlist_index) {
-    //         Some(f(selected_playlist))
-    //     } else {
-    //         None
-    //     }
-    // }
+        for (_artist, artist_songs) in &*self.songs.lock().unwrap() {
+            for song in artist_songs {
+                songs.push(song.clone());
+            }
+        }
 
-    // pub fn selected_playlist_mut(&self, f: impl FnOnce(&mut Playlist)) {
-    //     let selected_playlist_index = self.selected_artist_index.load(Ordering::Relaxed);
-    //     let mut playlists = self.playlists.lock().unwrap();
-    //
-    //     if let Some(selected_playlist) = playlists.get_mut(selected_playlist_index) {
-    //         f(selected_playlist);
-    //     }
-    // }
+        songs
+    }
+
+    pub fn add_songs(&self, songs: Vec<Song>) {
+        for song in songs {
+            self.add_song(song);
+        }
+    }
 
     pub fn add_song(&self, song: Song) {
         let mut songs = self.songs.lock().unwrap();
 
-        if songs.iter().find(|p| p.path == song.path).is_some() {
-            log::debug!("Library.add_song(): already in library! {}", song.path.display());
+        let Some(artist) = song.artist.clone() else {
+            log::error!("Library.add_song() -> no artist! {:?}", song);
             return;
+        };
+
+        if let Some(mut x) = songs.get_mut(&artist) {
+            x.push(song);
+        } else {
+            songs.insert(artist.clone(), vec![song]);
         }
 
-        songs.push(song);
+        let mut artists = self.artists.lock().unwrap();
+
+        if !artists.contains(&artist) {
+            (*artists).push(artist.clone());
+        }
     }
 
     pub fn add_cue(&self, cue_sheet: CueSheet) {
-        let mut songs = Song::from_cue_sheet(cue_sheet);
-        self.songs.lock().unwrap().append(&mut songs);
+        let songs = Song::from_cue_sheet(cue_sheet);
+        self.add_songs(songs);
     }
 
     pub fn add_directory(&self, path: PathBuf) {

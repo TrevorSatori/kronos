@@ -117,7 +117,7 @@ impl<'a> App<'a> {
             media_rec_t: None,
 
             focused_element: FocusedElement::Browser,
-            target: None,
+            target: Some(KeyboardHandler::Ref(library.clone())),
             active_tab: AppTab::Library,
 
             library,
