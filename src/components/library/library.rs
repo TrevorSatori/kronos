@@ -40,7 +40,7 @@ impl<'a> Library<'a> {
     pub fn new(theme: Theme, songs: Vec<Song>) -> Self {
         let lib = Self {
             theme,
-            focused_element: Mutex::new(LibraryScreenElement::SongList),
+            focused_element: Mutex::new(LibraryScreenElement::ArtistList),
 
             on_select_fn: Mutex::new(Box::new(|_| {}) as _),
 
@@ -86,7 +86,9 @@ impl<'a> Library<'a> {
         };
 
         if let Some(mut x) = songs.get_mut(&artist) {
-            x.push(song);
+            if !x.iter().any(|s| s.path == song.path) {
+                x.push(song);
+            }
         } else {
             songs.insert(artist.clone(), vec![song]);
         }
@@ -103,8 +105,9 @@ impl<'a> Library<'a> {
         self.add_songs(songs);
     }
 
-    pub fn add_directory(&self, path: PathBuf) {
-
+    pub fn add_directory(&self, path: &PathBuf) {
+        let songs = Song::from_dir(path);
+        self.add_songs(songs);
     }
 
 }

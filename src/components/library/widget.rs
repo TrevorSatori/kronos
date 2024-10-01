@@ -32,9 +32,6 @@ impl<'a> WidgetRef for Library<'a> {
 
         let artists = self.artists.lock().unwrap();
 
-        log::debug!("rendering artists :{:?}", *artists);
-
-
         for i in 0..artists.len() {
             let artist = artists[i].as_str();
             let area = Rect {
@@ -65,12 +62,10 @@ impl<'a> WidgetRef for Library<'a> {
         }
 
         let artist = artists[selected_artist_index].as_str();
-        // let songs = self.songs_by_artist(artist);
         let songs_all = self.songs.lock().unwrap();
         let songs = songs_all.get(artist);
 
         let Some(songs) = songs else {
-            // log::debug!("No songs for {artist}");
             return;
         };
 
@@ -97,7 +92,7 @@ impl<'a> WidgetRef for Library<'a> {
                 Style::default().fg(Color::White).bg(self.theme.background)
             };
 
-            let line = ratatui::text::Line::from(song.title.as_str()).style(style);
+            let line = ratatui::text::Line::from(format!("{} - {}", song.album.clone().unwrap_or("(no album)".to_string()), song.title.clone())).style(style);
 
             line.render_ref(area, buf);
         }

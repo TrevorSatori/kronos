@@ -253,10 +253,7 @@ impl<'a> App<'a> {
                 // directory_to_songs_and_folders
             }
             (FileBrowserSelection::Directory(path), KeyCode::Char('j')) => {
-                log::debug!("TODO: file_browser().on_select(Directory({}), j)", path.display());
-                // let songs = path_to
-                // media_library.lock().unwrap().push(song.clone());
-                // directory_to_songs_and_folders
+                media_library.add_directory(&path);
             }
             _ => {}
         }

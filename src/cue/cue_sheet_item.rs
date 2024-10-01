@@ -7,6 +7,7 @@ pub enum CueSheetItem {
     Comment(String),
     Title(String),
     Performer(String),
+    Album(Option<String>),
     File(String, Vec<CueSheetItem>),
     Track(String, Vec<CueSheetItem>),
     Index(String),

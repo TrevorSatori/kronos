@@ -71,10 +71,10 @@ impl<'a> FileBrowser<'a> {
     pub fn selected_item(&self) -> FileBrowserSelection {
         if self.items.is_empty() {
             log::error!("self.selected_index -> self.items.is_empty()");
-            FileBrowserSelection::from_path(self.current_directory.clone()).unwrap()
+            FileBrowserSelection::from_path(&self.current_directory).unwrap()
         } else if self.selected_index >= self.items.len() {
             log::error!("self.selected_index >= self.items.len()");
-            FileBrowserSelection::from_path(self.current_directory.clone()).unwrap()
+            FileBrowserSelection::from_path(&self.current_directory).unwrap()
         } else {
             self.items[self.selected_index].clone()
             // self.current_directory.join(&self.items[self.selected_index])

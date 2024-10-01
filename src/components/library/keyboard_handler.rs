@@ -38,20 +38,30 @@ impl<'a> KeyboardHandlerRef<'a> for Library<'a> {
 impl<'a> Library<'a> {
 
     fn on_key_event_artist_list(&self, key: KeyEvent) {
-        let len = self.artists.lock().unwrap().len();
+        let mut artists = self.artists.lock().unwrap();
+        let len = artists.len();
 
         match key.code {
             KeyCode::Up => {
                 let _ = self.selected_artist_index.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |a| { Some(a.saturating_sub(1)) });
+                self.selected_song_index.store(0, Ordering::SeqCst);
             },
             KeyCode::Down => {
                 let _ = self.selected_artist_index.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |a| { Some(a.saturating_add(1).min(len.saturating_sub(1))) });
+                self.selected_song_index.store(0, Ordering::SeqCst);
             },
             KeyCode::Home => {
                 self.selected_artist_index.store(0, Ordering::SeqCst);
+                self.selected_song_index.store(0, Ordering::SeqCst);
             },
             KeyCode::End => {
                 self.selected_artist_index.store(len.saturating_sub(1), Ordering::SeqCst);
+                self.selected_song_index.store(0, Ordering::SeqCst);
+            },
+            KeyCode::Delete => {
+                let removed_artist = artists.remove(self.selected_artist_index.load(Ordering::SeqCst));
+                let mut songs = self.songs.lock().unwrap();
+                songs.remove(removed_artist.as_str());
             },
             _ => {},
         }
@@ -72,10 +82,10 @@ impl<'a> Library<'a> {
         let len = songs.len();
 
         match key.code {
-            KeyCode::Up if key.modifiers == KeyModifiers::NONE => {
+            KeyCode::Up => {
                 let _ = self.selected_song_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_sub(1)) });
             },
-            KeyCode::Down if key.modifiers == KeyModifiers::NONE => {
+            KeyCode::Down => {
                 let _ = self.selected_song_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len.saturating_sub(1))) });
             },
             KeyCode::Home => {
@@ -85,8 +95,14 @@ impl<'a> Library<'a> {
                 self.selected_song_index.store(len.saturating_sub(1), Ordering::SeqCst);
             },
             KeyCode::Enter | KeyCode::Char(_) => {
+                let i = self.selected_song_index.load(Ordering::SeqCst);
+                if i >= songs.len() {
+                    log::error!("library on_key_event_song_list enter: selected_song_index > songs.len");
+                    return;
+                }
                 let song = songs[self.selected_song_index.load(Ordering::SeqCst)].clone();
                 self.on_select_fn.lock().unwrap()((song, key));
+                let _ = self.selected_song_index.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |a| { Some(a.saturating_add(1).min(len.saturating_sub(1))) });
             },
             _ => {},
         }

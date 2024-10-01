@@ -6,36 +6,53 @@ use std::{
 use lofty::{Accessor, AudioFile, LoftyError, Probe, TaggedFileExt};
 use serde::{Deserialize, Serialize};
 
-use crate::cue::CueSheet;
+use crate::{
+    cue::CueSheet,
+    components::{FileBrowserSelection, directory_to_songs_and_folders},
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Song {
     pub path: PathBuf,
+    pub start_time: Duration,
     pub length: Duration,
     pub title: String,
-    pub start_time: Duration,
     pub artist: Option<String>,
+    pub album: Option<String>,
 }
 
 impl Song {
     pub fn from_file(path: &PathBuf) -> Result<Self, LoftyError> {
         let tagged_file = Probe::open(path)?.read()?;
 
-        let (artist, title) = match tagged_file.primary_tag() {
+        let (artist, album, title) = match tagged_file.primary_tag() {
             Some(primary_tag) => (
                 primary_tag.artist().map(String::from),
+                primary_tag.album().map(String::from),
                 primary_tag.title().map(String::from),
             ),
-            _ => (None, None),
+            _ => (None, None, None),
         };
 
         Ok(Song {
             path: PathBuf::from(path),
-            length: tagged_file.properties().duration(),
-            artist,
-            title: title.unwrap_or(path.file_name().unwrap().to_str().unwrap().to_string()),
             start_time: Duration::ZERO,
+            length: tagged_file.properties().duration(),
+            title: title.unwrap_or(path.file_name().unwrap().to_str().unwrap().to_string()),
+            artist,
+            album,
         })
+    }
+
+    pub fn from_dir(path: &PathBuf) -> Vec<Self> {
+        let songs = directory_to_songs_and_folders(path);
+        songs.iter().filter_map(|s| {
+            if let FileBrowserSelection::Song(song) = s {
+                Some(song.clone())
+            } else {
+                None
+            }
+        }).collect()
     }
 
     pub fn from_cue_sheet(cue_sheet: CueSheet) -> Vec<Self> {
@@ -56,6 +73,7 @@ impl Song {
                 artist: t.performer(),
                 title: t.title(),
                 start_time: t.start_time(),
+                album: None, // TODO: album for CUE
             })
             .collect();
 
