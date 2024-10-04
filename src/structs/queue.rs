@@ -1,5 +1,4 @@
 use std::sync::{
-    mpsc::{channel, Receiver, Sender},
     Arc, Condvar, Mutex, MutexGuard,
 };
 use std::time::Duration;

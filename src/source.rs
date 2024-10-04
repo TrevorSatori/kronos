@@ -64,7 +64,6 @@ impl Controls<'_> {
 
 pub struct Source<F> {
     input: PeriodicRodioSource<F>,
-    path: PathBuf,
     on_playback_end: Option<Box<dyn FnOnce() + Send + 'static>>,
 }
 
@@ -98,7 +97,6 @@ impl Source<()> {
 
         Source {
             input,
-            path,
             on_playback_end: Some(Box::new(on_playback_end)),
         }
     }
