@@ -1,3 +1,5 @@
+cargo-features = ["profile-rustflags"]
+
 [package]
 name = "jolteon"
 version = "0.1.0"
@@ -5,9 +7,14 @@ edition = "2021"
 
 [profile.release]
 panic = 'abort'
+strip = "debuginfo"
+lto = true
+codegen-units = 1
+rustflags = ["-C", "target-cpu=native"]
 
 [profile.dev]
 panic = 'abort'
+rustflags = ["-Z", "threads=8"]
 
 [dependencies]
 crossterm = {  version = "0.28.1", features = ["event-stream"] }
