@@ -63,13 +63,7 @@ impl<'a> WidgetRef for Library<'a> {
             return;
         }
 
-        let artist = artists[selected_artist_index].as_str();
-        let songs_all = self.songs.lock().unwrap();
-        let songs = songs_all.get(artist);
-
-        let Some(songs) = songs else {
-            return;
-        };
+        let songs = self.selected_artist_songs.lock().unwrap();
 
         if songs.len() < 1 {
             return;

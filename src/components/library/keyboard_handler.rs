@@ -67,9 +67,17 @@ impl<'a> Library<'a> {
                 let mut songs = self.songs.lock().unwrap();
                 songs.remove(removed_artist.as_str());
                 self.offset.store(0, Ordering::SeqCst);
+                let _ = self.selected_artist_index.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |a| { Some(a.saturating_sub(1).min(len.saturating_sub(1))) });
             },
             _ => {},
         }
+
+
+        let artist = artists[self.selected_artist_index.load(Ordering::SeqCst)].as_str();
+        let songs = self.songs.lock().unwrap();
+        let artist_songs = songs.get(artist).unwrap();
+        let artist_songs = artist_songs.iter().map(|s| s.clone()).collect();
+        *self.selected_artist_songs.lock().unwrap() = artist_songs;
     }
 
     fn on_key_event_song_list(&self, key: KeyEvent) {
@@ -105,12 +113,12 @@ impl<'a> Library<'a> {
     }
 
     fn on_song_list_directional_key(&self, key: KeyEvent) {
-        let songs = self.songs_by_artist();
+        let songs = self.selected_artist_songs.lock().unwrap();
 
-        let Some(songs) = songs else {
+        if songs.is_empty() {
             log::debug!("on_key_event_song_list No songs for artist");
             return;
-        };
+        }
 
         let length = songs.len() as i32;
 
