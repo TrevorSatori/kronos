@@ -10,7 +10,7 @@ use crate::{
     cue::CueSheet,
 };
 
-const VALID_EXTENSIONS: [&str; 8] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac", "cue"];
+const VALID_EXTENSIONS: [&str; 7] = ["mp3", "mp4", "m4a", "wav", "flac", "ogg", "aac"];
 
 #[derive(Debug, Clone)]
 pub enum FileBrowserSelection {
