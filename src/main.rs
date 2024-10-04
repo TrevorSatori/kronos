@@ -21,7 +21,7 @@ use std::sync::mpsc::channel;
 use std::thread;
 
 use async_std::task;
-use colored::Colorize;
+use colored::{Color, Colorize};
 use flexi_logger::{DeferredNow, FileSpec, Logger, WriteMode, style};
 use futures::{
     future::FutureExt, // for `.fuse()`
@@ -46,8 +46,17 @@ pub fn log_format(w: &mut dyn std::io::Write, now: &mut DeferredNow, record: &Re
 
     write!(w, "{: <16}", thread::current().name().unwrap_or("<unnamed>"),)?;
 
-    let module = record.module_path().unwrap_or("").to_string();
-    write!(w, "{:28}", module[..module.len().min(25)].green())?;
+    let target = record.target().to_string();
+
+    let color = if target.starts_with("jolteon") {
+        Color::Green
+    } else if target.starts_with("::") {
+        Color::Blue
+    } else {
+        Color::Black
+    };
+
+    write!(w, "{:28}", target[..target.len().min(25)].color(color))?;
 
     write!(w, "{}", record.args())?;
     Ok(())
@@ -57,7 +66,7 @@ pub fn log_format(w: &mut dyn std::io::Write, now: &mut DeferredNow, record: &Re
 async fn main() -> Result<(), Box<dyn Error>> {
     set_panic_hook();
 
-    let _logger = Logger::try_with_str("jolteon=trace,warn")?
+    let _logger = Logger::try_with_str("jolteon=trace,::=trace, warn")?
         .format(log_format)
         .log_to_file(FileSpec::default().suppress_timestamp())
         .write_mode(WriteMode::Direct)
