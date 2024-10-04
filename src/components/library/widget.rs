@@ -18,13 +18,15 @@ impl<'a> Widget for Library<'a> {
 
 impl<'a> WidgetRef for Library<'a> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
-        let [area_left, _, _area_right] = Layout::horizontal([
+        let [area_left, _, area_right] = Layout::horizontal([
             Constraint::Percentage(50),
             Constraint::Length(5),
             Constraint::Percentage(50),
         ])
             .horizontal_margin(2)
             .areas(area);
+
+        self.height.store(area_right.height as usize, Ordering::Relaxed);
 
         let focused_element = self.focused_element.lock().unwrap();
         let selected_artist_index = self.selected_artist_index.load(Ordering::Relaxed);
@@ -74,15 +76,24 @@ impl<'a> WidgetRef for Library<'a> {
         }
 
         let selected_song_index = self.selected_song_index.load(Ordering::Relaxed);
-        for i in 0..songs.len() {
-            let song = &songs[i];
+        let offset = self.offset.load(Ordering::Relaxed);
+
+        for i in 0..songs.len().min(area.height as usize) {
+            let song_index = i + offset;
+
+            if song_index >= songs.len() {
+                log::error!("song index {song_index} > songs.len() {} offset={offset}", songs.len());
+                break;
+            }
+
+            let song = &songs[song_index];
             let area = Rect {
-                y: _area_right.y + i as u16,
+                y: area_right.y + i as u16,
                 height: 1,
-                .._area_right
+                ..area_right
             };
 
-            let style = if i == selected_song_index {
+            let style = if song_index == selected_song_index {
                 if *focused_element == LibraryScreenElement::SongList {
                     Style::default().fg(self.theme.highlight_foreground).bg(self.theme.highlight_background)
                 } else {
@@ -92,15 +103,15 @@ impl<'a> WidgetRef for Library<'a> {
                 Style::default().fg(Color::White).bg(self.theme.background)
             };
 
-            let line = ratatui::text::Line::from(format!("{} - {}", song.album.clone().unwrap_or("(no album)".to_string()), song.title.clone())).style(style);
+            let line = ratatui::text::Line::from(
+                format!("{} - {} - {}",
+                    song.album.clone().unwrap_or("(no album)".to_string()),
+                    song.track.unwrap_or(0),
+                    song.title.clone()
+                ),
+            ).style(style);
 
             line.render_ref(area, buf);
         }
-        //
-        // if selected_song_index >= songs.len() {
-        //     log::error!("selected_playlist_index >= playlists.len()");
-        //     return;
-        // }
-
     }
 }

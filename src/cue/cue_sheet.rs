@@ -76,6 +76,10 @@ impl Track {
         track
     }
 
+    pub fn index(&self) -> String {
+        self.index.clone()
+    }
+
     pub fn title(&self) -> String {
         self.title.clone()
     }
@@ -143,6 +147,10 @@ impl CueSheet {
 
     pub fn file(&self) -> Option<CueFile> {
         self.file.clone()
+    }
+
+    pub fn title(&self) -> Option<String> {
+        self.title.clone()
     }
 }
 

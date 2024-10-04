@@ -124,12 +124,10 @@ impl Player {
         let thread = thread::Builder::new().name("player".to_string()).spawn(move || {
             loop {
                 // Grab the next song in the queue. If there isn't one, we block until one comes in.
-                // log::trace!("Queue.pop()...");
                 let Ok(song) = queue_items.pop() else {
                     log::debug!("queue_items.pop() returned an error");
                     break;
                 };
-                // log::debug!("Queue.pop() -> popped {:?} {:?}", song.title, song.start_time);
 
                 let path = song.path.clone();
                 let start_time = song.start_time.clone();

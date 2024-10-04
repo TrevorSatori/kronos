@@ -220,7 +220,7 @@ impl<'a> App<'a> {
         key_event: KeyEvent,
     ) {
         // log::debug!("on_file_browser_key({:?}, {:?})", key_event.code, file_browser_selection);
-        log::debug!("on_file_browser_key({:?})", key_event.code);
+        // log::debug!("on_file_browser_key({:?})", key_event.code);
         match (file_browser_selection, key_event.code) {
             (FileBrowserSelection::Song(song), KeyCode::Enter) => {
                 player.play_song(song);
@@ -228,10 +228,18 @@ impl<'a> App<'a> {
             (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Enter) => {
                 player.enqueue_cue(cue_sheet);
             }
+
             (FileBrowserSelection::Song(song), KeyCode::Char('j')) => {
-                log::debug!("TODO: file_browser().on_select(Song({}), j)", song.title);
                 media_library.add_song(song.clone());
             }
+            (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Char('j')) => {
+                log::debug!("on_file_browser_key CUE ({:?})", cue_sheet);
+                media_library.add_cue(cue_sheet);
+            }
+            (FileBrowserSelection::Directory(path), KeyCode::Char('j')) => {
+                media_library.add_directory(&path);
+            }
+
             (FileBrowserSelection::Song(song), KeyCode::Char('a')) => {
                 player.enqueue_song(song);
             }
@@ -242,6 +250,7 @@ impl<'a> App<'a> {
                 log::debug!("TODO: file_browser().on_select(Directory({}), a)", path.display());
                 // directory_to_songs_and_folders
             }
+
             (FileBrowserSelection::Song(song), KeyCode::Char('y')) => {
                 playlists.add_song(song);
             }
@@ -251,9 +260,6 @@ impl<'a> App<'a> {
             (FileBrowserSelection::Directory(path), KeyCode::Char('y')) => {
                 log::debug!("TODO: file_browser().on_select(Directory({}), y)", path.display());
                 // directory_to_songs_and_folders
-            }
-            (FileBrowserSelection::Directory(path), KeyCode::Char('j')) => {
-                media_library.add_directory(&path);
             }
             _ => {}
         }

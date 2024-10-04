@@ -19,19 +19,21 @@ pub struct Song {
     pub title: String,
     pub artist: Option<String>,
     pub album: Option<String>,
+    pub track: Option<u32>,
 }
 
 impl Song {
     pub fn from_file(path: &PathBuf) -> Result<Self, LoftyError> {
         let tagged_file = Probe::open(path)?.read()?;
 
-        let (artist, album, title) = match tagged_file.primary_tag() {
+        let (artist, album, title, track) = match tagged_file.primary_tag() {
             Some(primary_tag) => (
                 primary_tag.artist().map(String::from),
                 primary_tag.album().map(String::from),
                 primary_tag.title().map(String::from),
+                primary_tag.track(),
             ),
-            _ => (None, None, None),
+            _ => (None, None, None, None),
         };
 
         Ok(Song {
@@ -41,6 +43,7 @@ impl Song {
             title: title.unwrap_or(path.file_name().unwrap().to_str().unwrap().to_string()),
             artist,
             album,
+            track,
         })
     }
 
@@ -56,6 +59,8 @@ impl Song {
     }
 
     pub fn from_cue_sheet(cue_sheet: CueSheet) -> Vec<Self> {
+        // log::debug!(target: "::song.from_cue_sheet", "{:?}", cue_sheet);
+
         let cue_file = cue_sheet.file().unwrap();
         let file_name = cue_file.name();
         let tracks = cue_file.tracks();
@@ -73,7 +78,8 @@ impl Song {
                 artist: t.performer(),
                 title: t.title(),
                 start_time: t.start_time(),
-                album: None, // TODO: album for CUE
+                album: cue_sheet.title(),
+                track: t.index().split_whitespace().nth(0).map(|i| i.parse().ok()).flatten(),
             })
             .collect();
 
