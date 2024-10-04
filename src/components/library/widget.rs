@@ -26,20 +26,27 @@ impl<'a> WidgetRef for Library<'a> {
             .horizontal_margin(2)
             .areas(area);
 
-        self.height.store(area_right.height as usize, Ordering::Relaxed);
+        self.height.store(area.height as usize, Ordering::Relaxed);
+
+        self.render_ref_artists(area_left, buf);
+        self.render_ref_songs(area_right, buf);
+    }
+}
+
+impl<'a> Library<'a> {
+    fn render_ref_artists(&self, area: Rect, buf: &mut Buffer) {
+        self.height.store(area.height as usize, Ordering::Relaxed);
 
         let focused_element = self.focused_element.lock().unwrap();
         let selected_artist_index = self.selected_artist_index.load(Ordering::Relaxed);
-
-
         let artists = self.artists.lock().unwrap();
 
         for i in 0..artists.len() {
             let artist = artists[i].as_str();
             let area = Rect {
-                y: area_left.y + i as u16,
+                y: area.y + i as u16,
                 height: 1,
-                ..area_left
+                ..area
             };
 
             let style = if i == selected_artist_index {
@@ -56,7 +63,11 @@ impl<'a> WidgetRef for Library<'a> {
 
             line.render_ref(area, buf);
         }
+    }
 
+    fn render_ref_songs(&self, area: Rect, buf: &mut Buffer) {
+        let selected_artist_index = self.selected_artist_index.load(Ordering::Relaxed);
+        let artists = self.artists.lock().unwrap();
 
         if selected_artist_index >= artists.len() {
             log::error!("selected_artist_index >= artists.len()");
@@ -68,6 +79,9 @@ impl<'a> WidgetRef for Library<'a> {
         if songs.len() < 1 {
             return;
         }
+
+
+        let focused_element = self.focused_element.lock().unwrap();
 
         let selected_song_index = self.selected_song_index.load(Ordering::Relaxed);
         let offset = self.offset.load(Ordering::Relaxed);
@@ -82,9 +96,9 @@ impl<'a> WidgetRef for Library<'a> {
 
             let song = &songs[song_index];
             let area = Rect {
-                y: area_right.y + i as u16,
+                y: area.y + i as u16,
                 height: 1,
-                ..area_right
+                ..area
             };
 
             let style = if song_index == selected_song_index {
@@ -99,9 +113,9 @@ impl<'a> WidgetRef for Library<'a> {
 
             let line = ratatui::text::Line::from(
                 format!("{} - {} - {}",
-                    song.album.clone().unwrap_or("(no album)".to_string()),
-                    song.track.unwrap_or(0),
-                    song.title.clone()
+                        song.album.clone().unwrap_or("(no album)".to_string()),
+                        song.track.unwrap_or(0),
+                        song.title.clone()
                 ),
             ).style(style);
 
