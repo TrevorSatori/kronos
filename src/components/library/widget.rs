@@ -33,6 +33,18 @@ impl<'a> WidgetRef for Library<'a> {
     }
 }
 
+fn line_style(theme: &crate::config::Theme, index: usize, selected_index: usize, focused_element: bool) -> Style {
+    if index == selected_index {
+        if focused_element {
+            Style::default().fg(theme.highlight_foreground).bg(theme.highlight_background)
+        } else {
+            Style::default().fg(theme.highlight_foreground).bg(Color::from_hsl(29.0, 54.0, 34.0))
+        }
+    } else {
+        Style::default().fg(Color::White).bg(theme.background)
+    }
+}
+
 impl<'a> Library<'a> {
     fn render_ref_artists(&self, area: Rect, buf: &mut Buffer) {
         self.height.store(area.height as usize, Ordering::Relaxed);
@@ -49,16 +61,7 @@ impl<'a> Library<'a> {
                 ..area
             };
 
-            let style = if i == selected_artist_index {
-                if *focused_element == LibraryScreenElement::ArtistList {
-                    Style::default().fg(self.theme.highlight_foreground).bg(self.theme.highlight_background)
-                } else {
-                    Style::default().fg(self.theme.highlight_foreground).bg(Color::from_hsl(29.0, 54.0, 34.0))
-                }
-            } else {
-                Style::default().fg(Color::White).bg(self.theme.background)
-            };
-
+            let style = line_style(&self.theme, i, selected_artist_index, *focused_element == LibraryScreenElement::ArtistList);
             let line = ratatui::text::Line::from(artist).style(style);
 
             line.render_ref(area, buf);
@@ -80,7 +83,6 @@ impl<'a> Library<'a> {
             return;
         }
 
-
         let focused_element = self.focused_element.lock().unwrap();
 
         let selected_song_index = self.selected_song_index.load(Ordering::Relaxed);
@@ -101,16 +103,7 @@ impl<'a> Library<'a> {
                 ..area
             };
 
-            let style = if song_index == selected_song_index {
-                if *focused_element == LibraryScreenElement::SongList {
-                    Style::default().fg(self.theme.highlight_foreground).bg(self.theme.highlight_background)
-                } else {
-                    Style::default().fg(self.theme.highlight_foreground).bg(Color::from_hsl(29.0, 54.0, 34.0))
-                }
-            } else {
-                Style::default().fg(Color::White).bg(self.theme.background)
-            };
-
+            let style = line_style(&self.theme, song_index, selected_song_index, *focused_element == LibraryScreenElement::SongList);
             let line = ratatui::text::Line::from(
                 format!("{} - {} - {}",
                         song.album.clone().unwrap_or("(no album)".to_string()),
