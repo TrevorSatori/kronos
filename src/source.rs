@@ -64,6 +64,8 @@ impl Controls<'_> {
 
 pub struct Source<F> {
     input: PeriodicRodioSource<F>,
+    path: PathBuf,
+    on_playback_end: Option<Box<dyn FnOnce() + Send + 'static>>,
 }
 
 impl Source<()> {
@@ -71,6 +73,7 @@ impl Source<()> {
         path: PathBuf,
         mut periodic_access: impl FnMut(&mut Controls) + Send,
         shared_pos: Arc<Mutex<Duration>>,
+        on_playback_end: impl FnOnce() + Send + 'static,
     ) -> Source<Box<impl FnMut(&mut FullRodioSource) + Send>>
     {
         let periodic_access_inner = {
@@ -81,7 +84,7 @@ impl Source<()> {
             })
         };
 
-        let file = BufReader::new(File::open(path).unwrap());
+        let file = BufReader::new(File::open(path.clone()).unwrap());
         let source = Decoder::new(file).unwrap();
         let input = source
             .speed(1.0)
@@ -95,6 +98,8 @@ impl Source<()> {
 
         Source {
             input,
+            path,
+            on_playback_end: Some(Box::new(on_playback_end)),
         }
     }
 }
@@ -128,7 +133,15 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<f32> {
-        self.input.next()
+        let n = self.input.next();
+
+        if n.is_none() {
+            if let Some(cb) = self.on_playback_end.take() {
+                cb();
+            }
+        }
+
+        n
     }
 
     #[inline]
@@ -164,5 +177,11 @@ where
     #[inline]
     fn try_seek(&mut self, pos: Duration) -> Result<(), SeekError> {
         self.input.try_seek(pos)
+    }
+}
+
+impl<F> Drop for Source<F> {
+    fn drop(&mut self) {
+        log::trace!("Source.drop()");
     }
 }

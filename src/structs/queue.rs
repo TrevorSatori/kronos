@@ -1,6 +1,6 @@
 use std::sync::{
     mpsc::{channel, Receiver, Sender},
-    Arc, Mutex, MutexGuard,
+    Arc, Condvar, Mutex, MutexGuard,
 };
 use std::time::Duration;
 use std::collections::VecDeque;
@@ -10,11 +10,10 @@ use crate::structs::Song;
 
 pub struct Queue {
     items: Arc<Mutex<VecDeque<Song>>>,
-    selected_item_index: Arc<Mutex<Option<usize>>>,
+    selected_item_index: Mutex<Option<usize>>,
     total_time: Arc<Mutex<Duration>>,
-    tx: Arc<Mutex<Sender<()>>>,
-    rx: Arc<Mutex<Receiver<()>>>,
     must_exit_pop_loop: AtomicBool, // TODO: enum in tx/rx
+    pop_condvar: Condvar,
 }
 
 fn song_list_to_duration(items: &VecDeque<Song>) -> Duration {
@@ -26,28 +25,24 @@ impl Queue {
         let songs = VecDeque::from(songs);
         let total_time = song_list_to_duration(&songs);
 
-        let (tx, rx) = channel();
-
         Self {
             items: Arc::new(Mutex::new(songs)),
-            selected_item_index: Arc::new(Mutex::new(None)),
+            selected_item_index: Mutex::new(None),
             total_time: Arc::new(Mutex::new(total_time)),
-            tx: Arc::new(Mutex::new(tx)),
-            rx: Arc::new(Mutex::new(rx)),
             must_exit_pop_loop: AtomicBool::new(false),
+            pop_condvar: Condvar::new(),
         }
     }
 
     pub fn quit(&self) {
         log::trace!("Queue.quit()");
         self.must_exit_pop_loop.store(true, Ordering::SeqCst);
-        if let Err(err) = self.tx.lock().unwrap().send(()) {
-            log::warn!("Queue.quit().send(Stop) failed {:?}", err);
-        }
+        self.pop_condvar.notify_one();
     }
 
     pub fn notify_queue_change(&self) {
-        self.tx.lock().unwrap().send(()).unwrap();
+        self.refresh_total_time();
+        self.pop_condvar.notify_one();
     }
 
     pub fn songs(&self) -> MutexGuard<VecDeque<Song>> {
@@ -66,7 +61,7 @@ impl Queue {
         if self.songs().is_empty() {
             None
         } else {
-            self.selected_item_index.clone().lock().unwrap().clone()
+            self.selected_item_index.lock().unwrap().clone()
         }
     }
 
@@ -83,27 +78,25 @@ impl Queue {
     /// Retrieves the first item of the queue, removing it in the process.
     /// This function will block if there is no item available, until there is one.
     pub fn pop(&self) -> Result<Song, ()> {
+        let target = "::queue.pop()";
+
+        let mut items = self.items.lock().unwrap();
+
         loop {
-            let song = {
-                let mut items = self.items.lock().unwrap();
-                items.pop_front()
-            };
-            if let Some(song) = song {
-                self.refresh_total_time();
+            if self.must_exit_pop_loop.load(Ordering::SeqCst) {
+                log::trace!(target: target, "Exit");
+                return Err(());
+            }
+
+            if let Some(song) = items.pop_front() {
+                log::trace!(target: target, "Got song {:?}", song.title);
+                *self.total_time.lock().unwrap() = song_list_to_duration(&items);
                 return Ok(song);
             }
-            if let Err(err) = self.rx.lock().unwrap().recv() {
-                log::warn!("Queue.pop() {:#?}", err);
-                break;
-            }
-            if self.must_exit_pop_loop.load(Ordering::SeqCst) {
-                log::debug!("Queue.pop() exit");
-                break;
-            }
-            log::trace!("Queue.pop() iteration");
-        }
 
-        Err(())
+            log::trace!(target: target, "Waiting for queue change...");
+            items = self.pop_condvar.wait(items).unwrap();
+        }
     }
 
     pub fn select_next(&self) {
@@ -137,19 +130,16 @@ impl Queue {
 
     pub fn add_front(&self, song: Song) {
         self.songs().push_front(song);
-        self.refresh_total_time();
         self.notify_queue_change();
     }
 
     pub fn add_back(&self, song: Song) {
         self.songs().push_back(song);
-        self.refresh_total_time();
         self.notify_queue_change();
     }
 
     pub fn append(&self, songs: &mut VecDeque<Song>) {
         self.songs().append(songs);
-        self.refresh_total_time();
         self.notify_queue_change();
     }
 
@@ -158,11 +148,8 @@ impl Queue {
             return;
         }
 
-        let selected_item_index_clone = self.selected_item_index.clone();
-        let mut selected_item_index_option = selected_item_index_clone.lock().unwrap();
-
-        let items_clone = self.items.clone();
-        let mut items = items_clone.lock().unwrap();
+        let mut selected_item_index_option = self.selected_item_index.lock().unwrap();
+        let mut items = self.items.lock().unwrap();
 
         if let Some(selected_item_index) = *selected_item_index_option {
             {
@@ -176,7 +163,7 @@ impl Queue {
             }
 
             drop(items);
-            self.refresh_total_time();
+            self.notify_queue_change();
         }
     }
 }
