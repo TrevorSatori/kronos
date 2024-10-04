@@ -23,6 +23,9 @@ pub struct Theme {
     #[serde(default = "default_highlight_background")]
     pub highlight_background: Color,
 
+    #[serde(default = "default_highlight_background_blur")]
+    pub highlight_background_blur: Color,
+
     #[serde(default = "default_search")]
     pub search: Color,
 
@@ -37,6 +40,7 @@ fn default_foreground() -> Color { Color::from_hsl(29.0, 54.0, 61.0) }
 fn default_background() -> Color { Color::Black }
 fn default_highlight_foreground() -> Color { Color::Black }
 fn default_highlight_background() -> Color { Color::from_hsl(29.0, 54.0, 61.0) }
+fn default_highlight_background_blur() -> Color { Color::from_hsl(29.0, 54.0, 34.0) }
 fn default_search() -> Color { Color::Red }
 fn default_top_bar_background() -> Color { Color::from_hsl(29.0, 34.0, 20.0) }
 fn default_top_bar_highlight() -> Color { Color::from_hsl(39.0, 67.0, 69.0) }

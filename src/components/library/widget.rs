@@ -33,12 +33,12 @@ impl<'a> WidgetRef for Library<'a> {
     }
 }
 
-fn line_style(theme: &crate::config::Theme, index: usize, selected_index: usize, focused_element: bool) -> Style {
+fn line_style(theme: &crate::config::Theme, index: usize, selected_index: usize, list_has_focus: bool) -> Style {
     if index == selected_index {
-        if focused_element {
+        if list_has_focus {
             Style::default().fg(theme.highlight_foreground).bg(theme.highlight_background)
         } else {
-            Style::default().fg(theme.highlight_foreground).bg(Color::from_hsl(29.0, 54.0, 34.0))
+            Style::default().fg(theme.highlight_foreground).bg(theme.highlight_background_blur)
         }
     } else {
         Style::default().fg(Color::White).bg(theme.background)
