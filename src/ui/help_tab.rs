@@ -93,7 +93,7 @@ impl<'a> WidgetRef for &HelpTab<'a> {
         let header = self
             .header
             .iter()
-            .map(|h| Cell::from(*h).style(Style::default().fg(self.config.theme.highlight_foreground)));
+            .map(|h| Cell::from(*h).style(Style::default().fg(self.config.theme.foreground_selected)));
 
         let header = Row::new(header)
             .style(
@@ -134,8 +134,8 @@ impl<'a> WidgetRef for &HelpTab<'a> {
             .highlight_style(
                 Style::default()
                     .add_modifier(Modifier::BOLD)
-                    .bg(self.config.theme.highlight_background)
-                    .fg(self.config.theme.highlight_foreground),
+                    .bg(self.config.theme.background_selected)
+                    .fg(self.config.theme.foreground_selected),
             )
             .widths(&[Constraint::Percentage(50), Constraint::Length(30), Constraint::Min(10)]);
 
@@ -157,7 +157,7 @@ impl<'a> WidgetRef for HelpTab<'a> {
         let header = self
             .header
             .iter()
-            .map(|h| Cell::from(*h).style(Style::default().fg(self.config.theme.highlight_foreground)));
+            .map(|h| Cell::from(*h).style(Style::default().fg(self.config.theme.foreground_selected)));
 
         let header = Row::new(header)
             .style(
@@ -198,8 +198,8 @@ impl<'a> WidgetRef for HelpTab<'a> {
             .highlight_style(
                 Style::default()
                     .add_modifier(Modifier::BOLD)
-                    .bg(self.config.theme.highlight_background)
-                    .fg(self.config.theme.highlight_foreground),
+                    .bg(self.config.theme.background_selected)
+                    .fg(self.config.theme.foreground_selected),
             )
             .widths(&[Constraint::Percentage(50), Constraint::Length(30), Constraint::Min(10)]);
 

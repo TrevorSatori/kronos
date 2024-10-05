@@ -146,15 +146,15 @@ impl<'a> WidgetRef for Playlists<'a> {
             let style = if i == selected_playlist_index {
                 if *focused_element == PlaylistScreenElement::PlaylistList {
                     if is_renaming {
-                        Style::default().fg(self.theme.highlight_foreground).bg(Color::Red)
+                        Style::default().fg(self.theme.foreground_selected).bg(self.theme.search)
                     } else {
-                        Style::default().fg(self.theme.highlight_foreground).bg(self.theme.highlight_background)
+                        Style::default().fg(self.theme.foreground_selected).bg(self.theme.background_selected)
                     }
                 } else {
-                    Style::default().fg(self.theme.highlight_foreground).bg(Color::from_hsl(29.0, 54.0, 34.0))
+                    Style::default().fg(self.theme.foreground_selected).bg(self.theme.background_selected_blur)
                 }
             } else {
-                Style::default().fg(Color::White).bg(self.theme.background)
+                Style::default().fg(self.theme.foreground_secondary).bg(self.theme.background)
             };
 
             let line = if is_renaming && i == selected_playlist_index {
@@ -191,12 +191,12 @@ impl<'a> WidgetRef for Playlists<'a> {
 
             let style = if i == selected_song {
                 if *focused_element == PlaylistScreenElement::SongList {
-                    Style::default().fg(self.theme.highlight_foreground).bg(self.theme.highlight_background)
+                    Style::default().fg(self.theme.foreground_selected).bg(self.theme.background_selected)
                 } else {
-                    Style::default().fg(self.theme.highlight_foreground).bg(Color::from_hsl(29.0, 54.0, 34.0))
+                    Style::default().fg(self.theme.foreground_selected).bg(self.theme.background_selected_blur)
                 }
             } else {
-                Style::default().fg(Color::White).bg(self.theme.background)
+                Style::default().fg(self.theme.foreground_secondary).bg(self.theme.background)
             };
 
             let line = ratatui::text::Line::from(song_to_string(song)).style(style);

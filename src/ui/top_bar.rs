@@ -65,7 +65,7 @@ impl Widget for TopBar {
             .highlight_style(
                 Style::default()
                     .add_modifier(Modifier::BOLD)
-                    .fg(self.theme.top_bar_highlight),
+                    .fg(self.theme.top_bar_foreground_selected),
             );
         tabs.render(area, buf);
 

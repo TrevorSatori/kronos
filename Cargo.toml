@@ -32,6 +32,8 @@ flexi_logger = { version = "0.29" }
 log = "0.4"
 chrono = "0.4.38"
 colored = "2.1.0"
+serde-inline-default = "0.2.1"
+serde_default = "0.2.0"
 
 [patch.crates-io]
 cpal = { git = 'https://github.com/lautarodragan/cpal' }

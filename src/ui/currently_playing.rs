@@ -132,7 +132,7 @@ impl Widget for CurrentlyPlaying {
             let playing_gauge = Gauge::default()
                 .style(Style::default().fg(self.theme.foreground))
                 .label(playing_gauge_label)
-                .gauge_style(Style::default().fg(self.theme.highlight_background))
+                .gauge_style(Style::default().fg(self.theme.background_selected))
                 .use_unicode(true)
                 .ratio(song_progress);
             playing_gauge.render(area_bottom, buf);

@@ -1,5 +1,6 @@
 use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
+use serde_default::DefaultFromSerde;
 
 use crate::toml::read_toml_file_or_default;
 
@@ -9,41 +10,36 @@ pub struct Config {
     pub theme: Theme,
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, Default)]
+#[serde_inline_default::serde_inline_default]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, DefaultFromSerde)]
 pub struct Theme {
-    #[serde(default = "default_foreground")]
-    pub foreground: Color,
-
-    #[serde(default = "default_background")]
-    pub background: Color,
-
-    #[serde(default = "default_highlight_foreground")]
-    pub highlight_foreground: Color,
-
-    #[serde(default = "default_highlight_background")]
-    pub highlight_background: Color,
-
-    #[serde(default = "default_highlight_background_blur")]
-    pub highlight_background_blur: Color,
-
-    #[serde(default = "default_search")]
-    pub search: Color,
-
-    #[serde(default = "default_top_bar_background")]
+    #[serde_inline_default(Color::from_hsl(29.0, 34.0, 20.0))]
     pub top_bar_background: Color,
 
-    #[serde(default = "default_top_bar_highlight")]
-    pub top_bar_highlight: Color,
-}
+    #[serde_inline_default(Color::from_hsl(39.0, 67.0, 69.0))]
+    pub top_bar_foreground_selected: Color,
 
-fn default_foreground() -> Color { Color::from_hsl(29.0, 54.0, 61.0) }
-fn default_background() -> Color { Color::Black }
-fn default_highlight_foreground() -> Color { Color::Black }
-fn default_highlight_background() -> Color { Color::from_hsl(29.0, 54.0, 61.0) }
-fn default_highlight_background_blur() -> Color { Color::from_hsl(29.0, 54.0, 34.0) }
-fn default_search() -> Color { Color::Red }
-fn default_top_bar_background() -> Color { Color::from_hsl(29.0, 34.0, 20.0) }
-fn default_top_bar_highlight() -> Color { Color::from_hsl(39.0, 67.0, 69.0) }
+    #[serde_inline_default(Color::from_hsl(29.0, 54.0, 61.0))]
+    pub foreground: Color,
+
+    #[serde_inline_default(Color::Black)]
+    pub foreground_selected: Color,
+
+    #[serde_inline_default(Color::White)]
+    pub foreground_secondary: Color,
+
+    #[serde_inline_default(Color::Black)]
+    pub background: Color,
+
+    #[serde_inline_default(Color::from_hsl(29.0, 54.0, 61.0))]
+    pub background_selected: Color,
+
+    #[serde_inline_default(Color::from_hsl(29.0, 54.0, 34.0))]
+    pub background_selected_blur: Color,
+
+    #[serde_inline_default(Color::Red)]
+    pub search: Color,
+}
 
 impl Config {
     pub fn from_file() -> Self {

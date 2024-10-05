@@ -72,7 +72,7 @@ where
 {
     read_toml_file(file_name).unwrap_or_else(|err| {
         error!(
-            "Error '{file_name}' file. Will use default values. Error was: \n{:#?}",
+            "Error in '{file_name}' file. Will use default values. Error was: \n{:#?}",
             err
         );
         T::default()

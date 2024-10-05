@@ -125,7 +125,7 @@ fn file_list(theme: &Theme, items: &Vec<FileBrowserSelection>, filter: &Option<S
         .map(|i| {
             let fg = match filter.as_ref() {
                 Some(s) if i.to_path().to_string_lossy().to_lowercase().contains(&s.to_lowercase()) => theme.search,
-                _ => Color::Reset,
+                _ => theme.foreground_secondary,
             };
             ListItem::new(Text::from(i)).style(Style::default().fg(fg))
         })
@@ -135,8 +135,8 @@ fn file_list(theme: &Theme, items: &Vec<FileBrowserSelection>, filter: &Option<S
         .style(Style::default().fg(theme.foreground))
         .highlight_style(
             Style::default()
-                .bg(theme.highlight_background)
-                .fg(theme.highlight_foreground)
+                .bg(theme.background_selected)
+                .fg(theme.foreground_selected)
                 .add_modifier(Modifier::BOLD),
         )
         .scroll_padding(0)
@@ -152,8 +152,8 @@ fn queue_list<'a>(theme: &Theme, queue_items: &Queue) -> List<'a> {
         .style(Style::default().fg(theme.foreground))
         .highlight_style(
             Style::default()
-                .bg(theme.highlight_background)
-                .fg(theme.highlight_foreground)
+                .bg(theme.background_selected)
+                .fg(theme.foreground_selected)
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol("");
