@@ -29,7 +29,7 @@ impl<'a> WidgetRef for Library<'a> {
         self.height.store(area.height as usize, Ordering::Relaxed);
 
         self.render_ref_artists(area_left, buf);
-        self.render_ref_songs(area_right, buf);
+        self.song_list.lock().unwrap().render_ref(area_right, buf);
     }
 }
 
@@ -68,51 +68,4 @@ impl<'a> Library<'a> {
         }
     }
 
-    fn render_ref_songs(&self, area: Rect, buf: &mut Buffer) {
-        let selected_artist_index = self.selected_artist_index.load(Ordering::Relaxed);
-        let artists = self.artists.lock().unwrap();
-
-        if selected_artist_index >= artists.len() {
-            log::error!("selected_artist_index >= artists.len()");
-            return;
-        }
-
-        let songs = self.selected_artist_songs.lock().unwrap();
-
-        if songs.len() < 1 {
-            return;
-        }
-
-        let focused_element = self.focused_element.lock().unwrap();
-
-        let selected_song_index = self.selected_song_index.load(Ordering::Relaxed);
-        let offset = self.offset.load(Ordering::Relaxed);
-
-        for i in 0..songs.len().min(area.height as usize) {
-            let song_index = i + offset;
-
-            if song_index >= songs.len() {
-                log::error!("song index {song_index} > songs.len() {} offset={offset}", songs.len());
-                break;
-            }
-
-            let song = &songs[song_index];
-            let area = Rect {
-                y: area.y + i as u16,
-                height: 1,
-                ..area
-            };
-
-            let style = line_style(&self.theme, song_index, selected_song_index, *focused_element == LibraryScreenElement::SongList);
-            let line = ratatui::text::Line::from(
-                format!("{} - {} - {}",
-                        song.album.clone().unwrap_or("(no album)".to_string()),
-                        song.track.unwrap_or(0),
-                        song.title.clone()
-                ),
-            ).style(style);
-
-            line.render_ref(area, buf);
-        }
-    }
 }

@@ -1,6 +1,7 @@
 use std::{
     cmp::Ordering,
     collections::{HashMap, HashSet},
+    rc::Rc,
     sync::{
         atomic::{AtomicUsize, Ordering as AtomicOrdering},
         Mutex,
@@ -15,7 +16,9 @@ use crate::{
     structs::{Song},
     config::Theme,
     cue::CueSheet,
+    ui::KeyboardHandlerRef,
 };
+use super::song_list::SongList;
 
 #[derive(Eq, PartialEq)]
 pub(super) enum LibraryScreenElement {
@@ -26,17 +29,16 @@ pub(super) enum LibraryScreenElement {
 pub struct Library<'a> {
     pub(super) theme: Theme,
 
-    pub(super) artists: Arc<Mutex<Vec<String>>>, // TODO: songs: Vec<Song>, other stuff: weak ref, etc
+    pub(super) artists: Arc<Mutex<Vec<String>>>,
     pub(super) songs: Mutex<HashMap<String, Vec<Song>>>,
+    pub(super) song_list: Mutex<SongList<'a>>,
 
     pub(super) focused_element: Mutex<LibraryScreenElement>,
 
     pub(super) selected_artist_index: AtomicUsize,
     pub(super) selected_song_index: AtomicUsize,
 
-    pub(super) selected_artist_songs: Mutex<Vec<Song>>,
-
-    pub(super) on_select_fn: Mutex<Box<dyn FnMut((Song, KeyEvent)) + 'a>>,
+    pub(super) on_select_fn: Rc<Mutex<Box<dyn FnMut((Song, KeyEvent)) + 'a>>>,
 
     pub(super) offset: AtomicUsize,
     pub(super) height: AtomicUsize,
@@ -44,19 +46,31 @@ pub struct Library<'a> {
 
 impl<'a> Library<'a> {
     pub fn new(theme: Theme, songs: Vec<Song>) -> Self {
+        let on_select_fn: Rc<Mutex<Box<dyn FnMut((Song, KeyEvent)) + 'a>>> = Rc::new(Mutex::new(Box::new(|_| {}) as _));
+
+        let songs_el = SongList::new(theme);
+        songs_el.on_select({
+            let on_select_fn = on_select_fn.clone();
+            move |(song, key)| {
+                log::debug!("song selected {:?}", song);
+                let mut on_select_fn = on_select_fn.lock().unwrap();
+
+                on_select_fn((song, key));
+            }
+        });
+
         let lib = Self {
             theme,
             focused_element: Mutex::new(LibraryScreenElement::ArtistList),
 
-            on_select_fn: Mutex::new(Box::new(|_| {}) as _),
+            on_select_fn,
 
             artists: Arc::new(Mutex::new(vec![])),
             songs: Mutex::new(HashMap::new()),
+            song_list: Mutex::new(songs_el),
 
             selected_artist_index: AtomicUsize::new(0),
             selected_song_index: AtomicUsize::new(0),
-
-            selected_artist_songs: Mutex::new(Vec::new()),
 
             offset: AtomicUsize::new(0),
             height: AtomicUsize::new(0),
@@ -133,10 +147,6 @@ impl<'a> Library<'a> {
 
         artists.sort_unstable();
 
-        // cache selected_artist_songs.
-        // will eventually split the artist list and song list into separate components,
-        // and this code will become self.song_list.something(...);
-
         let Some(selected_artist) = artists.get(self.selected_song_index.load(AtomicOrdering::SeqCst)) else {
             return;
         };
@@ -152,7 +162,7 @@ impl<'a> Library<'a> {
 
         // Cloning the song list once per key press is probably more performant than dealing with Rc's, WeakRef's and whatnot.
         let artist_songs = artist_songs.iter().map(|s| s.clone()).collect();
-        *self.selected_artist_songs.lock().unwrap() = artist_songs;
+        self.song_list.lock().unwrap().set_songs(artist_songs);
     }
 
     pub fn add_cue(&self, cue_sheet: CueSheet) {

@@ -87,7 +87,7 @@ impl PartialOrd for FileBrowserSelection {
                 }
             }
             FileBrowserSelection::Song(song) => {
-                // last, but not least, songs
+                // last, but not least, song_list
                 match other {
                     FileBrowserSelection::Directory(_) => Ordering::Greater,
                     FileBrowserSelection::CueSheet(_) => Ordering::Greater,

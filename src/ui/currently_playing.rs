@@ -92,7 +92,7 @@ impl Widget for CurrentlyPlaying {
             )
         });
 
-        let songs = if self.queue_song_count == 1 { "song" } else { "songs" };
+        let songs = if self.queue_song_count == 1 { "song" } else { "song_list" };
 
         let queue_label = if self.queue_song_count > 0 {
             Some(format!(
