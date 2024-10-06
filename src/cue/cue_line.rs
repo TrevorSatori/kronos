@@ -33,7 +33,15 @@ impl CueLine {
     {
         let mut cue_lines = Vec::new();
 
-        for line in lines.flatten() {
+        for line in lines {
+            let line = match line {
+                Ok(line) => line,
+                Err(err) => {
+                    log::warn!(target: "::CueLine::from_reader()", "Failed to read line {:?}", err);
+                    continue;
+                }
+            };
+
             let indentation = line.count_leading_whitespace();
             let key_value = line.trim_leading_whitespace();
 
@@ -54,6 +62,7 @@ impl CueLine {
 
     pub fn from_file(path: &Path) -> io::Result<Vec<CueLine>> {
         let file = File::open(path)?;
+
         let reader = BufReader::new(file).lines();
         Ok(Self::from_reader(reader))
     }
