@@ -233,7 +233,7 @@ impl<'a> App<'a> {
                 media_library.add_song(song.clone());
             }
             (FileBrowserSelection::CueSheet(cue_sheet), KeyCode::Char('j')) => {
-                log::debug!("on_file_browser_key CUE ({:?})", cue_sheet);
+                // log::debug!("on_file_browser_key CUE ({:#?})", cue_sheet);
                 media_library.add_cue(cue_sheet);
             }
             (FileBrowserSelection::Directory(path), KeyCode::Char('j')) => {
