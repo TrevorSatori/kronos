@@ -59,6 +59,18 @@ impl<'a> SongList<'a> {
                 }
 
             },
+            KeyCode::Down if key.modifiers == KeyModifiers::NONE => {
+                let padding = height.saturating_sub(padding).saturating_sub(1);
+                i += 1;
+                if i > offset + padding {
+                    offset = if i > padding {
+                        i - padding
+                    } else {
+                        0
+                    };
+                }
+
+            }
             KeyCode::Up | KeyCode::Down if key.modifiers == KeyModifiers::ALT => {
                 let Some(song) = (*songs).get(i as usize) else {
                     log::error!("no selected song");
@@ -101,18 +113,6 @@ impl<'a> SongList<'a> {
                 i = 0;
                 offset = 0;
             },
-            KeyCode::Down if key.modifiers == KeyModifiers::NONE => {
-                let padding = height.saturating_sub(padding).saturating_sub(1);
-                i += 1;
-                if i > offset + padding {
-                    offset = if i > padding {
-                        i - padding
-                    } else {
-                        0
-                    };
-                }
-
-            },
             KeyCode::End => {
                 i = length - 1;
                 offset = i - height + padding;
@@ -123,7 +123,6 @@ impl<'a> SongList<'a> {
         offset = offset.min(length - height).max(0);
         i = i.min(length - 1).max(0);
 
-        // log::debug!("asd {offset} {i}");
         self.offset.store(offset as usize, Ordering::SeqCst);
         self.selected_song_index.store(i as usize, Ordering::SeqCst);
     }
