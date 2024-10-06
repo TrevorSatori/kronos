@@ -71,15 +71,15 @@ impl Queue {
         self.pop_condvar.notify_one();
     }
 
-    pub fn notify_queue_change(&self) {
-        self.refresh_atomic_caches();
-        self.pop_condvar.notify_one();
-    }
+    fn mut_queue(&self, f: impl FnOnce(&mut VecDeque<Song>)) {
+        let mut songs = self.songs();
 
-    fn refresh_atomic_caches(&self) {
-        let songs = self.songs();
+        f(&mut *songs);
+
         self.queue_length.store(songs.len(), Ordering::SeqCst);
         self.set_total_time(song_list_to_duration(&songs).as_secs());
+
+        self.pop_condvar.notify_one();
     }
 
     pub fn songs(&self) -> MutexGuard<VecDeque<Song>> {
@@ -130,18 +130,21 @@ impl Queue {
     }
 
     pub fn add_front(&self, song: Song) {
-        self.songs().push_front(song);
-        self.notify_queue_change();
+        self.mut_queue(|queue_songs| {
+            queue_songs.push_front(song);
+        });
     }
 
     pub fn add_back(&self, song: Song) {
-        self.songs().push_back(song);
-        self.notify_queue_change();
+        self.mut_queue(|queue_songs| {
+            queue_songs.push_back(song);
+        });
     }
 
     pub fn append(&self, songs: &mut VecDeque<Song>) {
-        self.songs().append(songs);
-        self.notify_queue_change();
+        self.mut_queue(|queue_songs| {
+            queue_songs.append(songs);
+        });
     }
 
     pub fn remove_selected(&self) {
@@ -151,14 +154,11 @@ impl Queue {
 
         let selected_index = self.selected_song_index();
 
-        {
-            let mut items = self.songs();
-            items.remove(selected_index);
-        }
+        self.mut_queue(|queue_songs| {
+            queue_songs.remove(selected_index);
+        });
 
         self.select_previous();
-
-        self.notify_queue_change();
     }
 }
 
