@@ -60,6 +60,7 @@ impl Song {
 
     pub fn from_cue_sheet(cue_sheet: CueSheet) -> Vec<Self> {
         let cue_file = cue_sheet.file().unwrap();
+        let performer = cue_sheet.performer();
         let file_name = cue_file.name();
         let tracks = cue_file.tracks();
 
@@ -77,12 +78,14 @@ impl Song {
             }
         };
 
+        log::debug!(target: "::Song.from_cue_sheet()", "{:#?}", tracks);
+
         let mut songs: Vec<Song> = tracks
             .iter()
             .map(|t| Song {
                 path: song_path.clone(),
                 length: Duration::ZERO,
-                artist: t.performer(),
+                artist: performer.clone().or(t.performer()),
                 title: t.title(),
                 start_time: t.start_time(),
                 album: cue_sheet.title(),

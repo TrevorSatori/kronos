@@ -152,6 +152,10 @@ impl CueSheet {
     pub fn title(&self) -> Option<String> {
         self.title.clone()
     }
+
+    pub fn performer(&self) -> Option<String> {
+        self.performer.clone()
+    }
 }
 
 #[cfg(test)]
