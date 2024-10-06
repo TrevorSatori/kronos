@@ -48,9 +48,17 @@ impl<'a> SongList<'a> {
         let mut i = self.selected_song_index.load(Ordering::SeqCst) as i32;
 
         match key.code {
-            KeyCode::Up if key.modifiers == KeyModifiers::NONE  => {
-                i -= 1;
-                if i < offset + padding {
+            KeyCode::Up | KeyCode::Down if key.modifiers == KeyModifiers::NONE  => {
+                let mut padding = padding;
+
+                if key.code == KeyCode::Up {
+                    i -= 1;
+                } else {
+                    padding = height.saturating_sub(padding).saturating_sub(1);
+                    i += 1;
+                }
+
+                if (key.code == KeyCode::Up && i < offset + padding) || (key.code == KeyCode::Down && i > offset + padding){
                     offset = if i > padding {
                         i - padding
                     } else {
@@ -59,18 +67,6 @@ impl<'a> SongList<'a> {
                 }
 
             },
-            KeyCode::Down if key.modifiers == KeyModifiers::NONE => {
-                let padding = height.saturating_sub(padding).saturating_sub(1);
-                i += 1;
-                if i > offset + padding {
-                    offset = if i > padding {
-                        i - padding
-                    } else {
-                        0
-                    };
-                }
-
-            }
             KeyCode::Up | KeyCode::Down if key.modifiers == KeyModifiers::ALT => {
                 let Some(song) = (*songs).get(i as usize) else {
                     log::error!("no selected song");
@@ -105,7 +101,23 @@ impl<'a> SongList<'a> {
                 };
 
                 if let Some(next_song_index) = next_song_index {
-                    i = next_song_index as i32;
+                    let next_song_index = next_song_index as i32;
+
+                    let padding = if key.code == KeyCode::Up {
+                        padding
+                    } else {
+                        height.saturating_sub(padding).saturating_sub(1)
+                    };
+
+                    if (key.code == KeyCode::Up && next_song_index < offset + padding) || (key.code == KeyCode::Down && next_song_index > offset + padding) {
+                        offset = if next_song_index > padding {
+                            next_song_index - padding
+                        } else {
+                            0
+                        };
+                    }
+
+                    i = next_song_index;
                 }
 
             },
