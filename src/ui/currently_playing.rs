@@ -68,10 +68,7 @@ impl CurrentlyPlaying {
 }
 
 impl Widget for CurrentlyPlaying {
-    fn render(self, area: Rect, buf: &mut Buffer)
-    // where
-    //     Self: Sized
-    {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let [area_top, area_bottom] = Layout::vertical([Constraint::Length(2), Constraint::Length(1)]).areas(area);
 
         if let Some(ref current_song) = self.current_song {
@@ -92,7 +89,7 @@ impl Widget for CurrentlyPlaying {
             )
         });
 
-        let songs = if self.queue_song_count == 1 { "song" } else { "song_list" };
+        let songs = if self.queue_song_count == 1 { "song" } else { "songs" };
 
         let queue_label = if self.queue_song_count > 0 {
             Some(format!(

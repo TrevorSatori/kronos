@@ -341,11 +341,12 @@ impl<'a> KeyboardHandlerMut<'a> for App<'a> {
                     match self.focused_element {
                         FocusedElement::Browser => {
                             self.file_browser().focus();
-                            self.player.queue().select_none();
+                            // self.player.queue().set_focus(false);
                             self.target = Some(KeyboardHandler::Mut(self.browser.clone()));
                         }
                         FocusedElement::Queue => {
                             self.file_browser().blur();
+                            // self.player.queue().set_focus(true);
                             self.player.queue().select_next();
                             self.target = Some(KeyboardHandler::Ref(self.player.clone()));
                         }
@@ -401,12 +402,14 @@ impl<'a> WidgetRef for &App<'a> {
             },
         };
 
+        let queue = self.player.queue();
+
         let currently_playing = CurrentlyPlaying::new(
             self.config.theme,
             self.player.currently_playing().lock().unwrap().clone(),
             self.player.get_pos(),
-            self.player.queue().total_time(),
-            self.player.queue().length(),
+            queue.total_time(),
+            queue.length(),
         );
         currently_playing.render(area_bottom, buf);
     }

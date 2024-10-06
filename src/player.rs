@@ -306,6 +306,7 @@ impl Player {
     }
 
     pub fn play_song(&self, song: Song) {
+        log::debug!("player.play_song({})", song.title);
         self.queue_items.add_front(song);
 
         if self.currently_playing.lock().unwrap().is_some() {

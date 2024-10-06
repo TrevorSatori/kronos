@@ -70,7 +70,7 @@ impl<'a> WidgetRef for FileBrowser<'a> {
             ql,
             area_main_right,
             buf,
-            &mut ListState::default().with_selected(self.queue_items.selected_song_index())
+            &mut ListState::default().with_selected(Some(self.queue_items.selected_song_index()))
         );
 
     }
