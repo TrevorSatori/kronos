@@ -59,8 +59,6 @@ impl Song {
     }
 
     pub fn from_cue_sheet(cue_sheet: CueSheet) -> Vec<Self> {
-        // log::debug!(target: "::song.from_cue_sheet", "{:?}", cue_sheet);
-
         let cue_file = cue_sheet.file().unwrap();
         let file_name = cue_file.name();
         let tracks = cue_file.tracks();
@@ -68,7 +66,16 @@ impl Song {
         let cue_path = cue_sheet.cue_sheet_file_path();
         let song_path = cue_path.parent().unwrap().join(file_name);
 
-        let s = Song::from_file(&song_path).expect("could not load file");
+        let song = match Song::from_file(&song_path) {
+            Ok(s) => s,
+            Err(err) => {
+                log::warn!(target: "::song.from_cue_sheet", "Could not load songs from cue sheet.");
+                log::warn!(target: "::song.from_cue_sheet", "Cue sheet path: {:?}", cue_path);
+                log::warn!(target: "::song.from_cue_sheet", "Error: {:#?}", err);
+                log::warn!(target: "::song.from_cue_sheet", "Full cue sheet: {:#?}", cue_sheet);
+                return Vec::new();
+            }
+        };
 
         let mut songs: Vec<Song> = tracks
             .iter()
@@ -87,7 +94,7 @@ impl Song {
             let next_start = if i < songs.len() - 1 {
                 songs[i + 1].start_time
             } else {
-                s.length
+                song.length
             };
             let this_start = songs[i].start_time;
             songs[i].length = next_start.saturating_sub(this_start);
