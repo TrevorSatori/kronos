@@ -59,7 +59,7 @@ impl<'a> SongList<'a> {
                 }
 
             },
-            KeyCode::Up if key.modifiers == KeyModifiers::ALT => {
+            KeyCode::Up | KeyCode::Down if key.modifiers == KeyModifiers::ALT => {
                 let Some(song) = (*songs).get(i as usize) else {
                     log::error!("no selected song");
                     return;
@@ -70,15 +70,32 @@ impl<'a> SongList<'a> {
                     return;
                 };
 
-                let next_song = songs.iter().take(i as usize).rposition(|s| s.album.as_ref().is_some_and(|a| a != selected_album));
-                let next_song_album = next_song.and_then(|ns| songs.get(ns)).and_then(|ref s| s.album.as_ref());
+                let next_song_index = if key.code == KeyCode::Down {
+                    songs
+                        .iter()
+                        .skip(i as usize)
+                        .position(|s| s.album.as_ref().is_some_and(|a| a != selected_album))
+                        .map(|ns| ns.saturating_add(i as usize))
+                } else {
+                    songs
+                        .iter()
+                        .take(i as usize)
+                        .rposition(|s| s.album.as_ref().is_some_and(|a| a != selected_album))
+                        .and_then(|ns| songs.get(ns))
+                        .and_then(|ref s| s.album.as_ref())
+                        .and_then(|next_song_album| {
+                            songs
+                                .iter()
+                                .position(|song| {
+                                    song.album.as_ref().is_some_and(|a| a.as_str() == next_song_album)
+                                })
+                        })
+                };
 
-                if let Some(next_song_album) = next_song_album {
-                    let next_song = songs.iter().position(|ref s| s.album.as_ref().is_some_and(|a| a.as_str() == next_song_album));
-                    if let Some(next_song) = next_song {
-                        i = next_song as i32;
-                    }
+                if let Some(next_song_index) = next_song_index {
+                    i = next_song_index as i32;
                 }
+
             },
             KeyCode::Home => {
                 i = 0;
@@ -95,24 +112,6 @@ impl<'a> SongList<'a> {
                     };
                 }
 
-            },
-            KeyCode::Down if key.modifiers == KeyModifiers::ALT => {
-                let Some(song) = (*songs).get(i as usize) else {
-                    log::error!("no selected song");
-                    return;
-                };
-
-                let Some(ref selected_album) = song.album else {
-                    log::warn!("no selected song album");
-                    return;
-                };
-
-                let next_song = songs.iter().skip(i as usize).position(|s| s.album.as_ref().is_some_and(|a| a != selected_album));
-                let next_song = next_song.map(|ns| ns.saturating_add(i as usize));
-
-                if let Some(next_song) = next_song {
-                    i = next_song as i32;
-                }
             },
             KeyCode::End => {
                 i = length - 1;
