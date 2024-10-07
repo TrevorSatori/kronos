@@ -2,6 +2,7 @@ use std::sync::atomic::Ordering;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::{
+    structs::Song,
     ui::KeyboardHandlerRef,
 };
 
@@ -38,7 +39,7 @@ impl<'a> KeyboardHandlerRef<'a> for SongList<'a> {
 impl<'a> SongList<'a> {
 
     fn on_song_list_directional_key(&self, key: KeyEvent) {
-        let songs = &self.songs.lock().unwrap();
+        let songs = self.songs.lock().unwrap();
         let length = songs.len() as i32;
 
         let height = self.height.load(Ordering::Relaxed) as i32;
@@ -48,76 +49,33 @@ impl<'a> SongList<'a> {
         let mut i = self.selected_song_index.load(Ordering::SeqCst) as i32;
 
         match key.code {
-            KeyCode::Up | KeyCode::Down if key.modifiers == KeyModifiers::NONE  => {
-                let mut padding = padding;
-
-                if key.code == KeyCode::Up {
-                    i -= 1;
+            KeyCode::Up | KeyCode::Down => {
+                if key.modifiers == KeyModifiers::NONE {
+                    if key.code == KeyCode::Up {
+                        i -= 1;
+                    } else {
+                        i += 1;
+                    }
+                } else if key.modifiers == KeyModifiers::ALT {
+                    if let Some(next) = next_index_by_album(&*songs, i, key.code) {
+                        i = next as i32;
+                    }
                 } else {
-                    padding = height.saturating_sub(padding).saturating_sub(1);
-                    i += 1;
+                    return;
                 }
 
-                if (key.code == KeyCode::Up && i < offset + padding) || (key.code == KeyCode::Down && i > offset + padding){
+                let padding = if key.code == KeyCode::Up {
+                    padding
+                } else {
+                    height.saturating_sub(padding).saturating_sub(1)
+                };
+
+                if (key.code == KeyCode::Up && i < offset + padding) || (key.code == KeyCode::Down && i > offset + padding) {
                     offset = if i > padding {
                         i - padding
                     } else {
                         0
                     };
-                }
-
-            },
-            KeyCode::Up | KeyCode::Down if key.modifiers == KeyModifiers::ALT => {
-                let Some(song) = (*songs).get(i as usize) else {
-                    log::error!("no selected song");
-                    return;
-                };
-
-                let Some(ref selected_album) = song.album else {
-                    log::warn!("no selected song album");
-                    return;
-                };
-
-                let next_song_index = if key.code == KeyCode::Down {
-                    songs
-                        .iter()
-                        .skip(i as usize)
-                        .position(|s| s.album.as_ref().is_some_and(|a| a != selected_album))
-                        .map(|ns| ns.saturating_add(i as usize))
-                } else {
-                    songs
-                        .iter()
-                        .take(i as usize)
-                        .rposition(|s| s.album.as_ref().is_some_and(|a| a != selected_album))
-                        .and_then(|ns| songs.get(ns))
-                        .and_then(|ref s| s.album.as_ref())
-                        .and_then(|next_song_album| {
-                            songs
-                                .iter()
-                                .position(|song| {
-                                    song.album.as_ref().is_some_and(|a| a.as_str() == next_song_album)
-                                })
-                        })
-                };
-
-                if let Some(next_song_index) = next_song_index {
-                    let next_song_index = next_song_index as i32;
-
-                    let padding = if key.code == KeyCode::Up {
-                        padding
-                    } else {
-                        height.saturating_sub(padding).saturating_sub(1)
-                    };
-
-                    if (key.code == KeyCode::Up && next_song_index < offset + padding) || (key.code == KeyCode::Down && next_song_index > offset + padding) {
-                        offset = if next_song_index > padding {
-                            next_song_index - padding
-                        } else {
-                            0
-                        };
-                    }
-
-                    i = next_song_index;
                 }
 
             },
@@ -139,4 +97,40 @@ impl<'a> SongList<'a> {
         self.selected_song_index.store(i as usize, Ordering::SeqCst);
     }
 
+}
+
+fn next_index_by_album(songs: &Vec<Song>, i: i32, key: KeyCode) -> Option<usize> {
+    let Some(song) = (*songs).get(i as usize) else {
+        log::error!("no selected song");
+        return None;
+    };
+
+    let Some(ref selected_album) = song.album else {
+        log::warn!("no selected song album");
+        return None;
+    };
+
+    let next_song_index = if key == KeyCode::Down {
+        songs
+            .iter()
+            .skip(i as usize)
+            .position(|s| s.album.as_ref().is_some_and(|a| a != selected_album))
+            .map(|ns| ns.saturating_add(i as usize))
+    } else {
+        songs
+            .iter()
+            .take(i as usize)
+            .rposition(|s| s.album.as_ref().is_some_and(|a| a != selected_album))
+            .and_then(|ns| songs.get(ns))
+            .and_then(|ref s| s.album.as_ref())
+            .and_then(|next_song_album| {
+                songs
+                    .iter()
+                    .position(|song| {
+                        song.album.as_ref().is_some_and(|a| a.as_str() == next_song_album)
+                    })
+            })
+    };
+
+    next_song_index
 }
