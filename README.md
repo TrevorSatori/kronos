@@ -1,6 +1,6 @@
 # Jolteon 
 
-Music player that runs on the terminal.
+The best music player for local files.
 
 ![File Browser - Light Theme](assets/file_browser_light.png?raw=true)
 ![File Browser - Dark Theme](assets/file_browser_dark.png?raw=true)
@@ -19,22 +19,7 @@ Music player that runs on the terminal.
 
 ## About 
 
-Music player that runs on the terminal.
-
-### Why Jolteon
-
-I needed a replacement for `cmus`.
-
-### Why a new music player?
-
-I couldn't find one that I really liked.
-
-### Why on the terminal?
-
-Not sure, but I recently started thinking it's because TUIs are keyboard-first, and keyboard > mouse/trackpad.
-Most non-terminal UIs are mouse/trackpad first. Keyboard shortcuts are an afterthought. 
-
-And I _suspect_ I prefer the keyboard over the mouse/trackpad because of my ADHD and astigmatism. 
+Jolteon, the best music player for local files.
 
 ## Installation
 
@@ -54,8 +39,8 @@ cargo run --release
 
 ### Upcoming
 
-- binaries automatically built and published here, in the GitHub repo
-- auto updates
+- Binaries automatically built and published here, in the GitHub repo
+- Automatic updates
 - _maybe_ `apt`
 
 ## Features
@@ -77,6 +62,7 @@ cargo run --release
   - The queue
   - Current song (coming soon)
 - Safe handling of application crashes, restoring the terminal to its normal state.
+- A clock on the top bar :)
 
 ### Upcoming
 
