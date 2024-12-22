@@ -6,7 +6,7 @@ use std::{
 };
 
 use glob::glob;
-use lofty::{Accessor, Probe, TaggedFileExt};
+use lofty::{Accessor, AudioFile, Probe, TaggedFileExt};
 
 // converts queue items to what's displayed for user
 pub fn audio_display(path: &PathBuf) -> String {
@@ -16,16 +16,21 @@ pub fn audio_display(path: &PathBuf) -> String {
         .read()
         .expect("ERROR: Failed to read file!");
 
-    let ptag = tagged_file.primary_tag().unwrap();
-    let artist = ptag.artist();
+    // If the file contains a tag
+    if tagged_file.contains_tag() {
+        let ptag = tagged_file.primary_tag().unwrap();
+        let artist = ptag.artist();
 
-    // if filename
-    if let Some(i) = tagged_file.primary_tag().unwrap().title() {
-        // if artist data
-        if let Some(j) = artist {
-            format!("{artist} - {title}", artist = j, title = i)
+        // if filename
+        if let Some(i) = tagged_file.primary_tag().unwrap().title() {
+            // if artist data
+            if let Some(j) = artist {
+                format!("{artist} - {title}", artist = j, title = i)
+            } else {
+                i.into()
+            }
         } else {
-            i.into()
+            path.file_name().unwrap().to_str().unwrap().to_string()
         }
     } else {
         path.file_name().unwrap().to_str().unwrap().to_string()
